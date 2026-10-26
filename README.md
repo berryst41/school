@@ -27,7 +27,7 @@
 <a id="bomb"></a>
 
 <details>
-<summary><h2>🐵💣 폭탄원숭이</h2></summary>
+<summary><b>🐵💣 폭탄원숭이</b></summary>
 
 > **세 원숭이가 힘을 합쳐 폭탄을 해체하는 협동 게임**
 > 서로 다른 어려움을 가진 친구들이 어떻게 도우며 함께할 수 있는지 몸으로 느껴 보는 게임이에요.
@@ -96,7 +96,7 @@
 <a id="share"></a>
 
 <details>
-<summary><h2>📮 자료 공유 사이트</h2></summary>
+<summary><b>📮 자료 공유 사이트</b></summary>
 
 > **사진, 영상, 파일을 올리면 QR코드가 나와요.**
 > 학생들은 휴대폰 카메라로 QR코드를 찍기만 하면 바로 받을 수 있어요.
@@ -130,7 +130,7 @@
 </details>
 
 <details>
-<summary><h2>🗂️ 파일 구성</h2></summary>
+<summary><b>🗂️ 파일 구성</b></summary>
 <br>
 
 ```
