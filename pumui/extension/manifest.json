@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "품의 기안 도우미",
+  "version": "0.1.0",
+  "description": "쇼핑몰 장바구니를 읽어 품의 기안 본문과 품목내역을 만들고, 에듀파인 칸에 바로 넣어 줍니다.",
+  "permissions": ["sidePanel", "storage", "scripting", "activeTab", "tabs"],
+  "host_permissions": ["<all_urls>"],
+  "background": { "service_worker": "bg.js" },
+  "side_panel": { "default_path": "panel.html" },
+  "action": { "default_title": "품의 기안 도우미 열기" },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "all_frames": true,
+      "match_about_blank": true,
+      "run_at": "document_idle"
+    }
+  ]
+}
