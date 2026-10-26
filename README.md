@@ -46,6 +46,13 @@ https://strawberry0401.github.io/bombanana/
 
 ---
 
+## 📮 QR 나눔
+
+사진, 영상, 파일을 올리면 QR코드가 나오고, 휴대폰 카메라로 찍으면 바로 받을 수 있어요.
+👉 https://strawberry0401.github.io/bombanana/share/
+
+---
+
 <div align="center">
 소담초등학교 장애이해교육 · 아이디어는 협동 폭탄 해체 게임에서 얻었어요.
 </div>
