@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>QR 나눔</title>
-<meta name="description" content="사진, 영상, 파일을 올리면 QR코드가 나와요. 찍기만 하면 바로 받을 수 있어요.">
+<meta name="description" content="반 폴더를 만들면 QR코드가 나와요. QR을 찍은 학생들이 함께 사진, 영상, 파일을 올리고 받을 수 있어요.">
 <style>
 :root{
   --bg:#fff8ec; --card:#ffffff; --ink:#2b2b2b; --muted:#6b6b6b; --line:#eadfcb;
@@ -15,76 +15,89 @@
          --brand:#ff9a52; --brand-dark:#ff8a3d; --ok:#5cc489; --bad:#ff7a7a; --soft:#3a3128; }
 }
 *{box-sizing:border-box}
+[hidden]{display:none !important}
 body{margin:0;background:var(--bg);color:var(--ink);
   font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
   line-height:1.5;-webkit-text-size-adjust:100%}
-.wrap{max-width:760px;margin:0 auto;padding:20px 16px 60px}
+.wrap{max-width:820px;margin:0 auto;padding:20px 16px 60px}
 header{display:flex;align-items:center;gap:10px;margin-bottom:18px}
 header .logo{font-size:30px}
 header h1{font-size:24px;margin:0}
-header a{color:inherit;text-decoration:none}
+header a{color:inherit;text-decoration:none;display:flex;align-items:center;gap:10px}
 .sub{color:var(--muted);margin:-10px 0 18px;font-size:15px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;margin-bottom:16px;
   box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.card h2{margin:0 0 10px;font-size:20px}
+.card h3{margin:0 0 8px;font-size:17px}
 label.t{display:block;font-weight:700;margin-bottom:6px}
 input[type=text]{width:100%;font-size:17px;padding:12px 14px;border-radius:12px;border:1px solid var(--line);
-  background:var(--bg);color:var(--ink)}
-.drop{margin-top:16px;border:3px dashed var(--line);border-radius:18px;padding:30px 16px;text-align:center;cursor:pointer;
+  background:var(--bg);color:var(--ink);font-family:inherit}
+.check{display:flex;align-items:center;gap:10px;margin-top:14px;font-size:16px;cursor:pointer}
+.check input{width:22px;height:22px;accent-color:var(--brand)}
+.drop{border:3px dashed var(--line);border-radius:18px;padding:26px 16px;text-align:center;cursor:pointer;
   transition:.15s;background:var(--soft)}
 .drop.over{border-color:var(--brand);transform:scale(1.01)}
-.drop .big{font-size:44px}
+.drop .big{font-size:40px}
 .drop b{font-size:18px}
 .drop p{margin:6px 0 0;color:var(--muted);font-size:14px}
-.files{list-style:none;padding:0;margin:14px 0 0}
-.files li{display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid var(--line)}
-.files li:last-child{border-bottom:0}
-.files .ic{font-size:22px;width:28px;text-align:center}
-.files .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.files .sz{color:var(--muted);font-size:13px;white-space:nowrap}
-.files .x{border:0;background:none;color:var(--muted);font-size:20px;cursor:pointer;padding:0 6px}
-.files li.err .sz{color:var(--bad)}
+.queue{list-style:none;padding:0;margin:12px 0 0}
+.queue li{display:flex;align-items:center;gap:10px;padding:6px 2px;font-size:14px}
+.queue .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.queue .st{color:var(--muted);white-space:nowrap}
+.queue .st.bad{color:var(--bad)}
+.queue .st.ok{color:var(--ok)}
+.mini{height:6px;width:80px;background:var(--line);border-radius:6px;overflow:hidden}
+.mini i{display:block;height:100%;width:0;background:var(--brand)}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:14px;
-  padding:14px 20px;font-size:17px;font-weight:700;cursor:pointer;background:var(--brand);color:#fff;
+  padding:13px 18px;font-size:16px;font-weight:700;cursor:pointer;background:var(--brand);color:#fff;
   text-decoration:none;font-family:inherit}
 .btn:hover{background:var(--brand-dark)}
 .btn:disabled{opacity:.45;cursor:default}
 .btn.ghost{background:transparent;color:var(--ink);border:2px solid var(--line)}
 .btn.ghost:hover{border-color:var(--brand)}
 .btn.wide{width:100%;margin-top:16px}
-.btn.sm{padding:8px 12px;font-size:14px;border-radius:10px}
-.total{margin-top:10px;color:var(--muted);font-size:14px;text-align:right}
-.bar{height:14px;background:var(--line);border-radius:10px;overflow:hidden;margin-top:14px;display:none}
-.bar i{display:block;height:100%;width:0;background:var(--brand);transition:width .2s}
+.btn.sm{padding:7px 11px;font-size:14px;border-radius:10px}
 .msg{margin-top:10px;font-size:15px;min-height:1.5em}
 .msg.bad{color:var(--bad)}
-.result{text-align:center}
-.qrbox{display:inline-block;background:#fff;padding:14px;border-radius:16px;border:1px solid var(--line);margin:8px 0}
-.qrbox canvas{display:block;width:260px;height:260px;max-width:70vw;max-height:70vw;image-rendering:pixelated}
-.link{word-break:break-all;font-size:14px;color:var(--muted);margin:6px 0 14px}
-.row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.row{display:flex;flex-wrap:wrap;gap:8px}
+.row.c{justify-content:center}
+.qrwrap{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.qrbox{background:#fff;padding:10px;border-radius:14px;border:1px solid var(--line)}
+.qrbox canvas{display:block;width:180px;height:180px;image-rendering:pixelated}
+.qrside{flex:1;min-width:220px}
+.link{word-break:break-all;font-size:13px;color:var(--muted);margin:4px 0 12px}
+.teacher-tag{display:inline-block;background:var(--soft);color:var(--brand-dark);border-radius:8px;padding:2px 8px;font-size:13px;font-weight:700;margin-left:6px;vertical-align:middle}
 .full{position:fixed;inset:0;background:#fff;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:9;color:#222}
 .full.on{display:flex}
 .full h2{margin:0 0 10px;font-size:min(6vw,40px);text-align:center;padding:0 16px}
-.full canvas{width:min(80vh,90vw);height:min(80vh,90vw);image-rendering:pixelated}
+.full canvas{width:min(78vh,90vw);height:min(78vh,90vw);image-rendering:pixelated}
 .full p{margin:8px 0 0;color:#666}
-.recent h3{margin:0 0 8px;font-size:17px}
-.recent ul{list-style:none;margin:0;padding:0}
-.recent li{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
-.recent li:last-child{border-bottom:0}
-.recent .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.recent .dt{color:var(--muted);font-size:13px}
-/* 받는 화면 */
-.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-top:14px}
-.item{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
+.list{list-style:none;margin:0;padding:0}
+.list li{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--line)}
+.list li:last-child{border-bottom:0}
+.list .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.list .dt{color:var(--muted);font-size:13px}
+.bar-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0 2px}
+.bar-top .grow{flex:1}
+.live{font-size:13px;color:var(--muted)}
+.live::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ok);margin-right:6px;vertical-align:middle}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:12px}
+.item{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;position:relative}
+.item.new{animation:pop .6s ease}
+@keyframes pop{from{transform:scale(.92);opacity:0}to{transform:none;opacity:1}}
 .item .pv{background:var(--soft);aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.item .pv img,.item .pv video{width:100%;height:100%;object-fit:cover;display:block;background:#000}
-.item .pv img{background:transparent;cursor:zoom-in}
-.item .pv .ic{font-size:54px}
-.item .meta{padding:10px 12px;display:flex;align-items:center;gap:8px}
-.item .meta .nm{flex:1;min-width:0;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .pv img,.item .pv video{width:100%;height:100%;object-fit:cover;display:block}
+.item .pv video{background:#000}
+.item .pv img{cursor:zoom-in}
+.item .pv .ic{font-size:50px}
+.item .meta{padding:9px 11px;display:flex;align-items:center;gap:8px}
+.item .meta .nm{flex:1;min-width:0;font-size:14px;overflow:hidden}
+.item .meta .nm div{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .item .meta .sz{font-size:12px;color:var(--muted)}
+.item .hide{position:absolute;top:6px;right:6px;border:0;border-radius:10px;background:rgba(0,0,0,.6);color:#fff;
+  font-size:13px;padding:5px 8px;cursor:pointer}
+.empty{text-align:center;color:var(--muted);padding:30px 10px}
 .hint{color:var(--muted);font-size:14px;margin-top:8px}
-.center{text-align:center}
 .zoom{position:fixed;inset:0;background:rgba(0,0,0,.92);display:none;align-items:center;justify-content:center;z-index:9}
 .zoom.on{display:flex}
 .zoom img{max-width:96vw;max-height:90vh}
@@ -93,60 +106,90 @@ footer{text-align:center;color:var(--muted);font-size:13px;margin-top:30px}
 </head>
 <body>
 <div class="wrap">
-  <header><a href="./"><span class="logo">📮</span></a><a href="./"><h1>QR 나눔</h1></a></header>
+  <header><a href="./"><span class="logo">📮</span><h1>QR 나눔</h1></a></header>
 
-  <!-- 올리는 화면 -->
-  <section id="sendView" hidden>
-    <p class="sub">사진, 영상, 파일을 올리면 QR코드가 나와요. 휴대폰 카메라로 찍기만 하면 바로 받을 수 있어요.</p>
-    <div class="card" id="pickCard">
-      <label class="t" for="title">제목 (안 써도 돼요)</label>
-      <input type="text" id="title" maxlength="60" placeholder="예: 3학년 2반 현장체험학습 사진">
-      <div class="drop" id="drop" tabindex="0" role="button" aria-label="파일 고르기">
-        <div class="big">📷 🎬 📄</div>
-        <b>여기를 눌러 파일을 고르세요</b>
-        <p>또는 파일을 이 칸으로 끌어다 놓으세요 · 한 파일에 50MB까지</p>
-      </div>
-      <input type="file" id="fileInput" multiple hidden>
-      <ul class="files" id="fileList"></ul>
-      <div class="total" id="total"></div>
-      <button class="btn wide" id="sendBtn" disabled>QR코드 만들기</button>
-      <div class="bar" id="bar"><i></i></div>
-      <div class="msg" id="msg"></div>
+  <!-- 첫 화면: 반 폴더 만들기 -->
+  <section id="homeView" hidden>
+    <p class="sub">반 폴더를 만들면 QR코드가 나와요. QR을 찍은 학생들은 그 폴더에만 들어와서 함께 사진, 영상, 파일을 올리고 받을 수 있어요.</p>
+    <div class="card">
+      <h2>📁 새 반 폴더 만들기</h2>
+      <label class="t" for="newTitle">폴더 이름</label>
+      <input type="text" id="newTitle" maxlength="60" placeholder="예: 3학년 2반 현장체험학습">
+      <label class="check"><input type="checkbox" id="newAllow" checked> 학생도 파일을 올릴 수 있어요</label>
+      <button class="btn wide" id="createBtn">QR코드 만들기</button>
+      <div class="msg" id="createMsg"></div>
     </div>
-
-    <div class="card result" id="resultCard" hidden>
-      <h2 id="resTitle" style="margin:0 0 4px">QR코드가 만들어졌어요!</h2>
-      <div class="hint" style="margin:0 0 6px">휴대폰 카메라로 찍으면 파일을 받을 수 있어요.</div>
-      <div class="qrbox"><canvas id="qr"></canvas></div>
-      <div class="link" id="resLink"></div>
-      <div class="row">
-        <button class="btn" id="bigBtn">🔍 크게 보기</button>
-        <button class="btn ghost" id="copyBtn">🔗 링크 복사</button>
-        <button class="btn ghost" id="saveQrBtn">💾 QR 이미지 저장</button>
-        <a class="btn ghost" id="openBtn" target="_blank" rel="noopener">👀 받는 화면 보기</a>
-      </div>
-      <button class="btn ghost wide" id="againBtn">➕ 새로 공유하기</button>
-    </div>
-
-    <div class="card recent" id="recentCard" hidden>
-      <h3>🕘 내가 최근에 만든 QR</h3>
-      <ul id="recentList"></ul>
-      <div class="hint">이 목록은 지금 쓰는 기기에만 남아요.</div>
+    <div class="card" id="mineCard" hidden>
+      <h3>🗂️ 내가 만든 폴더</h3>
+      <ul class="list" id="mineList"></ul>
+      <div class="hint">이 목록과 선생님 권한은 지금 쓰는 기기에 저장돼요. 다른 기기에서도 관리하려면 폴더 안의 "선생님용 관리 링크"를 보관해 두세요.</div>
     </div>
   </section>
 
-  <!-- 받는 화면 -->
-  <section id="recvView" hidden>
-    <div class="card" id="recvHead">
-      <h2 id="rTitle" style="margin:0">불러오는 중…</h2>
-      <div class="hint" id="rInfo"></div>
-      <div class="row" style="justify-content:flex-start;margin-top:12px" id="rActions" hidden>
-        <button class="btn" id="allBtn">⬇️ 모두 받기</button>
-      </div>
-      <div class="hint" id="rTip" hidden>📱 아이폰에서 사진은 길게 눌러 "사진 앱에 저장"을 해도 돼요.</div>
+  <!-- 폴더 화면 (QR로 들어오는 곳) -->
+  <section id="folderView" hidden>
+    <div class="card">
+      <h2 id="fTitle" style="margin:0">불러오는 중…</h2>
+      <div class="hint" id="fInfo" style="margin-top:4px"></div>
     </div>
+
+    <!-- 선생님만 보이는 칸 -->
+    <div class="card" id="teacherCard" hidden>
+      <h3>👩‍🏫 선생님 메뉴</h3>
+      <div class="qrwrap">
+        <div class="qrbox"><canvas id="qr"></canvas></div>
+        <div class="qrside">
+          <div>학생들이 이 QR을 찍으면 이 폴더로 바로 들어와요.</div>
+          <div class="link" id="fLink"></div>
+          <div class="row">
+            <button class="btn sm" id="bigBtn">🔍 크게 보기</button>
+            <button class="btn ghost sm" id="copyBtn">🔗 링크 복사</button>
+            <button class="btn ghost sm" id="saveQrBtn">💾 QR 저장</button>
+          </div>
+        </div>
+      </div>
+      <label class="check"><input type="checkbox" id="allowToggle"> 학생도 파일을 올릴 수 있어요</label>
+      <div class="hint">사진 위의 "숨기기"를 누르면 그 파일이 목록에서 사라져요.</div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn ghost sm" id="keyBtn">🔑 선생님용 관리 링크 복사</button>
+      </div>
+      <div class="hint">관리 링크는 학생에게 주지 마세요. 다른 기기에서 이 링크를 열면 그 기기도 선생님 권한을 얻어요.</div>
+    </div>
+
+    <!-- 올리기 -->
+    <div class="card" id="upCard" hidden>
+      <h3>⬆️ 파일 올리기</h3>
+      <label class="t" for="myName">내 이름 (안 써도 돼요)</label>
+      <input type="text" id="myName" maxlength="20" placeholder="예: 김민수" style="margin-bottom:12px">
+      <div class="drop" id="drop" tabindex="0" role="button" aria-label="파일 고르기">
+        <div class="big">📷 🎬 📄</div>
+        <b>여기를 눌러 파일을 고르세요</b>
+        <p>여러 개를 한 번에 골라도 돼요 · 한 파일에 50MB까지</p>
+      </div>
+      <input type="file" id="fileInput" multiple hidden>
+      <ul class="queue" id="queue"></ul>
+    </div>
+    <div class="card" id="closedCard" hidden>
+      <div>🔒 지금은 선생님만 파일을 올릴 수 있어요. 아래에서 파일을 받을 수 있어요.</div>
+    </div>
+
+    <!-- 목록 -->
+    <div class="bar-top">
+      <h3 style="margin:0" id="countLabel">파일</h3>
+      <span class="live" id="live">자동으로 새로 고쳐져요</span>
+      <span class="grow"></span>
+      <button class="btn ghost sm" id="allBtn" hidden>⬇️ 모두 받기</button>
+    </div>
+    <div class="hint" id="iosTip" hidden>📱 아이폰에서 사진은 눌러서 크게 연 뒤 길게 눌러 "사진 앱에 저장"을 해도 돼요.</div>
     <div class="gallery" id="gallery"></div>
-    <p class="center" style="margin-top:24px"><a class="btn ghost" href="./">📮 나도 파일 나누기</a></p>
+    <div class="empty" id="empty" hidden>아직 올라온 파일이 없어요. 첫 번째로 올려 보세요!</div>
+  </section>
+
+  <section id="missingView" hidden>
+    <div class="card">
+      <h2>폴더를 찾을 수 없어요</h2>
+      <div class="hint">QR코드가 잘못되었거나 없어진 폴더예요. 선생님께 다시 물어보세요.</div>
+    </div>
   </section>
 
   <footer>소담초등학교 · QR 나눔</footer>
@@ -161,18 +204,31 @@ footer{text-align:center;color:var(--muted);font-size:13px;margin-top:30px}
 
 <script src="qrcode.js"></script>
 <script>
-// 봄바나나와 같은 Supabase 프로젝트의 'qrshare' 저장 공간을 써요.
+// 봄바나나와 같은 Supabase 프로젝트를 써요. 파일은 'qrshare' 저장 공간에 반 폴더별로 들어가요.
 const SUPABASE_URL = 'https://bmfihlddiyfeejrdrigm.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtZmlobGRkaXlmZWVqcmRyaWdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyNTUwNzIsImV4cCI6MjEwNjgzMTA3Mn0.8EHC-CI5fz0yg9hF2Cp0uSfI1dZuUz5yS-MUaAdcCbc';
 const BUCKET = 'qrshare';
 const MAX_BYTES = 50 * 1024 * 1024;
-const MAX_FILES = 100;
-const RECENT_KEY = 'qrshare-recent';
+const POLL_MS = 5000;
+const MINE_KEY = 'qrshare-folders';
+const NAME_KEY = 'qrshare-name';
 
 const $ = id => document.getElementById(id);
 const publicUrl = (path, downloadName) =>
   `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${path}` +
   (downloadName !== undefined ? `?download=${encodeURIComponent(downloadName)}` : '');
+
+async function rpc(name, args){
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`, {
+    method: 'POST',
+    headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify(args)
+  });
+  const text = await r.text();
+  const data = text ? JSON.parse(text) : null;
+  if (!r.ok) throw new Error((data && data.message) || ('HTTP ' + r.status));
+  return data;
+}
 
 function fmtSize(b){
   if (b < 1024) return b + 'B';
@@ -180,12 +236,17 @@ function fmtSize(b){
   if (b < 1024*1024*1024) return (b/1024/1024).toFixed(1) + 'MB';
   return (b/1024/1024/1024).toFixed(2) + 'GB';
 }
+function fmtTime(s){
+  const d = new Date(s), now = new Date();
+  const hm = `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
+  return d.toDateString() === now.toDateString() ? hm : `${d.getMonth()+1}/${d.getDate()} ${hm}`;
+}
 function kind(type, name){
   type = type || '';
   if (type.startsWith('image/')) return 'image';
   if (type.startsWith('video/')) return 'video';
   if (type.startsWith('audio/')) return 'audio';
-  if (/\.(jpe?g|png|gif|webp|heic|bmp)$/i.test(name)) return 'image';
+  if (/\.(jpe?g|png|gif|webp|bmp)$/i.test(name)) return 'image';
   if (/\.(mp4|mov|webm|m4v)$/i.test(name)) return 'video';
   return 'file';
 }
@@ -201,15 +262,14 @@ function icon(type, name){
   if (/\.(zip|7z|rar)$/i.test(name)) return '🗜️';
   return '📄';
 }
-function newId(){
+function randStr(n){
   // 헷갈리는 글자(0,o,1,l,i)는 뺐어요.
   const abc = 'abcdefghjkmnpqrstuvwxyz23456789';
-  const r = crypto.getRandomValues(new Uint8Array(10));
+  const r = crypto.getRandomValues(new Uint8Array(n));
   return Array.from(r, x => abc[x % abc.length]).join('');
 }
-function shareLink(id){
-  return location.origin + location.pathname.replace(/index\.html$/, '') + '?s=' + id;
-}
+const baseUrl = () => location.origin + location.pathname.replace(/index\.html$/, '');
+const folderLink = id => baseUrl() + '?f=' + id;
 function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 function drawQR(canvas, text){
@@ -226,171 +286,127 @@ function drawQR(canvas, text){
     if (q.isDark(r, c)) g.fillRect((c+margin)*cell, (r+margin)*cell, cell, cell);
 }
 
-function loadRecent(){ try { return JSON.parse(localStorage.getItem(RECENT_KEY)) || []; } catch(e){ return []; } }
-function saveRecent(list){ try { localStorage.setItem(RECENT_KEY, JSON.stringify(list.slice(0, 20))); } catch(e){} }
-
-/* ---------- 올리는 화면 ---------- */
-let picked = [];
-let current = null; // {id, title}
-
-function renderPicked(){
-  const ul = $('fileList');
-  ul.innerHTML = '';
-  let total = 0, bad = false;
-  picked.forEach((f, i) => {
-    const big = f.size > MAX_BYTES;
-    bad = bad || big;
-    total += f.size;
-    const li = document.createElement('li');
-    if (big) li.className = 'err';
-    li.innerHTML = `<span class="ic">${icon(f.type, f.name)}</span><span class="nm">${esc(f.name)}</span>` +
-      `<span class="sz">${big ? '50MB가 넘어요' : fmtSize(f.size)}</span><button class="x" aria-label="빼기">✕</button>`;
-    li.querySelector('.x').onclick = () => { picked.splice(i, 1); renderPicked(); };
-    ul.appendChild(li);
-  });
-  $('total').textContent = picked.length ? `${picked.length}개 · 모두 ${fmtSize(total)}` : '';
-  $('sendBtn').disabled = !picked.length || bad;
-  $('msg').className = 'msg';
-  $('msg').textContent = bad ? '50MB가 넘는 파일은 ✕를 눌러 빼 주세요. 긴 영상은 잘라서 올려 주세요.' : '';
-}
-function addFiles(list){
-  for (const f of list) {
-    if (picked.length >= MAX_FILES) break;
-    if (!picked.some(p => p.name === f.name && p.size === f.size && p.lastModified === f.lastModified)) picked.push(f);
-  }
-  renderPicked();
+function loadMine(){ try { return JSON.parse(localStorage.getItem(MINE_KEY)) || []; } catch(e){ return []; } }
+function saveMine(list){ try { localStorage.setItem(MINE_KEY, JSON.stringify(list)); } catch(e){} }
+function rememberFolder(id, title, key){
+  const list = loadMine().filter(f => f.id !== id);
+  list.unshift({ id, title, key, created: new Date().toISOString() });
+  saveMine(list);
 }
 
-function uploadOne(path, body, type, onProgress){
-  return new Promise((resolve, reject) => {
-    const x = new XMLHttpRequest();
-    x.open('POST', `${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`);
-    x.setRequestHeader('apikey', SUPABASE_KEY);
-    x.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
-    x.setRequestHeader('Content-Type', type || 'application/octet-stream');
-    x.setRequestHeader('x-upsert', 'false');
-    x.setRequestHeader('cache-control', 'max-age=3600');
-    x.upload.onprogress = e => { if (e.lengthComputable) onProgress(e.loaded); };
-    x.onload = () => {
-      if (x.status >= 200 && x.status < 300) resolve();
-      else {
-        let m = x.responseText;
-        try { m = JSON.parse(m).message || m; } catch(e){}
-        reject(new Error(m || ('HTTP ' + x.status)));
-      }
-    };
-    x.onerror = () => reject(new Error('인터넷 연결을 확인해 주세요.'));
-    x.send(body);
-  });
-}
-
-async function send(){
-  const btn = $('sendBtn'), bar = $('bar'), msg = $('msg');
-  btn.disabled = true;
-  $('fileInput').disabled = true;
-  bar.style.display = 'block';
-  msg.className = 'msg';
-  const id = newId();
-  const title = $('title').value.trim();
-  const total = picked.reduce((s, f) => s + f.size, 0) || 1;
-  let done = 0;
-  const files = [];
-  try {
-    for (let i = 0; i < picked.length; i++) {
-      const f = picked[i];
-      const m = /\.([a-z0-9]{1,8})$/i.exec(f.name);
-      const path = `${id}/${String(i+1).padStart(3, '0')}${m ? '.' + m[1].toLowerCase() : ''}`;
-      msg.textContent = `올리는 중… (${i+1}/${picked.length}) ${f.name}`;
-      await uploadOne(path, f, f.type, loaded => {
-        bar.firstElementChild.style.width = Math.min(100, (done + loaded) / total * 100) + '%';
-      });
-      done += f.size;
-      files.push({ name: f.name, path, size: f.size, type: f.type || '' });
+/* ---------- 첫 화면 ---------- */
+function initHome(){
+  $('homeView').hidden = false;
+  $('createBtn').onclick = async () => {
+    const btn = $('createBtn');
+    btn.disabled = true;
+    $('createMsg').className = 'msg';
+    $('createMsg').textContent = '만드는 중…';
+    const id = randStr(10), key = randStr(24);
+    const title = $('newTitle').value.trim();
+    try {
+      await rpc('qr_create_folder', { p_id: id, p_title: title, p_key: key, p_allow_upload: $('newAllow').checked });
+      rememberFolder(id, title, key);
+      location.href = folderLink(id);
+    } catch (e) {
+      $('createMsg').className = 'msg bad';
+      $('createMsg').textContent = '만들지 못했어요: ' + e.message;
+      btn.disabled = false;
     }
-    // 목록 파일은 맨 마지막에 올려요. 이게 있어야 받는 화면이 열려요.
-    const manifest = { v: 1, title, created: new Date().toISOString(), files };
-    await uploadOne(`${id}/manifest.json`, new Blob([JSON.stringify(manifest)], {type:'application/json'}),
-      'application/json', () => {});
-    bar.firstElementChild.style.width = '100%';
-    const recent = loadRecent();
-    recent.unshift({ id, title, created: manifest.created, count: files.length });
-    saveRecent(recent);
-    showResult(id, title);
-  } catch (e) {
-    msg.className = 'msg bad';
-    msg.textContent = '올리지 못했어요: ' + e.message + ' 다시 눌러 보세요.';
-    btn.disabled = false;
-    $('fileInput').disabled = false;
-  }
-}
-
-function showResult(id, title){
-  current = { id, title };
-  const link = shareLink(id);
-  $('pickCard').hidden = true;
-  $('resultCard').hidden = false;
-  $('resTitle').textContent = title || 'QR코드가 만들어졌어요!';
-  $('resLink').textContent = link;
-  $('openBtn').href = link;
-  drawQR($('qr'), link);
-  renderRecent();
-  window.scrollTo(0, 0);
-}
-
-function resetSend(){
-  picked = [];
-  current = null;
-  $('title').value = '';
-  $('fileInput').value = '';
-  $('fileInput').disabled = false;
-  $('bar').style.display = 'none';
-  $('bar').firstElementChild.style.width = '0';
-  $('pickCard').hidden = false;
-  $('resultCard').hidden = true;
-  renderPicked();
-}
-
-function renderRecent(){
-  const list = loadRecent();
-  $('recentCard').hidden = !list.length;
-  const ul = $('recentList');
-  ul.innerHTML = '';
-  list.forEach(r => {
+  };
+  const mine = loadMine();
+  $('mineCard').hidden = !mine.length;
+  mine.forEach(f => {
     const li = document.createElement('li');
-    const d = new Date(r.created);
-    li.innerHTML = `<span class="nm">${esc(r.title || '제목 없음')} <span class="dt">· ${r.count}개 · ${d.getMonth()+1}/${d.getDate()}</span></span>` +
-      `<button class="btn ghost sm">QR 보기</button>`;
-    li.querySelector('button').onclick = () => showResult(r.id, r.title);
-    ul.appendChild(li);
+    const d = new Date(f.created);
+    li.innerHTML = `<span class="nm">${esc(f.title || '이름 없는 폴더')} <span class="dt">· ${d.getMonth()+1}/${d.getDate()}</span></span>` +
+      `<a class="btn ghost sm" href="${folderLink(f.id)}">열기</a>`;
+    $('mineList').appendChild(li);
   });
 }
 
-function initSend(){
-  $('sendView').hidden = false;
-  const drop = $('drop'), input = $('fileInput');
-  drop.onclick = () => input.click();
-  drop.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); } };
-  input.onchange = () => { addFiles(input.files); input.value = ''; };
-  ['dragenter','dragover'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add('over'); }));
-  ['dragleave','drop'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove('over'); }));
-  drop.addEventListener('drop', e => addFiles(e.dataTransfer.files));
-  $('sendBtn').onclick = send;
-  $('againBtn').onclick = resetSend;
-  $('copyBtn').onclick = async () => {
-    const link = shareLink(current.id);
-    try { await navigator.clipboard.writeText(link); $('copyBtn').textContent = '✅ 복사했어요'; }
-    catch(e) { prompt('아래 링크를 복사하세요', link); }
-    setTimeout(() => $('copyBtn').textContent = '🔗 링크 복사', 1500);
+/* ---------- 폴더 화면 ---------- */
+let F = null;          // 폴더 정보
+let teacherKey = null; // 이 기기에 선생님 권한이 있으면 들어 있어요
+const shown = new Map(); // 화면에 있는 파일 id → 카드
+
+async function initFolder(id){
+  // 관리 링크(#k=...)로 들어오면 이 기기에 선생님 권한을 저장해요.
+  const hk = new URLSearchParams(location.hash.slice(1)).get('k');
+  let info;
+  try {
+    info = (await rpc('qr_get_folder', { p_id: id }))[0];
+  } catch (e) {
+    $('folderView').hidden = false;
+    $('fTitle').textContent = '불러오지 못했어요';
+    $('fInfo').textContent = '인터넷 연결을 확인하고 새로고침해 주세요.';
+    return;
+  }
+  if (!info) { $('missingView').hidden = false; return; }
+  F = info;
+  if (hk) {
+    rememberFolder(id, F.title, hk);
+    history.replaceState(null, '', folderLink(id));
+  }
+  const mine = loadMine().find(f => f.id === id);
+  teacherKey = mine ? mine.key : null;
+
+  $('folderView').hidden = false;
+  document.title = (F.title || '반 폴더') + ' · QR 나눔';
+  $('fTitle').innerHTML = esc(F.title || '반 폴더') + (teacherKey ? '<span class="teacher-tag">선생님</span>' : '');
+  $('fInfo').textContent = '이 폴더의 QR을 찍은 사람만 들어올 수 있어요.';
+  try { $('myName').value = localStorage.getItem(NAME_KEY) || ''; } catch(e){}
+  $('myName').oninput = () => { try { localStorage.setItem(NAME_KEY, $('myName').value.trim()); } catch(e){} };
+
+  if (teacherKey) initTeacher();
+  applyUploadState();
+  initUpload();
+  $('zoom').onclick = () => $('zoom').classList.remove('on');
+  $('allBtn').onclick = downloadAll;
+
+  await refresh();
+  setInterval(() => { if (!document.hidden) refresh(); }, POLL_MS);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
+}
+
+function applyUploadState(){
+  const canUp = F.allow_upload || !!teacherKey;
+  $('upCard').hidden = !canUp;
+  $('closedCard').hidden = canUp;
+}
+
+function initTeacher(){
+  $('teacherCard').hidden = false;
+  const link = folderLink(F.id);
+  $('fLink').textContent = link;
+  drawQR($('qr'), link);
+  $('allowToggle').checked = F.allow_upload;
+  $('allowToggle').onchange = async () => {
+    const v = $('allowToggle').checked;
+    try {
+      await rpc('qr_update_folder', { p_id: F.id, p_key: teacherKey, p_title: F.title, p_allow_upload: v });
+      F.allow_upload = v;
+    } catch (e) {
+      $('allowToggle').checked = !v;
+      alert('바꾸지 못했어요: ' + e.message);
+    }
   };
+  const copy = async (text, btn, label) => {
+    try { await navigator.clipboard.writeText(text); btn.textContent = '✅ 복사했어요'; }
+    catch(e) { prompt('아래 링크를 복사하세요', text); }
+    setTimeout(() => btn.textContent = label, 1500);
+  };
+  $('copyBtn').onclick = () => copy(link, $('copyBtn'), '🔗 링크 복사');
+  $('keyBtn').onclick = () => copy(link + '#k=' + teacherKey, $('keyBtn'), '🔑 선생님용 관리 링크 복사');
   $('saveQrBtn').onclick = () => {
     const a = document.createElement('a');
     a.href = $('qr').toDataURL('image/png');
-    a.download = (current.title || 'QR나눔') + '-QR.png';
+    a.download = (F.title || 'QR나눔') + '-QR.png';
     a.click();
   };
   $('bigBtn').onclick = () => {
-    $('fullTitle').textContent = current.title || '';
-    drawQR($('qrBig'), shareLink(current.id));
+    $('fullTitle').textContent = F.title || '';
+    drawQR($('qrBig'), link);
     $('full').classList.add('on');
     if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
   };
@@ -398,69 +414,175 @@ function initSend(){
     $('full').classList.remove('on');
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
   };
-  renderRecent();
 }
 
-/* ---------- 받는 화면 ---------- */
-async function initRecv(id){
-  $('recvView').hidden = false;
-  if (!/^[a-z0-9]{10}$/.test(id)) return notFound();
-  let m;
+let files = [];
+let refreshing = false;
+async function refresh(){
+  if (refreshing) return;
+  refreshing = true;
   try {
-    const r = await fetch(publicUrl(`${id}/manifest.json`), { cache: 'no-store' });
-    if (!r.ok) return notFound();
-    m = await r.json();
-  } catch (e) {
-    $('rTitle').textContent = '불러오지 못했어요';
-    $('rInfo').textContent = '인터넷 연결을 확인하고 새로고침해 주세요.';
-    return;
-  }
-  const title = m.title || '받은 파일';
-  document.title = title + ' · QR 나눔';
-  $('rTitle').textContent = title;
-  const d = new Date(m.created);
-  const total = m.files.reduce((s, f) => s + f.size, 0);
-  $('rInfo').textContent = `${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()} · ${m.files.length}개 · ${fmtSize(total)}`;
-  $('rActions').hidden = m.files.length < 2;
-  $('rTip').hidden = !m.files.some(f => kind(f.type, f.name) === 'image');
-
-  const g = $('gallery');
-  m.files.forEach(f => {
-    const k = kind(f.type, f.name);
-    const url = publicUrl(f.path);
-    const el = document.createElement('div');
-    el.className = 'item';
-    let pv;
-    if (k === 'image') pv = `<img src="${url}" alt="${esc(f.name)}" loading="lazy">`;
-    else if (k === 'video') pv = `<video src="${url}#t=0.1" controls playsinline preload="metadata"></video>`;
-    else pv = `<span class="ic">${icon(f.type, f.name)}</span>`;
-    el.innerHTML = `<div class="pv">${pv}</div>` +
-      (k === 'audio' ? `<audio src="${url}" controls preload="none" style="width:100%"></audio>` : '') +
-      `<div class="meta"><span class="nm" title="${esc(f.name)}">${esc(f.name)}<br><span class="sz">${fmtSize(f.size)}</span></span>` +
-      `<a class="btn sm" href="${publicUrl(f.path, f.name)}">⬇️ 받기</a></div>`;
-    const img = el.querySelector('img');
-    if (img) img.onclick = () => { $('zoomImg').src = url; $('zoom').classList.add('on'); };
-    g.appendChild(el);
-  });
-  $('zoom').onclick = () => $('zoom').classList.remove('on');
-  $('allBtn').onclick = async () => {
-    $('allBtn').disabled = true;
-    for (const f of m.files) {
-      const a = document.createElement('a');
-      a.href = publicUrl(f.path, f.name);
-      document.body.appendChild(a); a.click(); a.remove();
-      await new Promise(r => setTimeout(r, 900));
+    const [list, info] = await Promise.all([
+      rpc('qr_list_files', { p_folder: F.id }),
+      rpc('qr_get_folder', { p_id: F.id })
+    ]);
+    if (info[0] && info[0].allow_upload !== F.allow_upload) {
+      F.allow_upload = info[0].allow_upload;
+      if (teacherKey) $('allowToggle').checked = F.allow_upload;
+      applyUploadState();
     }
-    $('allBtn').disabled = false;
-  };
-}
-function notFound(){
-  $('rTitle').textContent = '파일을 찾을 수 없어요';
-  $('rInfo').textContent = 'QR코드가 잘못되었거나 이미 지워진 공유예요. 보낸 사람에게 다시 물어보세요.';
+    files = list;
+    renderFiles();
+    $('live').textContent = '자동으로 새로 고쳐져요';
+  } catch (e) {
+    $('live').textContent = '연결이 끊겼어요. 다시 연결하는 중…';
+  } finally {
+    refreshing = false;
+  }
 }
 
-const sid = new URLSearchParams(location.search).get('s');
-if (sid) initRecv(sid.trim().toLowerCase()); else initSend();
+function renderFiles(){
+  const g = $('gallery');
+  const ids = new Set(files.map(f => f.id));
+  for (const [id, el] of shown) if (!ids.has(id)) { el.remove(); shown.delete(id); }
+  const firstLoad = shown.size === 0;
+  // 새 파일이 맨 앞에 오도록 거꾸로 그려요.
+  files.slice().reverse().forEach((f, i) => {
+    if (shown.has(f.id)) return;
+    const el = fileCard(f);
+    if (!firstLoad) el.classList.add('new');
+    const before = g.children[i] || null;
+    g.insertBefore(el, before);
+    shown.set(f.id, el);
+  });
+  const total = files.reduce((s, f) => s + Number(f.size), 0);
+  $('countLabel').textContent = files.length ? `파일 ${files.length}개 · ${fmtSize(total)}` : '파일';
+  $('empty').hidden = files.length > 0;
+  $('allBtn').hidden = files.length < 2;
+  $('iosTip').hidden = !files.some(f => kind(f.type, f.name) === 'image');
+}
+
+function fileCard(f){
+  const k = kind(f.type, f.name);
+  const url = publicUrl(f.path);
+  const el = document.createElement('div');
+  el.className = 'item';
+  let pv;
+  if (k === 'image') pv = `<img src="${url}" alt="${esc(f.name)}" loading="lazy">`;
+  else if (k === 'video') pv = `<video src="${url}#t=0.1" controls playsinline preload="metadata"></video>`;
+  else pv = `<span class="ic">${icon(f.type, f.name)}</span>`;
+  const who = f.uploader ? esc(f.uploader) + ' · ' : '';
+  el.innerHTML = `<div class="pv">${pv}</div>` +
+    (k === 'audio' ? `<audio src="${url}" controls preload="none" style="width:100%"></audio>` : '') +
+    `<div class="meta"><div class="nm"><div title="${esc(f.name)}">${esc(f.name)}</div>` +
+    `<div class="sz">${who}${fmtTime(f.created_at)} · ${fmtSize(Number(f.size))}</div></div>` +
+    `<a class="btn sm" href="${publicUrl(f.path, f.name)}">⬇️ 받기</a></div>` +
+    (teacherKey ? `<button class="hide">숨기기</button>` : '');
+  const img = el.querySelector('img');
+  if (img) img.onclick = () => { $('zoomImg').src = url; $('zoom').classList.add('on'); };
+  const hb = el.querySelector('.hide');
+  if (hb) hb.onclick = async () => {
+    if (!confirm(`"${f.name}" 파일을 숨길까요? 학생들 화면에서도 사라져요.`)) return;
+    try { await rpc('qr_hide_file', { p_folder: F.id, p_key: teacherKey, p_file_id: f.id }); refresh(); }
+    catch (e) { alert('숨기지 못했어요: ' + e.message); }
+  };
+  return el;
+}
+
+async function downloadAll(){
+  $('allBtn').disabled = true;
+  for (const f of files) {
+    const a = document.createElement('a');
+    a.href = publicUrl(f.path, f.name);
+    document.body.appendChild(a); a.click(); a.remove();
+    await new Promise(r => setTimeout(r, 900));
+  }
+  $('allBtn').disabled = false;
+}
+
+/* ---------- 올리기 ---------- */
+const pending = [];
+let uploading = false;
+
+function initUpload(){
+  const drop = $('drop'), input = $('fileInput');
+  drop.onclick = () => input.click();
+  drop.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); } };
+  input.onchange = () => { enqueue(input.files); input.value = ''; };
+  ['dragenter','dragover'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave','drop'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', e => enqueue(e.dataTransfer.files));
+  window.addEventListener('beforeunload', e => { if (uploading) { e.preventDefault(); e.returnValue = ''; } });
+}
+
+function enqueue(list){
+  for (const file of list) {
+    const li = document.createElement('li');
+    li.innerHTML = `<span>${icon(file.type, file.name)}</span><span class="nm">${esc(file.name)}</span>` +
+      `<span class="mini"><i></i></span><span class="st">기다리는 중</span>`;
+    $('queue').prepend(li);
+    const job = { file, li };
+    if (file.size > MAX_BYTES) { setStatus(job, '50MB가 넘어서 못 올려요', 'bad'); continue; }
+    pending.push(job);
+  }
+  runQueue();
+}
+function setStatus(job, text, cls){
+  const st = job.li.querySelector('.st');
+  st.textContent = text;
+  st.className = 'st' + (cls ? ' ' + cls : '');
+  if (cls) job.li.querySelector('.mini').style.visibility = 'hidden';
+}
+
+async function runQueue(){
+  if (uploading) return;
+  uploading = true;
+  while (pending.length) {
+    const job = pending.shift();
+    const f = job.file;
+    // 여러 학생이 동시에 올려도 겹치지 않게, 파일마다 시간+무작위 이름을 붙여요.
+    const m = /\.([a-z0-9]{1,8})$/i.exec(f.name);
+    const path = `${F.id}/${Date.now().toString(36)}-${randStr(6)}${m ? '.' + m[1].toLowerCase() : ''}`;
+    setStatus(job, '올리는 중');
+    try {
+      await uploadOne(path, f, p => job.li.querySelector('.mini i').style.width = (p * 100) + '%');
+      await rpc('qr_add_file', { p_folder: F.id, p_path: path, p_name: f.name, p_type: f.type || '',
+        p_uploader: $('myName').value.trim(), p_key: teacherKey });
+      setStatus(job, '올렸어요 ✓', 'ok');
+      refresh();
+    } catch (e) {
+      const closed = /upload closed/.test(e.message);
+      setStatus(job, closed ? '선생님이 올리기를 닫았어요' : '실패: ' + e.message, 'bad');
+    }
+  }
+  uploading = false;
+}
+
+function uploadOne(path, file, onProgress){
+  return new Promise((resolve, reject) => {
+    const x = new XMLHttpRequest();
+    x.open('POST', `${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`);
+    x.setRequestHeader('apikey', SUPABASE_KEY);
+    x.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
+    x.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+    x.setRequestHeader('x-upsert', 'false');
+    x.setRequestHeader('cache-control', 'max-age=3600');
+    x.upload.onprogress = e => { if (e.lengthComputable) onProgress(e.loaded / e.total); };
+    x.onload = () => {
+      if (x.status >= 200 && x.status < 300) return resolve();
+      let m = x.responseText;
+      try { m = JSON.parse(m).message || m; } catch(e){}
+      reject(new Error(m || ('HTTP ' + x.status)));
+    };
+    x.onerror = () => reject(new Error('인터넷 연결을 확인해 주세요.'));
+    x.send(file);
+  });
+}
+
+const fid = (new URLSearchParams(location.search).get('f') || '').trim().toLowerCase();
+if (!fid) initHome();
+else if (!/^[a-z0-9]{10}$/.test(fid)) $('missingView').hidden = false;
+else initFolder(fid);
 </script>
 </body>
 </html>
