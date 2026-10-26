@@ -90,7 +90,9 @@ input[type=text]{width:100%;font-size:17px;padding:12px 14px;border-radius:12px;
 .item .pv video{background:#000}
 .item .pv img{cursor:zoom-in}
 .item .pv .ic{font-size:50px}
-.item .meta{padding:9px 11px;display:flex;align-items:center;gap:8px}
+.item .meta{padding:9px 11px;display:flex;flex-direction:column;gap:8px}
+.item .meta .nm{width:100%}
+.item .meta .btn{width:100%}
 .item .meta .nm{flex:1;min-width:0;font-size:14px;overflow:hidden}
 .item .meta .nm div{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .item .meta .sz{font-size:12px;color:var(--muted)}
@@ -101,6 +103,15 @@ input[type=text]{width:100%;font-size:17px;padding:12px 14px;border-radius:12px;
 .zoom{position:fixed;inset:0;background:rgba(0,0,0,.92);display:none;align-items:center;justify-content:center;z-index:9}
 .zoom.on{display:flex}
 .zoom img{max-width:96vw;max-height:90vh}
+textarea{width:100%;font-size:15px;padding:12px 14px;border-radius:12px;border:1px solid var(--line);
+  background:var(--bg);color:var(--ink);font-family:inherit;line-height:1.6;resize:vertical}
+.gate{text-align:center;max-width:440px;margin:30px auto}
+.gate .big{font-size:48px}
+.gate p{color:var(--muted)}
+.gate input{text-align:center;font-size:24px;letter-spacing:4px}
+.who{background:var(--soft);border-radius:12px;padding:10px 14px;margin-bottom:12px}
+.linkbtn{border:0;background:none;color:var(--brand-dark);text-decoration:underline;cursor:pointer;font-size:14px;font-family:inherit}
+.guide{white-space:pre-wrap;background:var(--soft);border-left:5px solid var(--brand);border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:16px;line-height:1.7}
 footer{text-align:center;color:var(--muted);font-size:13px;margin-top:30px}
 </style>
 </head>
@@ -116,6 +127,8 @@ footer{text-align:center;color:var(--muted);font-size:13px;margin-top:30px}
       <label class="t" for="newTitle">폴더 이름</label>
       <input type="text" id="newTitle" maxlength="60" placeholder="예: 3학년 2반 현장체험학습">
       <label class="check"><input type="checkbox" id="newAllow" checked> 학생도 파일을 올릴 수 있어요</label>
+      <label class="t" for="newNote" style="margin-top:14px">학생에게 보여 줄 안내 (고쳐 써도 돼요)</label>
+      <textarea id="newNote" maxlength="500" rows="6"></textarea>
       <button class="btn wide" id="createBtn">QR코드 만들기</button>
       <div class="msg" id="createMsg"></div>
     </div>
@@ -123,6 +136,18 @@ footer{text-align:center;color:var(--muted);font-size:13px;margin-top:30px}
       <h3>🗂️ 내가 만든 폴더</h3>
       <ul class="list" id="mineList"></ul>
       <div class="hint">이 목록과 선생님 권한은 지금 쓰는 기기에 저장돼요. 다른 기기에서도 관리하려면 폴더 안의 "선생님용 관리 링크"를 보관해 두세요.</div>
+    </div>
+  </section>
+
+  <!-- 학생 이름 확인 -->
+  <section id="nameView" hidden>
+    <div class="card gate">
+      <div class="big">👋</div>
+      <h2 id="gateTitle">반 폴더</h2>
+      <p>들어가기 전에 <b>내 이름</b>을 적어 주세요.<br>성과 이름을 한글로 정확히 적어요. 별명은 안 돼요.</p>
+      <input type="text" id="gateName" maxlength="4" placeholder="예: 김민수" autocomplete="name">
+      <button class="btn wide" id="gateBtn">들어가기</button>
+      <div class="msg bad" id="gateMsg"></div>
     </div>
   </section>
 
@@ -149,6 +174,9 @@ footer{text-align:center;color:var(--muted);font-size:13px;margin-top:30px}
         </div>
       </div>
       <label class="check"><input type="checkbox" id="allowToggle"> 학생도 파일을 올릴 수 있어요</label>
+      <label class="t" for="noteEdit" style="margin-top:14px">학생에게 보여 줄 안내</label>
+      <textarea id="noteEdit" maxlength="500" rows="5"></textarea>
+      <div class="row" style="margin-top:8px"><button class="btn ghost sm" id="noteSave">안내 저장</button></div>
       <div class="hint">사진 위의 "숨기기"를 누르면 그 파일이 목록에서 사라져요.</div>
       <div class="row" style="margin-top:10px">
         <button class="btn ghost sm" id="keyBtn">🔑 선생님용 관리 링크 복사</button>
@@ -159,8 +187,12 @@ footer{text-align:center;color:var(--muted);font-size:13px;margin-top:30px}
     <!-- 올리기 -->
     <div class="card" id="upCard" hidden>
       <h3>⬆️ 파일 올리기</h3>
-      <label class="t" for="myName">내 이름 (안 써도 돼요)</label>
-      <input type="text" id="myName" maxlength="20" placeholder="예: 김민수" style="margin-bottom:12px">
+      <div id="teacherName">
+        <label class="t" for="myName">올리는 사람 이름 (안 써도 돼요)</label>
+        <input type="text" id="myName" maxlength="20" placeholder="예: 담임선생님" style="margin-bottom:12px">
+      </div>
+      <div id="studentName" class="who" hidden>👤 <b id="whoName"></b> 이름으로 올려요 <button class="linkbtn" id="changeName">이름 바꾸기</button></div>
+      <div class="guide" id="guide" hidden></div>
       <div class="drop" id="drop" tabindex="0" role="button" aria-label="파일 고르기">
         <div class="big">📷 🎬 📄</div>
         <b>여기를 눌러 파일을 고르세요</b>
@@ -212,6 +244,12 @@ const MAX_BYTES = 50 * 1024 * 1024;
 const POLL_MS = 5000;
 const MINE_KEY = 'qrshare-folders';
 const NAME_KEY = 'qrshare-name';
+const NAME_RE = /^[가-힣]{2,4}$/;
+const DEFAULT_NOTE = `🎬 내가 만든 애니메이션 찾는 방법
+1. 아래 "여기를 눌러 파일을 고르세요"를 눌러요.
+2. "내 파일"을 눌러요.
+3. "play파일" → "Movies" → "FlipaClip" 폴더로 차례대로 들어가요.
+4. 내가 만든 애니메이션을 눌러서 골라요.`;
 
 const $ = id => document.getElementById(id);
 const publicUrl = (path, downloadName) =>
@@ -297,6 +335,7 @@ function rememberFolder(id, title, key){
 /* ---------- 첫 화면 ---------- */
 function initHome(){
   $('homeView').hidden = false;
+  $('newNote').value = DEFAULT_NOTE;
   $('createBtn').onclick = async () => {
     const btn = $('createBtn');
     btn.disabled = true;
@@ -307,6 +346,8 @@ function initHome(){
     try {
       await rpc('qr_create_folder', { p_id: id, p_title: title, p_key: key, p_allow_upload: $('newAllow').checked });
       rememberFolder(id, title, key);
+      const note = $('newNote').value.trim();
+      if (note) await rpc('qr_set_note', { p_id: id, p_key: key, p_note: note });
       location.href = folderLink(id);
     } catch (e) {
       $('createMsg').className = 'msg bad';
@@ -350,13 +391,29 @@ async function initFolder(id){
   }
   const mine = loadMine().find(f => f.id === id);
   teacherKey = mine ? mine.key : null;
+  document.title = (F.title || '반 폴더') + ' · QR 나눔';
+  try { F.note = (await rpc('qr_get_note', { p_id: id })) || ''; } catch (e) { F.note = ''; }
+
+  // 학생은 실명을 적어야 들어올 수 있어요.
+  if (!teacherKey) {
+    let saved = '';
+    try { saved = localStorage.getItem(NAME_KEY) || ''; } catch(e){}
+    studentName = NAME_RE.test(saved) ? saved : await askName();
+  }
 
   $('folderView').hidden = false;
-  document.title = (F.title || '반 폴더') + ' · QR 나눔';
   $('fTitle').innerHTML = esc(F.title || '반 폴더') + (teacherKey ? '<span class="teacher-tag">선생님</span>' : '');
   $('fInfo').textContent = '이 폴더의 QR을 찍은 사람만 들어올 수 있어요.';
-  try { $('myName').value = localStorage.getItem(NAME_KEY) || ''; } catch(e){}
-  $('myName').oninput = () => { try { localStorage.setItem(NAME_KEY, $('myName').value.trim()); } catch(e){} };
+  $('teacherName').hidden = !teacherKey;
+  $('studentName').hidden = !!teacherKey;
+  $('whoName').textContent = studentName;
+  $('changeName').onclick = async () => {
+    $('folderView').hidden = true;
+    studentName = await askName();
+    $('whoName').textContent = studentName;
+    $('folderView').hidden = false;
+  };
+  showGuide();
 
   if (teacherKey) initTeacher();
   applyUploadState();
@@ -367,6 +424,36 @@ async function initFolder(id){
   await refresh();
   setInterval(() => { if (!document.hidden) refresh(); }, POLL_MS);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
+}
+
+let studentName = '';
+function askName(){
+  return new Promise(resolve => {
+    $('nameView').hidden = false;
+    $('gateTitle').textContent = F.title || '반 폴더';
+    const input = $('gateName');
+    input.value = '';
+    input.focus();
+    const go = () => {
+      const v = input.value.replace(/\s/g, '');
+      if (!NAME_RE.test(v)) {
+        $('gateMsg').textContent = '성과 이름을 한글로 정확히 적어 주세요. (예: 김민수)';
+        input.focus();
+        return;
+      }
+      try { localStorage.setItem(NAME_KEY, v); } catch(e){}
+      $('gateMsg').textContent = '';
+      $('nameView').hidden = true;
+      resolve(v);
+    };
+    $('gateBtn').onclick = go;
+    input.onkeydown = e => { if (e.key === 'Enter') go(); };
+  });
+}
+
+function showGuide(){
+  $('guide').textContent = F.note || '';
+  $('guide').hidden = !F.note;
 }
 
 function applyUploadState(){
@@ -380,6 +467,17 @@ function initTeacher(){
   const link = folderLink(F.id);
   $('fLink').textContent = link;
   drawQR($('qr'), link);
+  $('noteEdit').value = F.note;
+  $('noteSave').onclick = async () => {
+    const v = $('noteEdit').value.trim();
+    try {
+      await rpc('qr_set_note', { p_id: F.id, p_key: teacherKey, p_note: v });
+      F.note = v;
+      showGuide();
+      $('noteSave').textContent = '✅ 저장했어요';
+    } catch (e) { alert('저장하지 못했어요: ' + e.message); }
+    setTimeout(() => $('noteSave').textContent = '안내 저장', 1500);
+  };
   $('allowToggle').checked = F.allow_upload;
   $('allowToggle').onchange = async () => {
     const v = $('allowToggle').checked;
@@ -547,12 +645,13 @@ async function runQueue(){
     try {
       await uploadOne(path, f, p => job.li.querySelector('.mini i').style.width = (p * 100) + '%');
       await rpc('qr_add_file', { p_folder: F.id, p_path: path, p_name: f.name, p_type: f.type || '',
-        p_uploader: $('myName').value.trim(), p_key: teacherKey });
+        p_uploader: teacherKey ? $('myName').value.trim() : studentName, p_key: teacherKey });
       setStatus(job, '올렸어요 ✓', 'ok');
       refresh();
     } catch (e) {
       const closed = /upload closed/.test(e.message);
-      setStatus(job, closed ? '선생님이 올리기를 닫았어요' : '실패: ' + e.message, 'bad');
+      const noName = /name required/.test(e.message);
+      setStatus(job, closed ? '선생님이 올리기를 닫았어요' : noName ? '이름을 다시 적어 주세요' : '실패: ' + e.message, 'bad');
     }
   }
   uploading = false;
