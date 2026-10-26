@@ -112,6 +112,11 @@ textarea{width:100%;font-size:15px;padding:12px 14px;border-radius:12px;border:1
 .who{background:var(--soft);border-radius:12px;padding:10px 14px;margin-bottom:12px}
 .linkbtn{border:0;background:none;color:var(--brand-dark);text-decoration:underline;cursor:pointer;font-size:14px;font-family:inherit}
 .guide{white-space:pre-wrap;background:var(--soft);border-left:5px solid var(--brand);border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:16px;line-height:1.7}
+.row.nowrap{flex-wrap:nowrap}
+.row.nowrap input{flex:1;min-width:0}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.folders li{flex-wrap:wrap}
+.folders .acts{display:flex;gap:6px}
 footer{text-align:center;color:var(--muted);font-size:13px;margin-top:30px}
 </style>
 </head>
@@ -122,8 +127,13 @@ footer{text-align:center;color:var(--muted);font-size:13px;margin-top:30px}
   <!-- 첫 화면: 반 폴더 만들기 -->
   <section id="homeView" hidden>
     <p class="sub">반 폴더를 만들면 QR코드가 나와요. QR을 찍은 학생들은 그 폴더에만 들어와서 함께 사진, 영상, 파일을 올리고 받을 수 있어요.</p>
-    <div class="card">
-      <h2>📁 새 반 폴더 만들기</h2>
+    <div class="card" id="mineCard" hidden>
+      <h2>🗂️ 내 폴더 관리</h2>
+      <ul class="list folders" id="mineList"></ul>
+      <div class="hint">이 목록과 선생님 권한은 지금 쓰는 기기에 저장돼요. 다른 기기에서도 관리하려면 폴더 안의 "선생님용 관리 링크"를 그 기기에서 열어 주세요.</div>
+    </div>
+    <div class="card" id="createCard">
+      <h2>➕ 새 반 폴더 만들기</h2>
       <label class="t" for="newTitle">폴더 이름</label>
       <input type="text" id="newTitle" maxlength="60" placeholder="예: 3학년 2반 현장체험학습">
       <label class="check"><input type="checkbox" id="newAllow" checked> 학생도 파일을 올릴 수 있어요</label>
@@ -131,11 +141,6 @@ footer{text-align:center;color:var(--muted);font-size:13px;margin-top:30px}
       <textarea id="newNote" maxlength="500" rows="6"></textarea>
       <button class="btn wide" id="createBtn">QR코드 만들기</button>
       <div class="msg" id="createMsg"></div>
-    </div>
-    <div class="card" id="mineCard" hidden>
-      <h3>🗂️ 내가 만든 폴더</h3>
-      <ul class="list" id="mineList"></ul>
-      <div class="hint">이 목록과 선생님 권한은 지금 쓰는 기기에 저장돼요. 다른 기기에서도 관리하려면 폴더 안의 "선생님용 관리 링크"를 보관해 두세요.</div>
     </div>
   </section>
 
@@ -173,6 +178,8 @@ footer{text-align:center;color:var(--muted);font-size:13px;margin-top:30px}
           </div>
         </div>
       </div>
+      <label class="t" for="titleEdit" style="margin-top:16px">폴더 이름</label>
+      <div class="row nowrap"><input type="text" id="titleEdit" maxlength="60"><button class="btn ghost sm" id="titleSave">이름 저장</button></div>
       <label class="check"><input type="checkbox" id="allowToggle"> 학생도 파일을 올릴 수 있어요</label>
       <label class="t" for="noteEdit" style="margin-top:14px">학생에게 보여 줄 안내</label>
       <textarea id="noteEdit" maxlength="500" rows="5"></textarea>
@@ -180,6 +187,8 @@ footer{text-align:center;color:var(--muted);font-size:13px;margin-top:30px}
       <div class="hint">사진 위의 "숨기기"를 누르면 그 파일이 목록에서 사라져요.</div>
       <div class="row" style="margin-top:10px">
         <button class="btn ghost sm" id="keyBtn">🔑 선생님용 관리 링크 복사</button>
+        <a class="btn ghost sm" href="./">🗂️ 내 폴더 관리 · 새 폴더 만들기</a>
+        <button class="btn ghost sm danger" id="delBtn">🗑️ 이 폴더 삭제</button>
       </div>
       <div class="hint">관리 링크는 학생에게 주지 마세요. 다른 기기에서 이 링크를 열면 그 기기도 선생님 권한을 얻어요.</div>
     </div>
@@ -327,9 +336,35 @@ function drawQR(canvas, text){
 function loadMine(){ try { return JSON.parse(localStorage.getItem(MINE_KEY)) || []; } catch(e){ return []; } }
 function saveMine(list){ try { localStorage.setItem(MINE_KEY, JSON.stringify(list)); } catch(e){} }
 function rememberFolder(id, title, key){
-  const list = loadMine().filter(f => f.id !== id);
-  list.unshift({ id, title, key, created: new Date().toISOString() });
-  saveMine(list);
+  const list = loadMine();
+  const old = list.find(f => f.id === id);
+  const rest = list.filter(f => f.id !== id);
+  rest.unshift({ id, title, key, created: old ? old.created : new Date().toISOString() });
+  saveMine(rest);
+}
+function forgetFolder(id){ saveMine(loadMine().filter(f => f.id !== id)); }
+
+async function renameFolder(id, key, title){
+  await rpc('qr_update_folder', { p_id: id, p_key: key, p_title: title, p_allow_upload: null });
+  const list = loadMine();
+  const f = list.find(x => x.id === id);
+  if (f) { f.title = title; saveMine(list); }
+}
+
+// 폴더를 지우고, 그 안에 올라온 실제 파일도 저장 공간에서 지워요.
+async function deleteFolder(id, key, title){
+  const ok = confirm(`"${title || '이름 없는 폴더'}" 폴더를 삭제할까요?\n\n학생들이 올린 파일도 모두 지워지고, 이 폴더의 QR코드는 더 이상 열리지 않아요. 되돌릴 수 없어요.`);
+  if (!ok) return false;
+  const paths = await rpc('qr_delete_folder', { p_id: id, p_key: key });
+  for (let i = 0; i < paths.length; i += 100) {
+    await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}`, {
+      method: 'DELETE',
+      headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prefixes: paths.slice(i, i + 100) })
+    }).catch(() => {});
+  }
+  forgetFolder(id);
+  return true;
 }
 
 /* ---------- 첫 화면 ---------- */
@@ -355,14 +390,40 @@ function initHome(){
       btn.disabled = false;
     }
   };
+  renderMine();
+  // 다른 기기에서 바꾼 이름을 맞추고, 지워진 폴더는 목록에서 빼요.
+  Promise.all(loadMine().map(async f => {
+    try {
+      const info = (await rpc('qr_get_folder', { p_id: f.id }))[0];
+      if (!info) forgetFolder(f.id);
+      else if (info.title !== f.title) rememberFolder(f.id, info.title, f.key);
+    } catch (e) {}
+  })).then(renderMine);
+}
+
+function renderMine(){
   const mine = loadMine();
   $('mineCard').hidden = !mine.length;
+  const ul = $('mineList');
+  ul.innerHTML = '';
   mine.forEach(f => {
     const li = document.createElement('li');
     const d = new Date(f.created);
-    li.innerHTML = `<span class="nm">${esc(f.title || '이름 없는 폴더')} <span class="dt">· ${d.getMonth()+1}/${d.getDate()}</span></span>` +
-      `<a class="btn ghost sm" href="${folderLink(f.id)}">열기</a>`;
-    $('mineList').appendChild(li);
+    li.innerHTML = `<span class="nm">📁 ${esc(f.title || '이름 없는 폴더')} <span class="dt">· ${d.getMonth()+1}/${d.getDate()} 만듦</span></span>` +
+      `<span class="acts"><a class="btn sm" href="${folderLink(f.id)}">열기</a>` +
+      `<button class="btn ghost sm" data-a="rename">✏️ 이름</button>` +
+      `<button class="btn ghost sm danger" data-a="delete">🗑️ 삭제</button></span>`;
+    li.querySelector('[data-a=rename]').onclick = async () => {
+      const t = prompt('새 폴더 이름을 적어 주세요', f.title || '');
+      if (t === null || !t.trim()) return;
+      try { await renameFolder(f.id, f.key, t.trim().slice(0, 60)); renderMine(); }
+      catch (e) { alert('바꾸지 못했어요: ' + e.message); }
+    };
+    li.querySelector('[data-a=delete]').onclick = async () => {
+      try { if (await deleteFolder(f.id, f.key, f.title)) renderMine(); }
+      catch (e) { alert('삭제하지 못했어요: ' + e.message); }
+    };
+    ul.appendChild(li);
   });
 }
 
@@ -467,6 +528,23 @@ function initTeacher(){
   const link = folderLink(F.id);
   $('fLink').textContent = link;
   drawQR($('qr'), link);
+  $('titleEdit').value = F.title;
+  $('titleSave').onclick = async () => {
+    const t = $('titleEdit').value.trim();
+    if (!t) return;
+    try {
+      await renameFolder(F.id, teacherKey, t);
+      F.title = t;
+      document.title = t + ' · QR 나눔';
+      $('fTitle').innerHTML = esc(t) + '<span class="teacher-tag">선생님</span>';
+      $('titleSave').textContent = '✅ 저장했어요';
+    } catch (e) { alert('바꾸지 못했어요: ' + e.message); }
+    setTimeout(() => $('titleSave').textContent = '이름 저장', 1500);
+  };
+  $('delBtn').onclick = async () => {
+    try { if (await deleteFolder(F.id, teacherKey, F.title)) location.href = './'; }
+    catch (e) { alert('삭제하지 못했어요: ' + e.message); }
+  };
   $('noteEdit').value = F.note;
   $('noteSave').onclick = async () => {
     const v = $('noteEdit').value.trim();
@@ -524,7 +602,18 @@ async function refresh(){
       rpc('qr_list_files', { p_folder: F.id }),
       rpc('qr_get_folder', { p_id: F.id })
     ]);
-    if (info[0] && info[0].allow_upload !== F.allow_upload) {
+    if (!info[0]) {
+      // 선생님이 폴더를 지웠어요.
+      $('folderView').hidden = true;
+      $('missingView').hidden = false;
+      return;
+    }
+    if (info[0].title !== F.title && !teacherKey) {
+      F.title = info[0].title;
+      $('fTitle').textContent = F.title || '반 폴더';
+      document.title = (F.title || '반 폴더') + ' · QR 나눔';
+    }
+    if (info[0].allow_upload !== F.allow_upload) {
       F.allow_upload = info[0].allow_upload;
       if (teacherKey) $('allowToggle').checked = F.allow_upload;
       applyUploadState();
