@@ -46,7 +46,7 @@ https://strawberry0401.github.io/bombanana/
 
 ---
 
-## 📮 QR 나눔
+## 📮 자료 공유 사이트
 
 사진, 영상, 파일을 올리면 QR코드가 나오고, 휴대폰 카메라로 찍으면 바로 받을 수 있어요.
 👉 https://strawberry0401.github.io/bombanana/share/
