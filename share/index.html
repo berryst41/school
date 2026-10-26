@@ -185,7 +185,7 @@ footer{text-align:center;color:var(--muted);font-size:13px;margin-top:30px}
       <label class="t" for="noteEdit" style="margin-top:14px">학생에게 보여 줄 안내</label>
       <textarea id="noteEdit" maxlength="500" rows="5"></textarea>
       <div class="row" style="margin-top:8px"><button class="btn ghost sm" id="noteSave">안내 저장</button></div>
-      <div class="hint">사진 위의 "숨기기"를 누르면 그 파일이 목록에서 사라져요.</div>
+      <div class="hint">파일 위의 "🗑️ 삭제"를 누르면 그 파일이 완전히 지워져요. 이 버튼은 선생님 화면에만 보여요.</div>
       <div class="row" style="margin-top:10px">
         <button class="btn ghost sm" id="keyBtn">🔑 선생님용 관리 링크 복사</button>
         <a class="btn ghost sm" href="./">🗂️ 내 폴더 관리 · 새 폴더 만들기</a>
@@ -692,14 +692,26 @@ function fileCard(f){
     `<div class="meta"><div class="nm"><div title="${esc(f.name)}">${esc(f.name)}</div>` +
     `<div class="sz">${who}${fmtTime(f.created_at)} · ${fmtSize(Number(f.size))}</div></div>` +
     `<a class="btn sm" href="${publicUrl(f.path, f.name)}">⬇️ 받기</a></div>` +
-    (teacherKey ? `<button class="hide">숨기기</button>` : '');
+    (teacherKey ? `<button class="hide">🗑️ 삭제</button>` : '');
   const img = el.querySelector('img');
   if (img) img.onclick = () => { $('zoomImg').src = url; $('zoom').classList.add('on'); };
   const hb = el.querySelector('.hide');
   if (hb) hb.onclick = async () => {
-    if (!confirm(`"${f.name}" 파일을 숨길까요? 학생들 화면에서도 사라져요.`)) return;
-    try { await rpc('qr_hide_file', { p_folder: F.id, p_key: teacherKey, p_file_id: f.id }); refresh(); }
-    catch (e) { alert('숨기지 못했어요: ' + e.message); }
+    if (!confirm(`"${f.name}" 파일을 삭제할까요?\n학생들 화면에서도 사라지고 되돌릴 수 없어요.`)) return;
+    hb.disabled = true;
+    try {
+      // 목록에서 빼고(관리 키 확인), 이어서 저장 공간의 실제 파일을 지워요.
+      const path = await rpc('qr_delete_file', { p_folder: F.id, p_key: teacherKey, p_file_id: f.id });
+      await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}`, {
+        method: 'DELETE',
+        headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prefixes: [path] })
+      }).catch(() => {});
+      refresh();
+    } catch (e) {
+      hb.disabled = false;
+      alert('삭제하지 못했어요: ' + e.message);
+    }
   };
   return el;
 }
