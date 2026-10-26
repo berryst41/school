@@ -110,6 +110,7 @@ textarea{width:100%;font-size:15px;padding:12px 14px;border-radius:12px;border:1
 .gate p{color:var(--muted)}
 .gate input{text-align:center;font-size:24px;letter-spacing:4px}
 .who{background:var(--soft);border-radius:12px;padding:10px 14px;margin-bottom:12px}
+.req{color:var(--bad);font-weight:400;font-size:14px}
 .linkbtn{border:0;background:none;color:var(--brand-dark);text-decoration:underline;cursor:pointer;font-size:14px;font-family:inherit}
 .guide{white-space:pre-wrap;background:var(--soft);border-left:5px solid var(--brand);border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:16px;line-height:1.7}
 .row.nowrap{flex-wrap:nowrap}
@@ -197,10 +198,13 @@ footer{text-align:center;color:var(--muted);font-size:13px;margin-top:30px}
     <div class="card" id="upCard" hidden>
       <h3>⬆️ 파일 올리기</h3>
       <div id="teacherName">
-        <label class="t" for="myName">올리는 사람 이름 (안 써도 돼요)</label>
-        <input type="text" id="myName" maxlength="20" placeholder="예: 담임선생님" style="margin-bottom:12px">
+        <label class="t" for="myName">올리는 사람 이름 <span class="req">(본명을 꼭 적어 주세요)</span></label>
+        <input type="text" id="myName" maxlength="4" placeholder="예: 홍길동">
+        <div class="msg bad" id="nameMsg" style="margin-top:4px;min-height:0"></div>
+        <div class="hint" style="margin:0 0 12px">📝 올린 파일 이름은 내 이름으로 바뀌어요. (예: 홍길동.mp4, 두 번째부터는 홍길동(2).mp4)</div>
       </div>
-      <div id="studentName" class="who" hidden>👤 <b id="whoName"></b> 이름으로 올려요 <button class="linkbtn" id="changeName">이름 바꾸기</button></div>
+      <div id="studentName" class="who" hidden>👤 <b id="whoName"></b> 이름으로 올려요 <button class="linkbtn" id="changeName">이름 바꾸기</button>
+        <div class="hint" style="margin:4px 0 0">📝 올린 파일 이름은 내 이름으로 바뀌어요. (예: <span id="whoEx"></span>.mp4, 두 번째부터는 <span id="whoEx2"></span>(2).mp4)</div></div>
       <div class="guide" id="guide" hidden></div>
       <div class="drop" id="drop" tabindex="0" role="button" aria-label="파일 고르기">
         <div class="big">📷 🎬 📄</div>
@@ -467,11 +471,11 @@ async function initFolder(id){
   $('fInfo').textContent = '이 폴더의 QR을 찍은 사람만 들어올 수 있어요.';
   $('teacherName').hidden = !teacherKey;
   $('studentName').hidden = !!teacherKey;
-  $('whoName').textContent = studentName;
+  showWho();
   $('changeName').onclick = async () => {
     $('folderView').hidden = true;
     studentName = await askName();
-    $('whoName').textContent = studentName;
+    showWho();
     $('folderView').hidden = false;
   };
   showGuide();
@@ -488,6 +492,30 @@ async function initFolder(id){
 }
 
 let studentName = '';
+const TEACHER_NAME_KEY = 'qrshare-teacher-name';
+function showWho(){
+  $('whoName').textContent = studentName;
+  $('whoEx').textContent = studentName;
+  $('whoEx2').textContent = studentName;
+}
+// 올리는 사람 이름: 학생은 들어올 때 적은 이름, 선생님은 올리기 칸에 적은 이름이에요.
+function uploaderName(){
+  if (!teacherKey) return studentName;
+  const v = $('myName').value.replace(/\s/g, '');
+  if (NAME_RE.test(v)) { $('nameMsg').textContent = ''; return v; }
+  $('nameMsg').textContent = '본명을 한글로 정확히 적어 주세요. (예: 홍길동)';
+  $('myName').focus();
+  return null;
+}
+// 파일 이름을 "이름.확장자"로 바꿔요. 같은 사람이 여러 개 올리면 (2), (3)…을 붙여요.
+let myUploads = 0;
+function renamedFile(name, original){
+  const m = /\.([a-z0-9]{1,8})$/i.exec(original);
+  const ext = m ? '.' + m[1].toLowerCase() : '';
+  const n = Math.max(files.filter(x => x.uploader === name).length, myUploads) + 1;
+  myUploads = n;
+  return n === 1 ? name + ext : `${name}(${n})${ext}`;
+}
 function askName(){
   return new Promise(resolve => {
     $('nameView').hidden = false;
@@ -693,8 +721,14 @@ let uploading = false;
 
 function initUpload(){
   const drop = $('drop'), input = $('fileInput');
-  drop.onclick = () => input.click();
-  drop.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); } };
+  const pick = () => { if (uploaderName()) input.click(); };
+  drop.onclick = pick;
+  drop.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } };
+  try { $('myName').value = localStorage.getItem(TEACHER_NAME_KEY) || ''; } catch(e){}
+  $('myName').oninput = () => {
+    $('nameMsg').textContent = '';
+    try { localStorage.setItem(TEACHER_NAME_KEY, $('myName').value.trim()); } catch(e){}
+  };
   input.onchange = () => { enqueue(input.files); input.value = ''; };
   ['dragenter','dragover'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add('over'); }));
   ['dragleave','drop'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove('over'); }));
@@ -703,12 +737,14 @@ function initUpload(){
 }
 
 function enqueue(list){
+  const who = uploaderName();
+  if (!who) return;
   for (const file of list) {
     const li = document.createElement('li');
     li.innerHTML = `<span>${icon(file.type, file.name)}</span><span class="nm">${esc(file.name)}</span>` +
       `<span class="mini"><i></i></span><span class="st">기다리는 중</span>`;
     $('queue').prepend(li);
-    const job = { file, li };
+    const job = { file, li, who };
     if (file.size > MAX_BYTES) { setStatus(job, '50MB가 넘어서 못 올려요', 'bad'); continue; }
     pending.push(job);
   }
@@ -733,9 +769,10 @@ async function runQueue(){
     setStatus(job, '올리는 중');
     try {
       await uploadOne(path, f, p => job.li.querySelector('.mini i').style.width = (p * 100) + '%');
-      await rpc('qr_add_file', { p_folder: F.id, p_path: path, p_name: f.name, p_type: f.type || '',
-        p_uploader: teacherKey ? $('myName').value.trim() : studentName, p_key: teacherKey });
-      setStatus(job, '올렸어요 ✓', 'ok');
+      const shownName = renamedFile(job.who, f.name);
+      await rpc('qr_add_file', { p_folder: F.id, p_path: path, p_name: shownName, p_type: f.type || '',
+        p_uploader: job.who, p_key: teacherKey });
+      setStatus(job, `올렸어요 ✓ (${shownName})`, 'ok');
       refresh();
     } catch (e) {
       const closed = /upload closed/.test(e.message);
