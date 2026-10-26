@@ -66,6 +66,8 @@ input[type=text]{width:100%;font-size:17px;padding:12px 14px;border-radius:12px;
 .qrbox canvas{display:block;width:180px;height:180px;image-rendering:pixelated}
 .qrside{flex:1;min-width:220px}
 .link{word-break:break-all;font-size:13px;color:var(--muted);margin:4px 0 12px}
+.preview-bar{background:#fff4d6;border:1px solid #f0d58a;color:#6b5200;border-radius:12px;padding:10px 14px;margin-bottom:12px;font-weight:600}
+.preview-bar a{color:inherit;margin-left:6px}
 .teacher-tag{display:inline-block;background:var(--soft);color:var(--brand-dark);border-radius:8px;padding:2px 8px;font-size:13px;font-weight:700;margin-left:6px;vertical-align:middle}
 .full{position:fixed;inset:0;background:#fff;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:9;color:#222}
 .full.on{display:flex}
@@ -158,6 +160,7 @@ footer{text-align:center;color:var(--muted);font-size:13px;margin-top:30px}
   <header><a href="./"><span class="logo">📮</span><h1>자료 공유 사이트</h1></a></header>
 
   <!-- 첫 화면: 반 폴더 만들기 -->
+  <div class="preview-bar" id="previewBar" hidden>👀 학생 화면 미리보기예요. 학생들에게는 이렇게 보여요. <a href="#" id="previewClose">닫기</a></div>
   <section id="homeView" hidden>
     <p class="sub">반 폴더를 만들면 QR코드가 나와요. QR을 찍은 학생들은 그 폴더에만 들어와서 함께 사진, 영상, 파일을 올리고 받을 수 있어요.</p>
     <div class="card" id="usageCard">
@@ -222,6 +225,7 @@ footer{text-align:center;color:var(--muted);font-size:13px;margin-top:30px}
             <button class="btn sm" id="bigBtn">🔍 크게 보기</button>
             <button class="btn ghost sm" id="copyBtn">🔗 링크 복사</button>
             <button class="btn ghost sm" id="saveQrBtn">💾 QR 저장</button>
+            <button class="btn ghost sm" id="previewBtn">👀 학생 화면으로 보기</button>
           </div>
         </div>
       </div>
@@ -605,7 +609,13 @@ async function initFolder(id){
     history.replaceState(null, '', folderLink(id));
   }
   const mine = loadMine().find(f => f.id === id);
-  teacherKey = mine ? mine.key : null;
+  // ?preview=1 이면 선생님 기기에서도 학생 화면으로 보여 줘요.
+  const preview = new URLSearchParams(location.search).get('preview') === '1';
+  teacherKey = mine && !preview ? mine.key : null;
+  if (preview) {
+    $('previewBar').hidden = false;
+    $('previewClose').onclick = e => { e.preventDefault(); window.close(); location.href = folderLink(id); };
+  }
   document.title = (F.title || '반 폴더') + ' · 자료 공유 사이트';
   try { F.note = (await rpc('qr_get_note', { p_id: id })) || ''; } catch (e) { F.note = ''; }
 
@@ -753,6 +763,7 @@ function initTeacher(){
   };
   $('copyBtn').onclick = () => copy(link, $('copyBtn'), '🔗 링크 복사');
   $('keyBtn').onclick = () => copy(link + '#k=' + teacherKey, $('keyBtn'), '🔑 선생님용 관리 링크 복사');
+  $('previewBtn').onclick = () => window.open(link + '&preview=1', '_blank');
   $('saveQrBtn').onclick = () => {
     const a = document.createElement('a');
     a.href = $('qr').toDataURL('image/png');
