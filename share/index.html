@@ -144,6 +144,12 @@ textarea{width:100%;font-size:15px;padding:12px 14px;border-radius:12px;border:1
 .modal-box h3{margin:16px 0 4px;font-size:16px}
 .modal-box ol,.modal-box ul{margin:4px 0;padding-left:22px;line-height:1.7}
 .bigfiles{background:var(--soft);border-radius:10px;padding:8px 12px 8px 30px !important;font-size:14px}
+.center-box{text-align:center;max-width:400px}
+.up-icon{font-size:48px}
+.up-title{color:var(--ink) !important}
+.up-warn{color:var(--bad);font-size:17px;line-height:1.6}
+.meter.big{height:22px;border-radius:11px}
+.meter.big i{border-radius:11px}
 footer{text-align:center;color:var(--muted);font-size:13px;margin-top:30px}
 </style>
 </head>
@@ -289,6 +295,16 @@ footer{text-align:center;color:var(--muted);font-size:13px;margin-top:30px}
   <p>휴대폰 카메라로 찍어 보세요 · 화면을 누르면 닫혀요</p>
 </div>
 <div class="zoom" id="zoom"><img id="zoomImg" alt=""></div>
+<div class="modal" id="upModal" role="alertdialog" aria-modal="true" aria-labelledby="upTitle" aria-live="polite" hidden>
+  <div class="modal-box center-box">
+    <div class="up-icon" id="upIcon">⏳</div>
+    <h2 id="upTitle" class="up-title">파일을 올리는 중이에요</h2>
+    <p class="up-warn" id="upWarn"><b>진행 막대가 끝날 때까지<br>창을 닫거나 다른 곳으로 가지 마세요!</b></p>
+    <div class="meter big"><i id="upFill"></i></div>
+    <div class="hint" id="upInfo"></div>
+    <button class="btn wide" id="upDone" hidden>확인</button>
+  </div>
+</div>
 <div class="modal" id="bigModal" role="dialog" aria-modal="true" aria-labelledby="bigTitle" hidden>
   <div class="modal-box">
     <h2 id="bigTitle">⚠️ 파일이 너무 커요</h2>
@@ -897,6 +913,7 @@ function enqueue(list){
     const job = { file, li, who };
     if (file.size > MAX_BYTES) { setStatus(job, '50MB가 넘어서 못 올려요', 'bad'); tooBig.push(file); continue; }
     pending.push(job);
+    batch.total++;
   }
   if (tooBig.length) showTooBig(tooBig);
   runQueue();
@@ -913,18 +930,48 @@ function setStatus(job, text, cls){
   if (cls) job.li.querySelector('.mini').style.visibility = 'hidden';
 }
 
+// 올리는 동안 "창을 닫지 마세요" 안내 창을 띄워요.
+let batch = { total: 0, done: 0, failed: 0 };
+function showUpModal(current, frac){
+  const pct = batch.total ? Math.min(100, (batch.done + frac) / batch.total * 100) : 0;
+  $('upModal').hidden = false;
+  $('upIcon').textContent = '⏳';
+  $('upTitle').textContent = '파일을 올리는 중이에요';
+  $('upWarn').hidden = false;
+  $('upDone').hidden = true;
+  $('upFill').style.width = pct + '%';
+  $('upInfo').textContent = `${Math.min(batch.done + 1, batch.total)} / ${batch.total}개 · ${current}`;
+}
+function finishUpModal(){
+  if (!batch.total) return;
+  const ok = batch.total - batch.failed;
+  $('upFill').style.width = '100%';
+  $('upWarn').hidden = true;
+  $('upIcon').textContent = batch.failed ? '⚠️' : '✅';
+  $('upTitle').textContent = batch.failed ? `${ok}개 올렸어요, ${batch.failed}개는 못 올렸어요` : '다 올렸어요!';
+  $('upInfo').textContent = batch.failed ? '못 올린 파일은 아래 목록에서 이유를 확인해 주세요.' : '이제 창을 닫아도 돼요.';
+  $('upDone').hidden = false;
+  $('upDone').onclick = () => { $('upModal').hidden = true; };
+  if (!batch.failed) setTimeout(() => { $('upModal').hidden = true; }, 2500);
+  batch = { total: 0, done: 0, failed: 0 };
+}
+
 async function runQueue(){
   if (uploading) return;
   uploading = true;
   while (pending.length) {
     const job = pending.shift();
+    showUpModal(job.file.name, 0);
     const f = job.file;
     // 여러 학생이 동시에 올려도 겹치지 않게, 파일마다 시간+무작위 이름을 붙여요.
     const m = /\.([a-z0-9]{1,8})$/i.exec(f.name);
     const path = `${F.id}/${Date.now().toString(36)}-${randStr(6)}${m ? '.' + m[1].toLowerCase() : ''}`;
     setStatus(job, '올리는 중');
     try {
-      await uploadOne(path, f, p => job.li.querySelector('.mini i').style.width = (p * 100) + '%');
+      await uploadOne(path, f, p => {
+        job.li.querySelector('.mini i').style.width = (p * 100) + '%';
+        showUpModal(f.name, p);
+      });
       const shownName = renamedFile(job.who, f.name);
       await rpc('qr_add_file', { p_folder: F.id, p_path: path, p_name: shownName, p_type: f.type || '',
         p_uploader: job.who, p_key: teacherKey });
@@ -934,9 +981,12 @@ async function runQueue(){
       const closed = /upload closed/.test(e.message);
       const noName = /name required/.test(e.message);
       setStatus(job, closed ? '선생님이 올리기를 닫았어요' : noName ? '이름을 다시 적어 주세요' : '실패: ' + e.message, 'bad');
+      batch.failed++;
     }
+    batch.done++;
   }
   uploading = false;
+  finishUpModal();
 }
 
 function uploadOne(path, file, onProgress){
