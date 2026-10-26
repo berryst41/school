@@ -242,6 +242,12 @@ footer{text-align:center;color:var(--muted);font-size:13px;margin-top:30px}
         <button class="btn ghost sm danger" id="delBtn">🗑️ 이 폴더 삭제</button>
       </div>
       <div class="hint">관리 링크는 학생에게 주지 마세요. 다른 기기에서 이 링크를 열면 그 기기도 선생님 권한을 얻어요.</div>
+      <h3 style="margin:16px 0 6px">🔐 선생님 권한 빼기</h3>
+      <div class="row">
+        <button class="btn ghost sm" id="forgetBtn">🚪 이 기기에서 권한 빼기</button>
+        <button class="btn ghost sm danger" id="rekeyBtn">🔄 다른 기기 권한 모두 빼기</button>
+      </div>
+      <div class="hint">"이 기기에서 권한 빼기"는 지금 쓰는 기기만 학생 화면으로 바꿔요. "다른 기기 권한 모두 빼기"는 관리 링크를 새로 바꿔서, 예전 관리 링크와 다른 기기의 선생님 권한이 모두 사라지고 지금 이 기기만 남아요.</div>
       <h3 style="margin:16px 0 6px">💾 저장 공간</h3>
       <div class="meter" role="img" aria-label="저장 공간 사용량"><i id="tAll"></i><i id="tFolder" class="mine"></i></div>
       <div class="hint" id="tUsage">불러오는 중…</div>
@@ -729,6 +735,22 @@ function initTeacher(){
       $('titleSave').textContent = '✅ 저장했어요';
     } catch (e) { alert('바꾸지 못했어요: ' + e.message); }
     setTimeout(() => $('titleSave').textContent = '이름 저장', 1500);
+  };
+  $('forgetBtn').onclick = () => {
+    if (!confirm('이 기기에서 선생님 권한을 뺄까요?\n\n빼고 나면 이 기기에서는 학생 화면으로 보여요. 다시 선생님으로 들어오려면 관리 링크가 꼭 필요해요.')) return;
+    prompt('이 관리 링크를 복사해서 안전한 곳에 보관하세요. (학생에게는 주지 마세요)', link + '#k=' + teacherKey);
+    forgetFolder(F.id);
+    location.href = link;
+  };
+  $('rekeyBtn').onclick = async () => {
+    if (!confirm('다른 모든 기기의 선생님 권한을 뺄까요?\n\n관리 링크가 새로 바뀌어서 예전 관리 링크는 더 이상 쓸 수 없어요. 지금 이 기기는 그대로 선생님으로 남아요. 학생용 QR과 링크는 바뀌지 않아요.')) return;
+    const nk = randStr(24);
+    try {
+      await rpc('qr_change_key', { p_id: F.id, p_key: teacherKey, p_new_key: nk });
+      teacherKey = nk;
+      rememberFolder(F.id, F.title, nk);
+      prompt('다른 기기의 권한을 모두 뺐어요. 새 관리 링크예요. 필요하면 복사해서 보관하세요.', link + '#k=' + nk);
+    } catch (e) { alert('바꾸지 못했어요: ' + e.message); }
   };
   $('delBtn').onclick = async () => {
     try { if (await deleteFolder(F.id, teacherKey, F.title)) location.href = './'; }
