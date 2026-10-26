@@ -118,6 +118,26 @@ textarea{width:100%;font-size:15px;padding:12px 14px;border-radius:12px;border:1
 .btn.danger{color:var(--bad);border-color:var(--bad)}
 .folders li{flex-wrap:wrap}
 .folders .acts{display:flex;gap:6px}
+.usage-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.usage-big{font-size:32px;font-weight:800}
+.usage-of{color:var(--muted);font-size:17px}
+.usage-pct{margin-left:auto;font-weight:700;font-size:17px}
+.meter{position:relative;height:16px;background:var(--line);border-radius:8px;overflow:hidden;margin:8px 0 4px}
+.meter i{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--brand);border-radius:8px;transition:width .4s}
+.meter i.mine{background:var(--brand-dark);opacity:.9}
+.meter.full i{background:var(--bad)}
+.warn{color:var(--bad)}
+.utable{width:100%;border-collapse:collapse;font-size:14px}
+.utable th{text-align:left;color:var(--muted);font-weight:600;padding:6px 4px;border-bottom:1px solid var(--line)}
+.utable td{padding:8px 4px;border-bottom:1px solid var(--line);vertical-align:middle}
+.utable tr:last-child td{border-bottom:0}
+.utable .num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.utable .barcol{width:38%}
+.utable .ubar{height:10px;background:var(--line);border-radius:5px;overflow:hidden}
+.utable .ubar i{display:block;height:100%;background:var(--brand);border-radius:5px;min-width:2px}
+.utable tr.other td{color:var(--muted)}
+.utable tr.other .ubar i{background:var(--muted)}
+@media (max-width:480px){ .utable .barcol{width:28%} }
 footer{text-align:center;color:var(--muted);font-size:13px;margin-top:30px}
 </style>
 </head>
@@ -128,6 +148,20 @@ footer{text-align:center;color:var(--muted);font-size:13px;margin-top:30px}
   <!-- 첫 화면: 반 폴더 만들기 -->
   <section id="homeView" hidden>
     <p class="sub">반 폴더를 만들면 QR코드가 나와요. QR을 찍은 학생들은 그 폴더에만 들어와서 함께 사진, 영상, 파일을 올리고 받을 수 있어요.</p>
+    <div class="card" id="usageCard">
+      <h2>💾 저장 공간 사용량</h2>
+      <div class="usage-head"><span class="usage-big" id="uUsed">–</span><span class="usage-of">/ 1GB</span><span class="usage-pct" id="uPct"></span></div>
+      <div class="meter" id="uMeter" role="img" aria-label="저장 공간 사용량"><i id="uFill"></i></div>
+      <div class="hint" id="uInfo">불러오는 중…</div>
+      <div class="hint warn" id="uWarn" hidden></div>
+      <div id="uMine" hidden>
+        <h3 style="margin:16px 0 6px">폴더별 사용량</h3>
+        <table class="utable">
+          <thead><tr><th>폴더</th><th class="num">파일</th><th class="num">용량</th><th class="barcol">1GB 중 비율</th></tr></thead>
+          <tbody id="uRows"></tbody>
+        </table>
+      </div>
+    </div>
     <div class="card" id="mineCard" hidden>
       <h2>🗂️ 내 폴더 관리</h2>
       <ul class="list folders" id="mineList"></ul>
@@ -192,6 +226,9 @@ footer{text-align:center;color:var(--muted);font-size:13px;margin-top:30px}
         <button class="btn ghost sm danger" id="delBtn">🗑️ 이 폴더 삭제</button>
       </div>
       <div class="hint">관리 링크는 학생에게 주지 마세요. 다른 기기에서 이 링크를 열면 그 기기도 선생님 권한을 얻어요.</div>
+      <h3 style="margin:16px 0 6px">💾 저장 공간</h3>
+      <div class="meter" role="img" aria-label="저장 공간 사용량"><i id="tAll"></i><i id="tFolder" class="mine"></i></div>
+      <div class="hint" id="tUsage">불러오는 중…</div>
     </div>
 
     <!-- 올리기 -->
@@ -371,6 +408,65 @@ async function deleteFolder(id, key, title){
   return true;
 }
 
+/* ---------- 저장 공간 사용량 ---------- */
+const LIMIT_BYTES = 1024 * 1024 * 1024; // Supabase 무료 저장 공간 1GB
+const pctOf = b => Math.min(100, b / LIMIT_BYTES * 100);
+const fmtPct = b => { const p = b / LIMIT_BYTES * 100; return (p > 0 && p < 0.1 ? '0.1% 미만' : p.toFixed(1) + '%'); };
+
+async function renderUsage(){
+  try {
+    const u = (await rpc('qr_usage', {}))[0];
+    const total = Number(u.total_bytes);
+    $('uUsed').textContent = fmtSize(total);
+    $('uPct').textContent = fmtPct(total) + ' 사용';
+    $('uFill').style.width = pctOf(total) + '%';
+    $('uFill').title = `${fmtSize(total)} 사용 · ${fmtSize(Math.max(0, LIMIT_BYTES - total))} 남음`;
+    $('uMeter').classList.toggle('full', total >= LIMIT_BYTES * 0.9);
+    $('uInfo').textContent = `남은 공간 ${fmtSize(Math.max(0, LIMIT_BYTES - total))} · 모든 반 폴더 합계 (폴더 ${u.folder_count}개, 파일 ${u.file_count}개)`;
+    const warn = total >= LIMIT_BYTES * 0.8;
+    $('uWarn').hidden = !warn;
+    if (warn) $('uWarn').textContent = '⚠️ 저장 공간이 거의 다 찼어요. 다 쓴 파일이나 폴더를 지워 자리를 만들어 주세요.';
+
+    const mine = loadMine();
+    if (!mine.length) { $('uMine').hidden = true; return; }
+    const rows = await rpc('qr_folder_usage', { p_ids: mine.map(f => f.id) });
+    const byId = Object.fromEntries(rows.map(r => [r.id, r]));
+    const tb = $('uRows');
+    tb.innerHTML = '';
+    let mineTotal = 0;
+    const addRow = (label, bytes, count, cls) => {
+      const tr = document.createElement('tr');
+      if (cls) tr.className = cls;
+      tr.innerHTML = `<td>${esc(label)}</td><td class="num">${count}</td><td class="num">${fmtSize(bytes)}</td>` +
+        `<td><div class="ubar" title="${esc(label)}: ${fmtSize(bytes)} (1GB의 ${fmtPct(bytes)})"><i style="width:${bytes ? pctOf(bytes) : 0}%"></i></div></td>`;
+      tb.appendChild(tr);
+    };
+    mine.map(f => ({ f, r: byId[f.id] || { total_bytes: 0, file_count: 0 } }))
+      .sort((a, b) => b.r.total_bytes - a.r.total_bytes)
+      .forEach(({ f, r }) => { mineTotal += Number(r.total_bytes); addRow(f.title || '이름 없는 폴더', Number(r.total_bytes), r.file_count); });
+    const other = Math.max(0, total - mineTotal);
+    if (other > 0) addRow('다른 선생님 폴더', other, '–', 'other');
+    $('uMine').hidden = false;
+  } catch (e) {
+    $('uInfo').textContent = '사용량을 불러오지 못했어요.';
+  }
+}
+
+async function renderFolderUsage(){
+  if (!teacherKey) return;
+  try {
+    const [u, r] = await Promise.all([rpc('qr_usage', {}), rpc('qr_folder_usage', { p_ids: [F.id] })]);
+    const total = Number(u[0].total_bytes), here = Number(r[0].total_bytes);
+    $('tAll').style.width = pctOf(total) + '%';
+    $('tFolder').style.width = pctOf(here) + '%';
+    $('tAll').title = `전체 ${fmtSize(total)}`;
+    $('tFolder').title = `이 폴더 ${fmtSize(here)}`;
+    $('tUsage').textContent = `이 폴더 ${fmtSize(here)} · 전체 ${fmtSize(total)} / 1GB (${fmtPct(total)}) · 남은 공간 ${fmtSize(Math.max(0, LIMIT_BYTES - total))}`;
+  } catch (e) {
+    $('tUsage').textContent = '사용량을 불러오지 못했어요.';
+  }
+}
+
 /* ---------- 첫 화면 ---------- */
 function initHome(){
   $('homeView').hidden = false;
@@ -402,7 +498,8 @@ function initHome(){
       if (!info) forgetFolder(f.id);
       else if (info.title !== f.title) rememberFolder(f.id, info.title, f.key);
     } catch (e) {}
-  })).then(renderMine);
+  })).then(() => { renderMine(); renderUsage(); });
+  renderUsage();
 }
 
 function renderMine(){
@@ -424,7 +521,7 @@ function renderMine(){
       catch (e) { alert('바꾸지 못했어요: ' + e.message); }
     };
     li.querySelector('[data-a=delete]').onclick = async () => {
-      try { if (await deleteFolder(f.id, f.key, f.title)) renderMine(); }
+      try { if (await deleteFolder(f.id, f.key, f.title)) { renderMine(); renderUsage(); } }
       catch (e) { alert('삭제하지 못했어요: ' + e.message); }
     };
     ul.appendChild(li);
@@ -487,6 +584,7 @@ async function initFolder(id){
   $('allBtn').onclick = downloadAll;
 
   await refresh();
+  renderFolderUsage();
   setInterval(() => { if (!document.hidden) refresh(); }, POLL_MS);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
 }
@@ -646,8 +744,10 @@ async function refresh(){
       if (teacherKey) $('allowToggle').checked = F.allow_upload;
       applyUploadState();
     }
+    const changed = list.length !== files.length || list.some((f, i) => !files[i] || files[i].id !== f.id);
     files = list;
     renderFiles();
+    if (changed) renderFolderUsage();
     $('live').textContent = '자동으로 새로 고쳐져요';
   } catch (e) {
     $('live').textContent = '연결이 끊겼어요. 다시 연결하는 중…';
