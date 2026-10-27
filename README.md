@@ -20,6 +20,7 @@
 | 🐵💣 | **[폭탄원숭이](#bomb)** | 장애이해교육 시간에 3명이 협동해서 폭탄을 해체하는 게임 | [**🎮 게임 하기**](https://berryst41.github.io/school/) |
 | 📮 | **[자료 공유 사이트](#share)** | 사진·영상·파일을 QR코드로 학생들에게 나눠 줄 때 | [**📂 열기**](https://berryst41.github.io/school/share/) |
 | 🧾 | **[품의 기안 도우미](#pumui)** | 쇼핑몰 장바구니로 품의 기안을 쓰고 K-에듀파인에 바로 채울 때 (선생님용 크롬 확장 프로그램) | [**⬇️ 내려받기**](https://github.com/berryst41/school/raw/main/pumui/pumui-extension.zip) |
+| 🖥️ | **[메인 모니터로 열기](#main-monitor)** | 듀얼 모니터(노트북 + 전자칠판)에서 한글·엑셀이 늘 메인 모니터에서 열리게 할 때 (선생님용 윈도우 프로그램) | [**⬇️ 내려받기**](https://github.com/berryst41/school/raw/main/main-monitor/main-monitor.zip) |
 
 <br>
 
@@ -195,6 +196,46 @@
 
 </details>
 
+<a id="main-monitor"></a>
+
+### 🖥️ 메인 모니터로 열기
+
+<details>
+<summary>👉 <b>눌러서 펼치기</b></summary>
+
+> **한글·엑셀 파일을 열면 늘 메인 모니터에서 열리게 해 주는 윈도우 프로그램**
+> 전자칠판으로 옮겨 두고 껐던 창도, 다시 열면 메인 모니터에서 열려요. 쓰는 동안에는 마음대로 옮겨도 돼요.
+
+👉 **[main-monitor.zip 내려받기](https://github.com/berryst41/school/raw/main/main-monitor/main-monitor.zip)**
+
+<details>
+<summary><b>🔧 설치하는 방법</b></summary>
+<br>
+
+| 순서 | 할 일 |
+|:---:|:---|
+| 1️⃣ | 압축 파일을 마우스 오른쪽 클릭 → **모두 압축 풀기** |
+| 2️⃣ | 풀린 폴더에서 **1_설치하기.bat** 을 더블클릭해요 |
+| 3️⃣ | 파란 **Windows의 PC 보호** 창이 뜨면 **추가 정보** → **실행** |
+| 4️⃣ | "설치가 끝났어요!"가 나오면 엔터 키로 닫아요. 컴퓨터를 다시 켜도 계속 작동해요 |
+
+그만 쓰고 싶으면 **2_제거하기.bat** 을 더블클릭하면 깨끗하게 지워져요.
+
+</details>
+
+<details>
+<summary><b>✨ 알아두면 좋아요</b></summary>
+<br>
+
+- 📄 한글 · 한셀 · 한쇼 · 엑셀 · 워드 · 파워포인트 · 아크로뱃(PDF)에 적용돼요.
+- 🧰 따로 설치할 프로그램 없이 윈도우에 들어 있는 기능(PowerShell)만 써요.
+- 🖥️ 노트북이 주 모니터인지 먼저 확인해요: 바탕화면 오른쪽 클릭 → **디스플레이 설정** → **이 디스플레이를 주 모니터로 만들기**
+- ⌨️ 창을 옆 모니터로 바로 보내려면 **윈도우 키 + Shift + ← / →**
+
+</details>
+
+</details>
+
 ### 🗂️ 파일 구성
 
 <details>
@@ -211,6 +252,9 @@ school/
 ├── pumui/
 │   ├── extension/       🧾 품의 기안 도우미 (크롬 확장 프로그램)
 │   └── pumui-extension.zip  내려받기용 압축 파일
+├── main-monitor/
+│   ├── program/         🖥️ 메인 모니터로 열기 (윈도우 프로그램)
+│   └── main-monitor.zip     내려받기용 압축 파일
 └── images/              원숭이별 게임 화면
 ```
 
