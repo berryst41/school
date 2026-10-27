@@ -1,4 +1,4 @@
-// 방탈출 예약 도우미 (키이스케이프)
+// 방탈출 예약 도우미 (키이스케이프·판타스트릭·제로월드·비트포비아 던전 등)
 // - 서버 시계: 사이트 응답의 Date 머리글로 내 컴퓨터와 서버의 시간 차이를 잽니다.
 // - 정시 새로고침: 정해 둔 서버 시각이 되면 이 탭을 딱 한 번 새로고침합니다.
 // - 내 정보 채우기: 이름·전화번호·인원 칸을 찾아 채웁니다. 예약(신청) 버튼은 누르지 않습니다.
@@ -6,23 +6,46 @@
   if (window.top !== window || window.__keHelper) return;
   window.__keHelper = true;
 
-  // 키이스케이프 예약 안내에 적힌 지점별 예약 오픈 시간
-  const BRANCHES = [
-    ['강남점', '18:00:00'],
-    ['홍대점', '20:00:00'],
-    ['부산점', '18:00:00'],
-    ['전주점', '18:00:00'],
-    ['더오름점', '10:00:00'],
-    ['우주라이크점', '10:00:00'],
-    ['LOG_IN 1', '10:00:00'],
-    ['LOG_IN 2', '10:00:00'],
-    ['메모리컴퍼니', '10:30:00'],
-    ['후즈데어', '11:00:00'],
-    ['STATION', '11:30:00'],
-    ['무비무드', '13:30:00'],
-    ['백산방역', '09:30:00'],
-    ['에버랜드', ''],
+  // 사이트별 설정
+  // - branches: [지점 이름(화면 글자), 예약 여는 시각] (각 사이트 예약 안내에 적힌 시각)
+  // - page: 고르기를 시작할 예약 화면 주소
+  const SITES = [
+    {
+      id: 'keyescape', host: /(^|\.)keyescape\.(com|co\.kr)$/, name: '키이스케이프', page: /reserv/i,
+      branches: [
+        ['강남점', '18:00:00'], ['홍대점', '20:00:00'], ['부산점', '18:00:00'], ['전주점', '18:00:00'],
+        ['더오름점', '10:00:00'], ['우주라이크점', '10:00:00'], ['LOG_IN 1', '10:00:00'], ['LOG_IN 2', '10:00:00'],
+        ['메모리컴퍼니', '10:30:00'], ['후즈데어', '11:00:00'], ['STATION', '11:30:00'], ['무비무드', '13:30:00'],
+        ['백산방역', '09:30:00'], ['에버랜드', ''],
+      ],
+    },
+    // 지점 고르기 없이 테마 카드를 누르는 화면. 일주일 뒤 날짜가 저녁 9시에 열립니다.
+    { id: 'fantastrick', host: /(^|\.)fantastrick\.co\.kr$/, name: '판타스트릭', page: /^\/reserve\/?$/, branches: [], openAt: '21:00:00' },
+    // 이름·전화번호 칸에 붙여넣기를 막아 두고 그림 글자(자동등록방지)도 있는 사이트라 내 정보는 직접 적습니다.
+    {
+      id: 'zeroworld', host: /(^|\.)zeroworldkorea\.com$/, name: '제로월드', page: /go=rev\.make/,
+      branches: [['김포본점', ''], ['강남점', ''], ['홍대점', ''], ['다이브 건대점', '']],
+      noFill: '제로월드는 이름·전화번호를 직접 적도록 막아 두었어요. 시간까지 골라 드릴게요. 내 정보와 그림 글자는 직접 적어 주세요.',
+    },
+    // 지점·날짜는 주소로 바뀌고, 테마마다 시간 목록이 붙어 있는 화면 (매일 일주일 치 오픈)
+    {
+      id: 'xdungeon', host: /(^|\.)xdungeon\.net$/, name: '비트포비아 던전', page: /go=rev\.(main|make)/, viaUrl: true,
+      branches: [
+        ['홍대던전', '13:00:00'], ['던전101', '14:00:00'], ['홍대던전Ⅲ', '15:00:00'], ['강남던전', '16:00:00'],
+        ['강남던전Ⅱ', '17:00:00'], ['던전루나', '18:00:00'], ['던전스텔라', '19:00:00'], ['서면던전', '20:00:00'],
+        ['서면던전 레드', '21:00:00'],
+      ],
+    },
+    // 아래 사이트는 아직 화면을 확인하지 못해서 서버 시계·정시 새로고침·내 정보 채우기만 씁니다.
+    { id: 'dpsnnn', host: /(^|\.)dpsnnn\.com$/, name: 'dpsnnn.com', branches: [], basic: true },
+    { id: 'doloescape', host: /(^|\.)doloescape\.co\.kr$/, name: 'doloescape.co.kr', branches: [], basic: true },
+    { id: 'thefrank', host: /(^|\.)thefrank\.co\.kr$/, name: 'thefrank.co.kr', branches: [], basic: true },
   ];
+  const SITE = SITES.find((s) => s.host.test(location.hostname)) || { id: 'other', name: location.hostname, branches: [], basic: true };
+  const BRANCHES = SITE.branches;
+  // 키이스케이프는 예전 저장 이름을 그대로 씁니다
+  const KEY = (k) => (SITE.id === 'keyescape' ? k : `${k}_${SITE.id}`);
+  const isReservePage = () => !!SITE.page && SITE.page.test(location.pathname + location.search);
   const KST = 9 * 3600 * 1000;
   const store = chrome.storage.local;
   const get = (k) => new Promise((r) => store.get(k, (v) => r(v[k])));
@@ -104,20 +127,21 @@
   button.gray{background:#888}
   button.big{background:#2f9e44;font-size:16px}
   .msg{margin-top:6px;font-size:12.5px;color:#444;white-space:pre-line}
+  .basic .pk{display:none}
   .armed{background:#fff4d6;border-radius:8px;padding:6px;text-align:center;font-weight:700}
 </style>
-<div class="box">
-  <div class="hd" id="hd"><span>🔑 방탈출 예약 도우미</span><span id="tg">－</span></div>
+<div class="box${SITE.basic ? ' basic' : ''}">
+  <div class="hd" id="hd"><span>🔑 예약 도우미 · ${SITE.name}</span><span id="tg">－</span></div>
   <div class="bd">
     <div class="clock" id="clock">--:--:--.-</div>
     <div class="sub" id="acc">서버 시간 맞추는 중…</div>
 
     <h4>① 정시 새로고침</h4>
-    <label><span>지점</span><select id="br"><option value="">고르기</option>${BRANCHES.map(([n, v]) => `<option value="${n}">${n}${v ? ' ' + v.slice(0, 5) : ''}</option>`).join('')}</select></label>
-    <label><span>테마(선택)</span><input type="text" id="th" placeholder="테마 이름 (안 적어도 돼요)"></label>
-    <label><span>날짜(선택)</span><input type="text" id="dt" placeholder="예: 10/31"></label>
-    <label><span>시간(선택)</span><input type="text" id="tm" placeholder="예: 14:30"></label>
-    <label><input type="checkbox" id="pick"> 이 지점·테마·날짜·시간 저절로 고르기</label>
+    <label${BRANCHES.length ? '' : ' style="display:none"'}><span>지점</span><select id="br"><option value="">고르기</option>${BRANCHES.map(([n, v]) => `<option value="${n}">${n}${v ? ' ' + v.slice(0, 5) : ''}</option>`).join('')}</select></label>
+    <label class="pk"><span>테마(선택)</span><input type="text" id="th" placeholder="테마 이름 (안 적어도 돼요)"></label>
+    <label class="pk"><span>날짜(선택)</span><input type="text" id="dt" placeholder="예: 10/31"></label>
+    <label class="pk"><span>시간(선택)</span><input type="text" id="tm" placeholder="예: 14:30"></label>
+    <label class="pk"><input type="checkbox" id="pick"> 이 지점·테마·날짜·시간 저절로 고르기</label>
     <label><span>열리는 시각</span><input type="text" id="at" placeholder="10:00:00"></label>
     <label><span>여유(초)</span><input type="number" id="lag" step="0.1" min="0" max="5" value="0.3"></label>
     <div id="armbox"></div>
@@ -147,7 +171,7 @@
     if (b && b[1]) $('at').value = b[1];
     savePick();
   };
-  const savePick = () => set({ pick: { branch: $('br').value, theme: $('th').value.trim(), date: $('dt').value.trim(), time: $('tm').value.trim(), on: $('pick').checked } });
+  const savePick = () => set({ [KEY('pick')]: { branch: $('br').value, theme: $('th').value.trim(), date: $('dt').value.trim(), time: $('tm').value.trim(), on: $('pick').checked } });
   ['th', 'dt', 'tm'].forEach((id) => $(id).addEventListener('change', savePick));
   $('pick').onchange = () => { savePick(); if ($('pick').checked) autoPick(); };
 
@@ -159,10 +183,10 @@
     $('pp').value = me.people || '';
     $('auto').checked = !!me.auto;
     $('agree').checked = !!me.agree;
-    const last = (await get('lastTime')) || {};
+    const last = (await get(KEY('lastTime'))) || {};
     if (last.at) $('at').value = last.at;
     if (last.lag != null) $('lag').value = last.lag;
-    const pick = (await get('pick')) || {};
+    const pick = (await get(KEY('pick'))) || {};
     $('br').value = pick.branch || '';
     $('th').value = pick.theme || '';
     $('dt').value = pick.date || '';
@@ -170,6 +194,7 @@
     $('pick').checked = !!pick.on;
     const b = BRANCHES.find(([n]) => n === pick.branch);
     if (!$('at').value && b && b[1]) $('at').value = b[1];
+    if (!$('at').value && SITE.openAt) $('at').value = SITE.openAt;
     if (pick.on) autoPick();
     if (me.auto) watchForForm();
   })();
@@ -223,7 +248,7 @@
     const lag = Math.min(5, Math.max(0, parseFloat($('lag').value) || 0));
     const fireAt = t + lag * 1000;
     if (fireAt <= serverNow()) { say('이미 지난 시각이에요. 시각을 다시 확인해 주세요.'); return; }
-    set({ lastTime: { at: $('at').value, lag } });
+    set({ [KEY('lastTime')]: { at: $('at').value, lag } });
     arm(fireAt);
     say('예약했어요. 시간이 되면 이 탭을 한 번 새로고침합니다.');
   };
@@ -244,7 +269,9 @@
     }
     const wrap = el.closest('label');
     if (wrap) parts.push(wrap.textContent);
-    const cell = el.closest('td,dd,li,div');
+    // 이름표(label)가 있으면 그걸 믿고, 없을 때만 바로 앞 칸의 글자를 봅니다 (옆 칸 "비밀번호"를 잘못 읽지 않게)
+    const hasLabel = wrap || (el.id && el.ownerDocument.querySelector(`label[for="${CSS.escape(el.id)}"]`));
+    const cell = !hasLabel && el.closest('td,dd,li,div');
     if (cell) {
       const prev = cell.previousElementSibling;
       if (prev && prev.textContent.length < 30) parts.push(prev.textContent);
@@ -283,6 +310,7 @@
     const name = $('nm').value.trim();
     const phone = $('ph').value.replace(/[^\d]/g, '');
     const people = $('pp').value.trim();
+    if (SITE.noFill) { if (!quiet) say(SITE.noFill); return 0; }
     if (!name && !phone && !people) { if (!quiet) say('먼저 ② 내 정보를 적어 주세요.'); return 0; }
 
     const found = { name: [], phone: [], people: [] };
@@ -309,7 +337,8 @@
         : [phone.slice(0, 3), phone.slice(3, 6), phone.slice(6)];
       let ok;
       if (f.length === 1) {
-        const dash = /-/.test(f[0].placeholder || '') || /-/.test(f[0].value || '');
+        // "010-1234-5678"처럼 보여 주거나 13글자까지 받는 칸이면 - 를 넣습니다 ("-없이 입력"은 빼고)
+        const dash = /\d\s*-\s*\d/.test(f[0].placeholder || '') || /-/.test(f[0].value || '') || f[0].maxLength === 13;
         ok = setValue(f[0], dash ? parts.join('-') : phone);
       } else if (f.length === 2) {
         ok = setValue(f[0], parts[1]) && setValue(f[1], parts[2]); // 앞자리(010)는 고정이거나 따로 있는 경우
@@ -339,8 +368,13 @@
       t += ' ' + (n.textContent || '');
     }
     if (t.trim()) return t.replace(/\s+/g, ' ');
-    const p = el.parentElement;
-    return p && p.querySelectorAll('input[type=checkbox]').length === 1 ? (p.innerText || '').replace(/\s+/g, ' ') : '';
+    // 체크칸만 감싼 label 옆에 글자가 따로 있는 화면: 체크칸이 하나뿐인 가장 가까운 상자의 앞부분 글자
+    for (let a = el.parentElement, i = 0; a && i < 4; a = a.parentElement, i++) {
+      if (a.querySelectorAll('input[type=checkbox]').length > 1) break;
+      const txt = (a.innerText || '').replace(/\s+/g, ' ').trim();
+      if (txt) return txt.slice(0, 60);
+    }
+    return '';
   }
   function checkAgree() {
     let all = null, any = false;
@@ -383,21 +417,30 @@
   // ---------- 지점·테마 저절로 고르기 ----------
   // 화면에서 글자가 지점(테마) 이름과 같은 버튼·링크·목록을 찾아 한 번 누릅니다.
   const norm = (t) => (t || '').replace(/\s+/g, '').replace(/[_\-]/g, '').toLowerCase();
+  // 목록 글자 끝의 "(강남)" 같은 괄호는 떼고 비교합니다
+  const optName = (o) => norm(o.textContent.replace(/\([^)]*\)\s*$/, ''));
+  function findOption(name, sels) {
+    const want = norm(name), short = want.replace(/점$/, '');
+    for (const sel of sels) {
+      const o = [...sel.options].find((o) => optName(o) === want || optName(o) === short) ||
+        [...sel.options].find((o) => short.length >= 2 && optName(o).startsWith(short));
+      if (o) return { select: sel, option: o };
+    }
+    return null;
+  }
   function findChoice(name) {
     const want = norm(name);
     const short = want.replace(/점$/, '');
     if (!want) return null;
-    for (const sel of document.querySelectorAll('select')) {
-      if (host.contains(sel) || !visible(sel)) continue;
-      const o = [...sel.options].find((o) => norm(o.textContent) === want || norm(o.textContent) === short);
-      if (o) return { select: sel, option: o };
-    }
+    const so = findOption(name, [...document.querySelectorAll('select')].filter((sel) => !host.contains(sel) && visible(sel)));
+    if (so) return so;
     let best = null;
     for (const el of document.querySelectorAll('a,button,li,label,td,span,div,p,img,[onclick]')) {
       if (host.contains(el) || !visible(el)) continue;
       const txt = norm(el.tagName === 'IMG' ? el.alt : el.innerText);
       if (!txt || txt.length > want.length + 8) continue;
-      if (txt === want || txt === short || txt.startsWith(want) || (short.length >= 2 && txt.startsWith(short))) {
+      // "제로월드 - 강남점"처럼 사이트 이름이 앞에 붙은 것도 찾습니다
+      if (txt === want || txt === short || txt.startsWith(want) || (short.length >= 2 && txt.startsWith(short)) || (want.length >= 3 && txt.endsWith(want))) {
         // 글자를 감싼 것 중 가장 작은(안쪽) 것을 고르고, 누를 수 있는 부모가 있으면 그것을 누릅니다
         if (!best || best.contains(el)) best = el;
       }
@@ -443,6 +486,20 @@
     });
   }
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  // 화면이 잠깐(quiet) 조용해질 때까지 기다립니다. 날짜를 누르면 시간 목록을 두 번 그리는 사이트(제로월드)가 있어서요.
+  function settle(quiet = 300, max = 2500) {
+    return new Promise((resolve) => {
+      let t = setTimeout(done, quiet);
+      const mo = new MutationObserver((list) => {
+        if (list.every((m) => host.contains(m.target))) return;
+        clearTimeout(t);
+        t = setTimeout(done, quiet);
+      });
+      const cap = setTimeout(done, max);
+      function done() { mo.disconnect(); clearTimeout(t); clearTimeout(cap); resolve(); }
+      mo.observe(document.body, { childList: true, subtree: true });
+    });
+  }
   function parseDate(t) {
     const m = /^(?:(\d{4})\D+)?(?:(\d{1,2})\D+)?(\d{1,2})\D*$/.exec(t.trim());
     if (!m) return null;
@@ -488,12 +545,12 @@
     return best && clickable(best);
   }
   const BAD = /마감|완료|불가|매진|sold|close/i;
-  function findTime(t) {
+  function findTime(t, root = document) {
     const hm = `${t.h}:${String(t.m).padStart(2, '0')}`;
     const hm2 = `${String(t.h).padStart(2, '0')}:${String(t.m).padStart(2, '0')}`;
     const ko = `${t.h}시${t.m ? String(t.m).padStart(2, '0') + '분' : ''}`;
     let best = null;
-    for (const el of document.querySelectorAll('a,button,li,label,td,span,div,p,[onclick]')) {
+    for (const el of root.querySelectorAll('a,button,li,label,td,span,div,p,[onclick]')) {
       if (host.contains(el) || !visible(el)) continue;
       const txt = leafText(el);
       if (!txt || txt.length > 30) continue;
@@ -501,6 +558,16 @@
       if (hit && (!best || best.contains(el))) best = el;
     }
     return best && clickable(best);
+  }
+  // 테마마다 시간 목록이 따로 붙어 있는 화면(비트포비아 던전)은 그 테마 상자 안에서 찾습니다
+  function findTimeFor(t, theme) {
+    const c = theme && findChoice(theme);
+    const el = c && (c.el || c.select);
+    for (let a = el && el.parentElement, i = 0; a && i < 6; a = a.parentElement, i++) {
+      const hit = findTime(t, a);
+      if (hit) return hit;
+    }
+    return findTime(t);
   }
   function findNext() {
     let best = null;
@@ -512,10 +579,7 @@
     return best && clickable(best);
   }
   const FLOW_KEY = '__keHelperFlow';
-  async function pickDateTime() {
-    const d = parseDate($('dt').value || '');
-    const t = parseTime($('tm').value || '');
-    if (!d) return true;
+  async function pickDate(d) {
     // 달력을 원하는 달로 넘깁니다 (최대 3번)
     for (let i = 0; i < 3; i++) {
       const sm = await waitFor(shownMonth, 5000);
@@ -528,32 +592,106 @@
     }
     const dayEl = await waitFor(() => findDay(d.day), 8000);
     if (!dayEl) { say(`달력에서 ${d.month}월 ${d.day}일을 찾지 못했어요. 직접 골라 주세요.`); return false; }
+    // 아직 안 열렸거나 지난 날짜는 회색(disabled·locked)으로 그려집니다 (칸 자체나 바로 바깥 상자에 표시)
+    const off = [dayEl, dayEl.parentElement].some((a) => a && (a.disabled || /disable|locked|\bpast\b|soldout|\boff\b/i.test(typeof a.className === 'string' ? a.className : '')));
+    if (off) {
+      say(`${d.month}월 ${d.day}일은 아직 예약이 열리지 않았거나 고를 수 없는 날이에요. 날짜를 확인해 주세요.`);
+      return false;
+    }
     dayEl.scrollIntoView({ block: 'center' });
     dayEl.click();
-    if (!t) { say(`${d.month}월 ${d.day}일을 골랐어요. 시간을 골라 주세요.`); return false; }
-    const tEl = await waitFor(() => findTime(t), 8000);
+    return true;
+  }
+  async function pickTime(t, dayLabel, theme) {
+    await settle();
+    // 빈자리를 확인하는 동안 잠깐 회색(wait)으로 그리는 사이트(판타스트릭)는 확인이 끝날 때까지 기다립니다
+    const tEl = await waitFor(() => {
+      const el = SITE.viaUrl ? findTimeFor(t, theme) : findTime(t);
+      return el && !/\bwait\b|loading/i.test(typeof el.className === 'string' ? el.className : '') ? el : null;
+    }, 8000);
     const label = `${t.h}:${String(t.m).padStart(2, '0')}`;
-    if (!tEl) { say(`${d.month}월 ${d.day}일을 골랐는데 ${label} 시간을 찾지 못했어요. 직접 골라 주세요.`); return false; }
+    if (!tEl) { say(`${dayLabel}을 골랐는데 ${label} 시간을 찾지 못했어요. 직접 골라 주세요.`); return false; }
     // 시간 칸 둘레(바로 위 몇 단계)에 "마감" 같은 글자가 있으면 고르지 않습니다
-    let closed = tEl.disabled;
+    // 키이스케이프는 마감 시간을 글자 없이 "누를 수 없는 동그라미(disabled)"로만 보여 줍니다
+    let closed = tEl.disabled || !!(tEl.querySelector && tEl.querySelector('input:disabled,button:disabled'));
     for (let a = tEl, i = 0; a && i < 4 && !closed; a = a.parentElement, i++) {
       const txt = a.innerText || '';
       if (txt.length > 40 || (txt.match(/\d{1,2}\s*(:|시)\s*\d{0,2}/g) || []).length > 1) break; // 다른 시간 칸까지 품으면 멈춤
-      closed = BAD.test(a.innerText || '') || /disable|soldout|\bclose|\boff\b/i.test(typeof a.className === 'string' ? a.className : '');
+      closed = BAD.test(a.innerText || '') || /disable|soldout|\bclose|\boff\b|\bdead\b|\bfull\b/i.test(typeof a.className === 'string' ? a.className : '');
     }
     if (closed) {
-      say(`${d.month}월 ${d.day}일 ${label}은(는) 이미 마감인 것 같아요. 다른 시간을 직접 골라 주세요.`);
+      say(`${dayLabel} ${label}은(는) 이미 마감인 것 같아요. 다른 시간을 직접 골라 주세요.`);
       return false;
     }
+    // 시간을 누르면 새 화면으로 넘어가는 사이트도 있어서, 누르기 전에 "다음 화면에서 채우기"를 적어 둡니다
+    sessionStorage.setItem(FLOW_KEY, String(Date.now()));
     tEl.scrollIntoView({ block: 'center' });
     tEl.click();
     await sleep(300);
-    const nx = await waitFor(findNext, 5000);
-    if (!nx) { say(`${d.month}월 ${d.day}일 ${label}을 골랐어요. NEXT를 직접 눌러 주세요.`); return false; }
+    // 누른 뒤에 시간 목록이 새로 그려졌으면(누른 게 사라졌으면) 한 번 더 찾아 누릅니다
+    if (!document.contains(tEl)) {
+      await settle();
+      const again = SITE.viaUrl ? findTimeFor(t, theme) : findTime(t);
+      if (again) { again.click(); await sleep(300); }
+    }
+    if (SITE.noFill) {
+      sessionStorage.removeItem(FLOW_KEY);
+      say(`${dayLabel} ${label}을 골랐어요. ${SITE.noFill}`);
+      return false;
+    }
+    // NEXT 버튼이 있으면 누르고, 입력칸이 같은 화면에 있으면 바로 채웁니다
+    const r = await waitFor(() => findNext() || (fillAll(true) ? 'filled' : null), 5000);
+    if (r === 'filled') {
+      sessionStorage.removeItem(FLOW_KEY);
+      say(`${dayLabel} ${label}을 고르고 내 정보를 채웠어요! 내용을 확인하고 예약 버튼은 직접 눌러 주세요.`);
+      return false;
+    }
+    if (!r) {
+      sessionStorage.removeItem(FLOW_KEY);
+      say(`${dayLabel} ${label}을 골랐어요. 다음 단계 버튼(NEXT 등)이 있으면 직접 눌러 주세요.`);
+      return false;
+    }
     sessionStorage.setItem(FLOW_KEY, String(Date.now()));
-    nx.click();
-    say(`${d.month}월 ${d.day}일 ${label}을 고르고 NEXT를 눌렀어요. 내 정보를 채우는 중…`);
+    r.click();
+    say(`${dayLabel} ${label}을 고르고 NEXT를 눌렀어요. 내 정보를 채우는 중…`);
     return true;
+  }
+  async function pickDateTime() {
+    const d = parseDate($('dt').value || '');
+    const t = parseTime($('tm').value || '');
+    if (!d) return true;
+    if (!(await pickDate(d))) return false;
+    if (!t) { say(`${d.month}월 ${d.day}일을 골랐어요. 시간을 골라 주세요.`); return false; }
+    return pickTime(t, `${d.month}월 ${d.day}일`);
+  }
+  // 지점·날짜를 주소로 바꾸는 사이트(비트포비아 던전): 주소가 다르면 한 번 옮겨 갑니다
+  function gotoBranchDate(branch, d) {
+    const u = new URL(location.href);
+    if (u.searchParams.get('go') !== 'rev.main') return false;
+    const sel = document.querySelector('select[name=s_zizum]');
+    const so = branch && sel && findOption(branch, [sel]);
+    if (branch && !so) { say(`지점 "${branch}"을(를) 목록에서 찾지 못했어요. 직접 골라 주세요.`); return null; }
+    const pad = (n) => String(n).padStart(2, '0');
+    const want = { s_zizum: so ? so.option.value : u.searchParams.get('s_zizum') || (sel && sel.value) || '', rev_days: d ? `${d.year}-${pad(d.month)}-${pad(d.day)}` : u.searchParams.get('rev_days') || '' };
+    if (Object.entries(want).every(([k, v]) => !v || u.searchParams.get(k) === v)) return false;
+    Object.entries(want).forEach(([k, v]) => v && u.searchParams.set(k, v));
+    location.href = u.toString();
+    return true;
+  }
+  async function autoPickViaUrl(branch, theme, step, mark) {
+    const d = parseDate($('dt').value || '');
+    const t = parseTime($('tm').value || '');
+    if (!(step.n >= 1)) {
+      mark(1);
+      const moved = gotoBranchDate(branch, d);
+      if (moved !== false) return;
+    }
+    if (!/go=rev\.main/.test(location.search)) return;
+    if (!t) { say('지점·날짜를 골랐어요. 테마와 시간을 직접 골라 주세요.'); return; }
+    if (!theme) { say('같은 시간이 여러 테마에 있어서 테마 이름을 적어야 시간까지 골라 드릴 수 있어요.'); return; }
+    if (step.n >= 2) { say('시간을 직접 골라 주세요.'); return; }
+    mark(2);
+    if (await pickTime(t, d ? `${d.month}월 ${d.day}일 "${theme}"` : `"${theme}"`, theme)) fillAfterNext();
   }
   // NEXT를 누른 뒤 입력칸이 나타나면 내 정보를 채웁니다 (같은 화면이든 새 화면이든)
   async function fillAfterNext() {
@@ -565,8 +703,8 @@
 
   let picking = false;
   async function autoPick() {
-    const branch = $('br').value, theme = $('th').value.trim();
-    if (picking || !branch || !/reserv/i.test(location.pathname)) return;
+    const branch = BRANCHES.length ? $('br').value : '', theme = $('th').value.trim();
+    if (picking || SITE.basic || (!branch && !theme) || !isReservePage()) return;
     picking = true;
     // 방금 NEXT를 눌러 넘어온 화면이면 고르기는 건너뛰고 채우기만 합니다
     const flow = +sessionStorage.getItem(FLOW_KEY);
@@ -577,7 +715,8 @@
     try { step = JSON.parse(sessionStorage.getItem(STEP_KEY)) || {}; } catch (e) {}
     if (!step.at || Date.now() - step.at > 20000) step = {};
     const mark = (n) => sessionStorage.setItem(STEP_KEY, JSON.stringify({ n, at: Date.now() }));
-    if (!(step.n >= 1)) {
+    if (SITE.viaUrl) return autoPickViaUrl(branch, theme, step, mark);
+    if (branch && !(step.n >= 1)) {
       mark(1);
       if (!(await waitAndChoose(branch, '지점'))) return;
       say(`지점 "${branch}"을(를) 골랐어요.` + (theme ? ' 테마를 찾는 중…' : ''));
@@ -586,11 +725,11 @@
     if (theme && !(step.n >= 2)) {
       mark(2);
       if (!(await waitAndChoose(theme, '테마'))) return;
-      say(`지점 "${branch}", 테마 "${theme}"을(를) 골랐어요.`);
+      say((branch ? `지점 "${branch}", ` : '') + `테마 "${theme}"을(를) 골랐어요.`);
     }
     if (step.n >= 4) { say('날짜·시간을 직접 골라 주세요.'); return; }
     mark(step.n === 3 ? 4 : 3);
-    if (!$('dt').value.trim()) { say(`지점 "${branch}"` + (theme ? `, 테마 "${theme}"` : '') + '을(를) 골랐어요. 날짜·시간을 골라 주세요.'); return; }
+    if (!$('dt').value.trim()) { say([branch && `지점 "${branch}"`, theme && `테마 "${theme}"`].filter(Boolean).join(', ') + '을(를) 골랐어요. 날짜·시간을 골라 주세요.'); return; }
     await sleep(500);
     if (await pickDateTime()) fillAfterNext();
   }
