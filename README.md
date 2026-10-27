@@ -21,6 +21,7 @@
 | 📮 | **[자료 공유 사이트](#share)** | 사진·영상·파일을 QR코드로 학생들에게 나눠 줄 때 | [**📂 열기**](https://berryst41.github.io/school/share/) |
 | 🧾 | **[품의 기안 도우미](#pumui)** | 쇼핑몰 장바구니로 품의 기안을 쓰고 K-에듀파인에 바로 채울 때 (선생님용 크롬 확장 프로그램) | [**⬇️ 내려받기**](https://github.com/berryst41/school/raw/main/pumui/pumui-extension.zip) |
 | 🖥️ | **[메인 모니터로 열기](#main-monitor)** | 듀얼 모니터(노트북 + 전자칠판)에서 한글·엑셀이 늘 메인 모니터에서 열리게 할 때 (선생님용 윈도우 프로그램) | [**⬇️ 내려받기**](https://github.com/berryst41/school/raw/main/main-monitor/main-monitor.zip) |
+| 📘 | **[처음 써 보는 Claude](#claude-guide)** | AI가 처음인 선생님이 가정통신문·평어·수업 준비에 Claude를 써 볼 때 (PDF 안내서) | [**📖 바로 보기**](https://berryst41.github.io/school/docs/claude-guide.pdf) |
 
 <br>
 
@@ -237,6 +238,45 @@
 
 </details>
 
+<a id="claude-guide"></a>
+
+### 📘 처음 써 보는 Claude
+
+<details>
+<summary>👉 <b>눌러서 펼치기</b></summary>
+
+> **AI가 처음인 초등 선생님을 위한 Claude 학교 업무 첫걸음 (76쪽 PDF)**
+> 가입부터 가정통신문, 평어, 수업 준비까지 복사해서 바로 쓰는 요청문과 답변 예시로 차근차근 알려 줘요.
+
+<a href="https://berryst41.github.io/school/docs/claude-guide.pdf"><img src="docs/claude-guide-cover.png" width="260" alt="처음 써 보는 Claude 표지"></a>
+
+| 보는 방법 | |
+|:---|:---|
+| 🌐 **[브라우저에서 바로 보기](https://berryst41.github.io/school/docs/claude-guide.pdf)** | 휴대폰·태블릿·컴퓨터 어디서나 바로 열려요 |
+| 🐙 **[깃허브 화면에서 보기](https://github.com/berryst41/school/blob/main/docs/claude-guide.pdf)** | 깃허브 안에서 쪽 넘기며 볼 수 있어요 |
+| ⬇️ **[내려받기](https://github.com/berryst41/school/raw/main/docs/claude-guide.pdf)** | 파일로 저장해 두고 싶을 때 |
+
+<details>
+<summary><b>📑 차례</b></summary>
+<br>
+
+| | 내용 |
+|:---:|:---|
+| PART 0 | 시작하기 전에 Claude와 친해지기 |
+| PART 1 | 학부모 안내 · 가정통신문과 학급 소식 |
+| PART 2 | 행정 · 업무 문서 기안부터 결과보고까지 |
+| PART 3 | 성적 처리 시즌 평어와 행동특성 |
+| PART 4 | 수업 준비 · 설계에서 학습지까지 |
+| PART 5 | 교실 도구와 학습 게임 직접 만들기 |
+| PART 6 | Claude 200% 쓰기 · 프로젝트·스킬·파일·앱 |
+| PART 7 | 자잘하지만 확실한 꿀팁 100 |
+| PART 8 | 안심하고 쓰는 체크리스트 |
+| 부록 | 한 해 업무 달력과 한 줄 요청문 모음 |
+
+</details>
+
+</details>
+
 ### 🗂️ 파일 구성
 
 <details>
@@ -256,6 +296,8 @@ school/
 ├── main-monitor/
 │   ├── program/         🖥️ 메인 모니터로 열기 (윈도우 프로그램)
 │   └── main-monitor.zip     내려받기용 압축 파일
+├── docs/
+│   └── claude-guide.pdf  📘 처음 써 보는 Claude (PDF 안내서)
 └── images/              원숭이별 게임 화면
 ```
 
