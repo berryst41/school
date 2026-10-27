@@ -115,7 +115,9 @@
     <h4>① 정시 새로고침</h4>
     <label><span>지점</span><select id="br"><option value="">고르기</option>${BRANCHES.map(([n, v]) => `<option value="${n}">${n}${v ? ' ' + v.slice(0, 5) : ''}</option>`).join('')}</select></label>
     <label><span>테마(선택)</span><input type="text" id="th" placeholder="테마 이름 (안 적어도 돼요)"></label>
-    <label><input type="checkbox" id="pick"> 이 지점·테마 저절로 고르기</label>
+    <label><span>날짜(선택)</span><input type="text" id="dt" placeholder="예: 10/31"></label>
+    <label><span>시간(선택)</span><input type="text" id="tm" placeholder="예: 14:30"></label>
+    <label><input type="checkbox" id="pick"> 이 지점·테마·날짜·시간 저절로 고르기</label>
     <label><span>열리는 시각</span><input type="text" id="at" placeholder="10:00:00"></label>
     <label><span>여유(초)</span><input type="number" id="lag" step="0.1" min="0" max="5" value="0.3"></label>
     <div id="armbox"></div>
@@ -144,8 +146,8 @@
     if (b && b[1]) $('at').value = b[1];
     savePick();
   };
-  const savePick = () => set({ pick: { branch: $('br').value, theme: $('th').value.trim(), on: $('pick').checked } });
-  $('th').addEventListener('change', savePick);
+  const savePick = () => set({ pick: { branch: $('br').value, theme: $('th').value.trim(), date: $('dt').value.trim(), time: $('tm').value.trim(), on: $('pick').checked } });
+  ['th', 'dt', 'tm'].forEach((id) => $(id).addEventListener('change', savePick));
   $('pick').onchange = () => { savePick(); if ($('pick').checked) autoPick(); };
 
   // 저장해 둔 정보 불러오기
@@ -161,6 +163,8 @@
     const pick = (await get('pick')) || {};
     $('br').value = pick.branch || '';
     $('th').value = pick.theme || '';
+    $('dt').value = pick.date || '';
+    $('tm').value = pick.time || '';
     $('pick').checked = !!pick.on;
     const b = BRANCHES.find(([n]) => n === pick.branch);
     if (!$('at').value && b && b[1]) $('at').value = b[1];
@@ -387,15 +391,172 @@
       loop();
     });
   }
+  // ---------- 날짜·시간 고르기 ----------
+  const leafText = (el) => (el.innerText || '').replace(/\s+/g, '');
+  const clickable = (el) => el.closest('a,button,label,li,td,[onclick]') || el;
+  function waitFor(find, ms) {
+    return new Promise((resolve) => {
+      const until = Date.now() + ms;
+      const loop = () => {
+        const r = find();
+        if (r) return resolve(r);
+        if (Date.now() > until) return resolve(null);
+        setTimeout(loop, 100);
+      };
+      loop();
+    });
+  }
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  function parseDate(t) {
+    const m = /^(?:(\d{4})\D+)?(?:(\d{1,2})\D+)?(\d{1,2})\D*$/.exec(t.trim());
+    if (!m) return null;
+    const k = new Date(serverNow() + KST);
+    return { year: m[1] ? +m[1] : k.getUTCFullYear(), month: m[2] ? +m[2] : k.getUTCMonth() + 1, day: +m[3] };
+  }
+  function parseTime(t) {
+    const m = /(\d{1,2})\s*(?::|시)\s*(\d{2})?/.exec(t);
+    return m ? { h: +m[1], m: +(m[2] || 0) } : null;
+  }
+  // 달력 위에 보이는 "2026년 10월"
+  function shownMonth() {
+    const m = /(\d{4})\s*년\s*(\d{1,2})\s*월/.exec(document.body.innerText);
+    return m ? { year: +m[1], month: +m[2] } : null;
+  }
+  function findNextMonth() {
+    for (const el of document.querySelectorAll('a,button,span,div,img,i,[onclick]')) {
+      if (host.contains(el) || !visible(el)) continue;
+      const t = (el.tagName === 'IMG' ? el.alt : el.innerText || '').trim();
+      const cls = (el.className && el.className.baseVal !== undefined ? el.className.baseVal : el.className || '') + ' ' + (el.id || '') + ' ' + (el.getAttribute('src') || '');
+      if (/^(▶|►|>|›|〉|다음달|다음 달)$/.test(t) || (!t && /next|right/i.test(cls))) return clickable(el);
+    }
+    return null;
+  }
+  // 달력 칸만 봅니다: "2026년 10월" 글자를 함께 품은 가장 가까운 상자 안의 숫자
+  const inCalendar = (el) => {
+    for (let a = el.parentElement, i = 0; a && i < 8; a = a.parentElement, i++) {
+      const t = a.innerText || '';
+      if (/\d{4}\s*년\s*\d{1,2}\s*월/.test(t)) return t.length < 600;
+    }
+    return false;
+  };
+  function findDay(day) {
+    const want = String(day);
+    let best = null, fallback = null;
+    for (const el of document.querySelectorAll('td,a,button,span,div,li,p')) {
+      if (host.contains(el) || !visible(el)) continue;
+      if (leafText(el) !== want) continue;
+      if (inCalendar(el)) { if (!best || best.contains(el)) best = el; }
+      else if (!fallback || fallback.contains(el)) fallback = el;
+    }
+    best = best || fallback;
+    return best && clickable(best);
+  }
+  const BAD = /마감|완료|불가|매진|sold|close/i;
+  function findTime(t) {
+    const hm = `${t.h}:${String(t.m).padStart(2, '0')}`;
+    const hm2 = `${String(t.h).padStart(2, '0')}:${String(t.m).padStart(2, '0')}`;
+    const ko = `${t.h}시${t.m ? String(t.m).padStart(2, '0') + '분' : ''}`;
+    let best = null;
+    for (const el of document.querySelectorAll('a,button,li,label,td,span,div,p,[onclick]')) {
+      if (host.contains(el) || !visible(el)) continue;
+      const txt = leafText(el);
+      if (!txt || txt.length > 30) continue;
+      const hit = txt.startsWith(hm2) || txt.startsWith(hm) || txt.startsWith(ko) || txt.includes(' ' + hm) || new RegExp('(^|\\D)' + hm2 + '(\\D|$)').test(txt) || new RegExp('(^|\\D)' + hm + '(\\D|$)').test(txt);
+      if (hit && (!best || best.contains(el))) best = el;
+    }
+    return best && clickable(best);
+  }
+  function findNext() {
+    let best = null;
+    for (const el of document.querySelectorAll('a,button,input[type=button],input[type=submit],div,span,[onclick]')) {
+      if (host.contains(el) || !visible(el)) continue;
+      const t = (el.tagName === 'INPUT' ? el.value : el.innerText || '').replace(/\s+/g, '').toLowerCase();
+      if (t === 'next' || t === '다음' || t === '다음단계') { if (!best || best.contains(el)) best = el; }
+    }
+    return best && clickable(best);
+  }
+  const FLOW_KEY = '__keHelperFlow';
+  async function pickDateTime() {
+    const d = parseDate($('dt').value || '');
+    const t = parseTime($('tm').value || '');
+    if (!d) return true;
+    // 달력을 원하는 달로 넘깁니다 (최대 3번)
+    for (let i = 0; i < 3; i++) {
+      const sm = await waitFor(shownMonth, 5000);
+      if (!sm || (sm.year === d.year && sm.month === d.month)) break;
+      if (sm.year * 12 + sm.month > d.year * 12 + d.month) break;
+      const nx = findNextMonth();
+      if (!nx) break;
+      nx.click();
+      await sleep(600);
+    }
+    const dayEl = await waitFor(() => findDay(d.day), 8000);
+    if (!dayEl) { say(`달력에서 ${d.month}월 ${d.day}일을 찾지 못했어요. 직접 골라 주세요.`); return false; }
+    dayEl.scrollIntoView({ block: 'center' });
+    dayEl.click();
+    if (!t) { say(`${d.month}월 ${d.day}일을 골랐어요. 시간을 골라 주세요.`); return false; }
+    const tEl = await waitFor(() => findTime(t), 8000);
+    const label = `${t.h}:${String(t.m).padStart(2, '0')}`;
+    if (!tEl) { say(`${d.month}월 ${d.day}일을 골랐는데 ${label} 시간을 찾지 못했어요. 직접 골라 주세요.`); return false; }
+    // 시간 칸 둘레(바로 위 몇 단계)에 "마감" 같은 글자가 있으면 고르지 않습니다
+    let closed = tEl.disabled;
+    for (let a = tEl, i = 0; a && i < 4 && !closed; a = a.parentElement, i++) {
+      const txt = a.innerText || '';
+      if (txt.length > 40 || (txt.match(/\d{1,2}\s*(:|시)\s*\d{0,2}/g) || []).length > 1) break; // 다른 시간 칸까지 품으면 멈춤
+      closed = BAD.test(a.innerText || '') || /disable|soldout|\bclose|\boff\b/i.test(typeof a.className === 'string' ? a.className : '');
+    }
+    if (closed) {
+      say(`${d.month}월 ${d.day}일 ${label}은(는) 이미 마감인 것 같아요. 다른 시간을 직접 골라 주세요.`);
+      return false;
+    }
+    tEl.scrollIntoView({ block: 'center' });
+    tEl.click();
+    await sleep(300);
+    const nx = await waitFor(findNext, 5000);
+    if (!nx) { say(`${d.month}월 ${d.day}일 ${label}을 골랐어요. NEXT를 직접 눌러 주세요.`); return false; }
+    sessionStorage.setItem(FLOW_KEY, String(Date.now()));
+    nx.click();
+    say(`${d.month}월 ${d.day}일 ${label}을 고르고 NEXT를 눌렀어요. 내 정보를 채우는 중…`);
+    return true;
+  }
+  // NEXT를 누른 뒤 입력칸이 나타나면 내 정보를 채웁니다 (같은 화면이든 새 화면이든)
+  async function fillAfterNext() {
+    const ok = await waitFor(() => fillAll(true) || null, 10000);
+    sessionStorage.removeItem(FLOW_KEY);
+    if (!ok) say('NEXT 뒤에 이름·전화번호 칸을 찾지 못했어요. [내 정보 채우기]를 눌러 보세요.');
+    else say('내 정보를 채웠어요! 내용을 확인하고 예약 버튼은 직접 눌러 주세요.');
+  }
+
   let picking = false;
   async function autoPick() {
     const branch = $('br').value, theme = $('th').value.trim();
     if (picking || !branch || !/reserv/i.test(location.pathname)) return;
     picking = true;
-    if (await waitAndChoose(branch, '지점')) {
-      say(`지점 "${branch}"을(를) 골랐어요.` + (theme ? ' 테마를 찾는 중…' : ' 테마·날짜·시간을 골라 주세요.'));
-      if (theme && await waitAndChoose(theme, '테마')) say(`지점 "${branch}", 테마 "${theme}"을(를) 골랐어요. 날짜·시간을 골라 주세요.`);
+    // 방금 NEXT를 눌러 넘어온 화면이면 고르기는 건너뛰고 채우기만 합니다
+    const flow = +sessionStorage.getItem(FLOW_KEY);
+    if (flow && Date.now() - flow < 30000) return fillAfterNext();
+    // 고를 때 화면이 새로 열리는 사이트라면, 20초 안에 이미 고른 단계는 다시 고르지 않습니다
+    const STEP_KEY = '__keHelperStep';
+    let step = {};
+    try { step = JSON.parse(sessionStorage.getItem(STEP_KEY)) || {}; } catch (e) {}
+    if (!step.at || Date.now() - step.at > 20000) step = {};
+    const mark = (n) => sessionStorage.setItem(STEP_KEY, JSON.stringify({ n, at: Date.now() }));
+    if (!(step.n >= 1)) {
+      mark(1);
+      if (!(await waitAndChoose(branch, '지점'))) return;
+      say(`지점 "${branch}"을(를) 골랐어요.` + (theme ? ' 테마를 찾는 중…' : ''));
+      await sleep(400);
     }
+    if (theme && !(step.n >= 2)) {
+      mark(2);
+      if (!(await waitAndChoose(theme, '테마'))) return;
+      say(`지점 "${branch}", 테마 "${theme}"을(를) 골랐어요.`);
+    }
+    if (step.n >= 4) { say('날짜·시간을 직접 골라 주세요.'); return; }
+    mark(step.n === 3 ? 4 : 3);
+    if (!$('dt').value.trim()) { say(`지점 "${branch}"` + (theme ? `, 테마 "${theme}"` : '') + '을(를) 골랐어요. 날짜·시간을 골라 주세요.'); return; }
+    await sleep(500);
+    if (await pickDateTime()) fillAfterNext();
   }
 
   // ---------- 시작 ----------
