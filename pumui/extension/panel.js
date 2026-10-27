@@ -247,6 +247,16 @@ async function callClaude(content, signal) {
 
 async function activeTab() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  // 처음부터 허락받은 곳은 4개 쇼핑몰과 에듀파인(go.kr)뿐이다.
+  // 다른 사이트는 그 사이트 하나만 쓰겠다고 그때 물어본다.
+  if (tab && /^https?:/.test(tab.url || "")) {
+    const origins = [new URL(tab.url).origin + "/*"];
+    if (!(await chrome.permissions.contains({ origins })) &&
+        !(await chrome.permissions.request({ origins }).catch(() => false))) {
+      say("readState", "이 사이트를 읽도록 허락해야 쓸 수 있어요.", "err");
+      return null;
+    }
+  }
   return tab;
 }
 
