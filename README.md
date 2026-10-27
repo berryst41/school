@@ -16,7 +16,7 @@
 ## ✨ 한눈에 보기
 
 <table>
-<tr><th align="left">도구 <sub>(누르면 설명으로)</sub></th><th align="left">이럴 때 써요</th><th>바로가기</th></tr>
+<tr><th align="left">도구 <sub>(누르면 설명으로)</sub></th><th align="left">이럴 때 써요</th><th width="80">열기</th></tr>
 <tr><td colspan="3"><b>💼 업무에 쓰는 도구</b></td></tr>
 <tr>
 <td>📘 <a href="#claude-guide"><b>처음 써 보는 Claude</b></a></td>
