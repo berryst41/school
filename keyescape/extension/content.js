@@ -128,6 +128,7 @@
     <label><span>전화번호</span><input type="tel" id="ph" placeholder="010-1234-5678"></label>
     <label><span>인원</span><input type="number" id="pp" min="1" max="20"></label>
     <label><input type="checkbox" id="auto"> 입력칸이 나타나면 자동으로 채우기</label>
+    <label><input type="checkbox" id="agree"> 필수 동의 칸도 체크하기 (마케팅 동의는 빼고)</label>
     <button class="big" id="fill">내 정보 채우기</button>
     <div class="msg" id="msg">예약 신청 버튼은 직접 눌러 주세요.</div>
   </div>
@@ -157,6 +158,7 @@
     $('ph').value = me.phone || '';
     $('pp').value = me.people || '';
     $('auto').checked = !!me.auto;
+    $('agree').checked = !!me.agree;
     const last = (await get('lastTime')) || {};
     if (last.at) $('at').value = last.at;
     if (last.lag != null) $('lag').value = last.lag;
@@ -171,8 +173,9 @@
     if (pick.on) autoPick();
     if (me.auto) watchForForm();
   })();
-  const saveMe = () => set({ me: { name: $('nm').value.trim(), phone: $('ph').value.trim(), people: $('pp').value.trim(), auto: $('auto').checked } });
+  const saveMe = () => set({ me: { name: $('nm').value.trim(), phone: $('ph').value.trim(), people: $('pp').value.trim(), auto: $('auto').checked, agree: $('agree').checked } });
   ['nm', 'ph', 'pp'].forEach((id) => $(id).addEventListener('change', saveMe));
+  $('agree').onchange = saveMe;
   $('auto').onchange = () => { saveMe(); if ($('auto').checked) watchForForm(); };
 
   // ---------- 정시 새로고침 ----------
@@ -315,6 +318,7 @@
       }
       if (ok) done.push('전화번호');
     }
+    if (done.length && $('agree').checked && checkAgree()) done.push('필수 동의');
     if (!quiet || done.length) {
       say(done.length
         ? `${done.join(', ')}을(를) 채웠어요. 내용을 확인하고 예약 버튼은 직접 눌러 주세요.`
@@ -323,6 +327,38 @@
     return done.length;
   }
   $('fill').onclick = () => { saveMe(); fillAll(false); };
+
+  // 필수 동의 칸(개인정보·결제 주의사항·이용약관)만 체크합니다. 마케팅·선택 동의는 건드리지 않습니다.
+  // 체크칸 바로 옆 글자(다음 체크칸 전까지)를 읽습니다
+  function checkText(el) {
+    const lab = el.closest('label') || (el.id && el.ownerDocument.querySelector(`label[for="${CSS.escape(el.id)}"]`));
+    if (lab && lab.textContent.trim()) return lab.textContent.replace(/\s+/g, ' ');
+    let t = '';
+    for (let n = el.nextSibling; n && t.length < 60; n = n.nextSibling) {
+      if (n.nodeType === 1 && (n.matches('input') || n.querySelector('input'))) break;
+      t += ' ' + (n.textContent || '');
+    }
+    if (t.trim()) return t.replace(/\s+/g, ' ');
+    const p = el.parentElement;
+    return p && p.querySelectorAll('input[type=checkbox]').length === 1 ? (p.innerText || '').replace(/\s+/g, ' ') : '';
+  }
+  function checkAgree() {
+    let all = null, any = false;
+    for (const d of docs()) {
+      for (const el of d.querySelectorAll('input[type=checkbox]')) {
+        if (host.contains(el) || el.disabled) continue;
+        const t = checkText(el);
+        if (/전체\s*동의|모두\s*동의|전체\s*선택/.test(t)) { all = el; continue; }
+        if (/마케팅|선택\)|\(선택|광고|수신/.test(t)) continue;
+        if (/동의|개인정보|약관|주의사항|이용안내/.test(t)) {
+          if (!el.checked) el.click();
+          any = true;
+        }
+      }
+    }
+    if (!any && all && !all.checked) { all.click(); any = true; }
+    return any;
+  }
 
   // 입력칸이 새로 나타나면 한 번 채웁니다
   let watching = false;
