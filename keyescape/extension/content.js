@@ -25,7 +25,7 @@
     {
       id: 'zeroworld', host: /(^|\.)zeroworldkorea\.com$/, name: '제로월드', page: /go=rev\.make/,
       branches: [['김포본점', ''], ['강남점', ''], ['홍대점', ''], ['다이브 건대점', '']],
-      noFill: '제로월드는 이름·전화번호를 직접 적도록 막아 두었어요. 시간까지 골라 드릴게요. 내 정보와 그림 글자는 직접 적어 주세요.',
+      noFill: '제로월드는 이름·전화번호를 직접 적도록 막아 두었어요. 이름 칸에 커서를 놓아 두었으니 바로 적어 주세요. 그림 글자도 직접 적어 주세요.',
     },
     // 지점·날짜는 주소로 바뀌고, 테마마다 시간 목록이 붙어 있는 화면 (매일 일주일 치 오픈)
     {
@@ -36,10 +36,11 @@
         ['서면던전 레드', '21:00:00'],
       ],
     },
-    // 아래 사이트는 아직 화면을 확인하지 못해서 서버 시계·정시 새로고침·내 정보 채우기만 씁니다.
-    { id: 'dpsnnn', host: /(^|\.)dpsnnn\.com$/, name: 'dpsnnn.com', branches: [], basic: true },
-    { id: 'doloescape', host: /(^|\.)doloescape\.co\.kr$/, name: 'doloescape.co.kr', branches: [], basic: true },
-    { id: 'thefrank', host: /(^|\.)thefrank\.co\.kr$/, name: 'thefrank.co.kr', branches: [], basic: true },
+    // 아래 두 곳은 제로월드와 같은 예약 화면(home.php?go=rev.make)을 씁니다. 지점이 여럿이면 그 지점 예약 화면을 열어 두세요.
+    { id: 'doloescape', host: /(^|\.)doloescape\.co\.kr$/, name: 'doloescape', page: /go=rev\.make/, branches: [] },
+    { id: 'thefrank', host: /(^|\.)thefrank\.co\.kr$/, name: 'thefrank', page: /go=rev\.make/, branches: [] },
+    // 화면을 직접 확인하지 못한 사이트: 테마·날짜·시간 찾기를 일반 방식으로 해 봅니다
+    { id: 'dpsnnn', host: /(^|\.)dpsnnn\.com$/, name: 'dpsnnn', page: /^\/reserve/, branches: [] },
   ];
   const SITE = SITES.find((s) => s.host.test(location.hostname)) || { id: 'other', name: location.hostname, branches: [], basic: true };
   const BRANCHES = SITE.branches;
@@ -151,6 +152,7 @@
     <label><span>이름</span><input type="text" id="nm"></label>
     <label><span>전화번호</span><input type="tel" id="ph" placeholder="010-1234-5678"></label>
     <label><span>인원</span><input type="number" id="pp" min="1" max="20"></label>
+    <label><span>예약 비번</span><input type="password" id="pw" inputmode="numeric" maxlength="8" placeholder="예약 비밀번호 (묻는 사이트만)"></label>
     <label><input type="checkbox" id="auto"> 입력칸이 나타나면 자동으로 채우기</label>
     <label><input type="checkbox" id="agree"> 필수 동의 칸도 체크하기 (마케팅 동의는 빼고)</label>
     <button class="big" id="fill">내 정보 채우기</button>
@@ -181,6 +183,7 @@
     $('nm').value = me.name || '';
     $('ph').value = me.phone || '';
     $('pp').value = me.people || '';
+    $('pw').value = me.pin || '';
     $('auto').checked = !!me.auto;
     $('agree').checked = !!me.agree;
     const last = (await get(KEY('lastTime'))) || {};
@@ -198,8 +201,8 @@
     if (pick.on) autoPick();
     if (me.auto) watchForForm();
   })();
-  const saveMe = () => set({ me: { name: $('nm').value.trim(), phone: $('ph').value.trim(), people: $('pp').value.trim(), auto: $('auto').checked, agree: $('agree').checked } });
-  ['nm', 'ph', 'pp'].forEach((id) => $(id).addEventListener('change', saveMe));
+  const saveMe = () => set({ me: { name: $('nm').value.trim(), phone: $('ph').value.trim(), people: $('pp').value.trim(), pin: $('pw').value.trim(), auto: $('auto').checked, agree: $('agree').checked } });
+  ['nm', 'ph', 'pp', 'pw'].forEach((id) => $(id).addEventListener('change', saveMe));
   $('agree').onchange = saveMe;
   $('auto').onchange = () => { saveMe(); if ($('auto').checked) watchForForm(); };
 
@@ -310,14 +313,22 @@
     const name = $('nm').value.trim();
     const phone = $('ph').value.replace(/[^\d]/g, '');
     const people = $('pp').value.trim();
+    const pin = $('pw').value.trim();
     if (SITE.noFill) { if (!quiet) say(SITE.noFill); return 0; }
     if (!name && !phone && !people) { if (!quiet) say('먼저 ② 내 정보를 적어 주세요.'); return 0; }
 
-    const found = { name: [], phone: [], people: [] };
+    const found = { name: [], phone: [], people: [], pin: [] };
     for (const d of docs()) {
       for (const el of d.querySelectorAll('input,select,textarea')) {
         if (!visible(el) || el.disabled || el.readOnly) continue;
         const type = (el.type || '').toLowerCase();
+        // 예약 비밀번호 칸(판타스트릭 등). 로그인·기존 비밀번호 칸은 건드리지 않습니다.
+        if (type === 'password') {
+          if (host.contains(el)) continue;
+          const t = labelText(el);
+          if (/비밀번호|비번|pin|password/i.test(t) && !/로그인|login|현재|기존|아이디/i.test(t)) found.pin.push(el);
+          continue;
+        }
         if (['hidden', 'checkbox', 'radio', 'submit', 'button', 'image', 'file', 'password'].includes(type)) continue;
         if (host.contains(el)) continue;
         const t = labelText(el);
@@ -331,6 +342,7 @@
     const done = [];
     if (name && found.name.length) { found.name.forEach((el) => setValue(el, name)); done.push('이름'); }
     if (people && found.people.length && found.people.some((el) => setValue(el, people))) done.push('인원');
+    if (pin && found.pin.length && found.pin.every((el) => setValue(el, pin))) done.push('예약 비밀번호');
     if (phone && found.phone.length) {
       const f = found.phone;
       const parts = phone.length === 11 ? [phone.slice(0, 3), phone.slice(3, 7), phone.slice(7)]
@@ -636,6 +648,10 @@
     }
     if (SITE.noFill) {
       sessionStorage.removeItem(FLOW_KEY);
+      // 바로 타자를 칠 수 있게 이름 칸에 글자 막대(커서)를 놓아 둡니다
+      const nameBox = [...document.querySelectorAll('input[type=text],input:not([type])')].find((el) =>
+        visible(el) && !el.disabled && !el.readOnly && RX.name.test(labelText(el)) && !RX.skip.test(labelText(el)));
+      if (nameBox) { nameBox.scrollIntoView({ block: 'center' }); nameBox.focus(); }
       say(`${dayLabel} ${label}을 골랐어요. ${SITE.noFill}`);
       return false;
     }
