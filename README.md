@@ -15,20 +15,36 @@
 
 ## ✨ 한눈에 보기
 
-#### 💼 업무에 쓰는 도구
-
-| | 도구 <sub>(누르면 설명으로)</sub> | 이럴 때 써요 | 바로가기 |
-|:---:|:---|:---|:---:|
-| 📘 | **[처음 써 보는 Claude](#claude-guide)** | AI가 처음인 선생님이 가정통신문·평어·수업 준비에 Claude를 써 볼 때 (PDF 안내서) | [**📖 바로 보기**](https://berryst41.github.io/school/docs/claude-guide.pdf) |
-| 🧾 | **[품의 기안 도우미](#pumui)** | 쇼핑몰 장바구니로 품의 기안을 쓰고 K-에듀파인에 바로 채울 때 (선생님용 크롬 확장 프로그램) | [**⬇️ 내려받기**](https://github.com/berryst41/school/raw/main/pumui/pumui-extension.zip) |
-| 🖥️ | **[메인 모니터로 열기](#main-monitor)** | 듀얼 모니터(노트북 + 전자칠판)에서 한글·엑셀이 늘 메인 모니터에서 열리게 할 때 (선생님용 윈도우 프로그램) | [**⬇️ 내려받기**](https://github.com/berryst41/school/raw/main/main-monitor/main-monitor.zip) |
-
-#### 🧑‍🏫 수업에 쓰는 도구
-
-| | 도구 <sub>(누르면 설명으로)</sub> | 이럴 때 써요 | 바로가기 |
-|:---:|:---|:---|:---:|
-| 📮 | **[자료 공유 사이트](#share)** | 사진·영상·파일을 QR코드로 학생들에게 나눠 줄 때 | [**📂 열기**](https://berryst41.github.io/school/share/) |
-| 🐵💣 | **[폭탄원숭이](#bomb)** | 장애이해교육 시간에 3명이 협동해서 폭탄을 해체하는 게임 | [**🎮 게임 하기**](https://berryst41.github.io/school/) |
+<table>
+<tr><th align="left">도구 <sub>(누르면 설명으로)</sub></th><th align="left">이럴 때 써요</th><th>바로가기</th></tr>
+<tr><td colspan="3"><b>💼 업무에 쓰는 도구</b></td></tr>
+<tr>
+<td>📘 <a href="#claude-guide"><b>처음 써 보는 Claude</b></a></td>
+<td>AI가 처음인 선생님을 위한 Claude 안내서 (PDF)</td>
+<td align="center"><a href="https://berryst41.github.io/school/docs/claude-guide.pdf"><b>📖 보기</b></a></td>
+</tr>
+<tr>
+<td>🧾 <a href="#pumui"><b>품의 기안 도우미</b></a></td>
+<td>쇼핑몰 장바구니로 품의 기안을 쓰고 에듀파인에 바로 채워요 (크롬 확장 프로그램)</td>
+<td align="center"><a href="https://github.com/berryst41/school/raw/main/pumui/pumui-extension.zip"><b>⬇️ 받기</b></a></td>
+</tr>
+<tr>
+<td>🖥️ <a href="#main-monitor"><b>메인 모니터로 열기</b></a></td>
+<td>듀얼 모니터에서 한글·엑셀이 늘 메인 모니터에 열려요 (윈도우 프로그램)</td>
+<td align="center"><a href="https://github.com/berryst41/school/raw/main/main-monitor/main-monitor.zip"><b>⬇️ 받기</b></a></td>
+</tr>
+<tr><td colspan="3"><b>🧑‍🏫 수업에 쓰는 도구</b></td></tr>
+<tr>
+<td>📮 <a href="#share"><b>자료 공유 사이트</b></a></td>
+<td>사진·영상·파일을 QR코드로 학생들과 나눠요</td>
+<td align="center"><a href="https://berryst41.github.io/school/share/"><b>📂 열기</b></a></td>
+</tr>
+<tr>
+<td>🐵💣 <a href="#bomb"><b>폭탄원숭이</b></a></td>
+<td>3명이 협동해서 폭탄을 해체하는 장애이해교육 게임</td>
+<td align="center"><a href="https://berryst41.github.io/school/"><b>🎮 하기</b></a></td>
+</tr>
+</table>
 
 <br>
 
@@ -242,9 +258,12 @@
 <summary>📸 <b>원숭이별 게임 화면 보기</b> (눌러서 펼치기)</summary>
 <br>
 
-| 🙊 | 🙉 | 🙈 |
-|:---:|:---:|:---:|
-| <img src="images/mute.png" width="220"> | <img src="images/deaf.png" width="220"> | <img src="images/blind.png" width="220"> |
+<p align="center">
+<img src="images/mute.png" width="32%" alt="🙊 말을 못 하는 원숭이 화면">
+<img src="images/deaf.png" width="32%" alt="🙉 안 들리는 원숭이 화면">
+<img src="images/blind.png" width="32%" alt="🙈 안 보이는 원숭이 화면">
+<br>🙊 · 🙉 · 🙈
+</p>
 
 </details>
 
