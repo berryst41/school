@@ -17,11 +17,11 @@
 
 | | 도구 <sub>(누르면 설명으로)</sub> | 이럴 때 써요 | 바로가기 |
 |:---:|:---|:---|:---:|
-| 🐵💣 | **[폭탄원숭이](#bomb)** | 장애이해교육 시간에 3명이 협동해서 폭탄을 해체하는 게임 | [**🎮 게임 하기**](https://berryst41.github.io/school/) |
+| 📘 | **[처음 써 보는 Claude](#claude-guide)** | AI가 처음인 선생님이 가정통신문·평어·수업 준비에 Claude를 써 볼 때 (PDF 안내서) | [**📖 바로 보기**](https://berryst41.github.io/school/docs/claude-guide.pdf) |
 | 📮 | **[자료 공유 사이트](#share)** | 사진·영상·파일을 QR코드로 학생들에게 나눠 줄 때 | [**📂 열기**](https://berryst41.github.io/school/share/) |
 | 🧾 | **[품의 기안 도우미](#pumui)** | 쇼핑몰 장바구니로 품의 기안을 쓰고 K-에듀파인에 바로 채울 때 (선생님용 크롬 확장 프로그램) | [**⬇️ 내려받기**](https://github.com/berryst41/school/raw/main/pumui/pumui-extension.zip) |
 | 🖥️ | **[메인 모니터로 열기](#main-monitor)** | 듀얼 모니터(노트북 + 전자칠판)에서 한글·엑셀이 늘 메인 모니터에서 열리게 할 때 (선생님용 윈도우 프로그램) | [**⬇️ 내려받기**](https://github.com/berryst41/school/raw/main/main-monitor/main-monitor.zip) |
-| 📘 | **[처음 써 보는 Claude](#claude-guide)** | AI가 처음인 선생님이 가정통신문·평어·수업 준비에 Claude를 써 볼 때 (PDF 안내서) | [**📖 바로 보기**](https://berryst41.github.io/school/docs/claude-guide.pdf) |
+| 🐵💣 | **[폭탄원숭이](#bomb)** | 장애이해교육 시간에 3명이 협동해서 폭탄을 해체하는 게임 | [**🎮 게임 하기**](https://berryst41.github.io/school/) |
 
 <br>
 
@@ -30,72 +30,40 @@
 
 ---
 
-<a id="bomb"></a>
+<a id="claude-guide"></a>
 
-### 🐵💣 폭탄원숭이
+### 📘 처음 써 보는 Claude
 
 <details>
 <summary>👉 <b>눌러서 펼치기</b></summary>
 
-> **세 원숭이가 힘을 합쳐 폭탄을 해체하는 협동 게임**
-> 서로 다른 어려움을 가진 친구들이 어떻게 도우며 함께할 수 있는지 몸으로 느껴 보는 게임이에요.
+> **AI가 처음인 초등 선생님을 위한 Claude 학교 업무 첫걸음 (76쪽 PDF)**
+> 가입부터 가정통신문, 평어, 수업 준비까지 복사해서 바로 쓰는 요청문과 답변 예시로 차근차근 알려 줘요.
+
+<a href="https://berryst41.github.io/school/docs/claude-guide.pdf"><img src="docs/claude-guide-cover.png" width="260" alt="처음 써 보는 Claude 표지"></a>
+
+| 보는 방법 | |
+|:---|:---|
+| 🌐 **[브라우저에서 바로 보기](https://berryst41.github.io/school/docs/claude-guide.pdf)** | 휴대폰·태블릿·컴퓨터 어디서나 바로 열려요 |
+| 🐙 **[깃허브 화면에서 보기](https://github.com/berryst41/school/blob/main/docs/claude-guide.pdf)** | 깃허브 안에서 쪽 넘기며 볼 수 있어요 |
+| ⬇️ **[내려받기](https://github.com/berryst41/school/raw/main/docs/claude-guide.pdf)** | 파일로 저장해 두고 싶을 때 |
 
 <details>
-<summary><b>🙊 🙉 🙈 세 원숭이</b></summary>
+<summary><b>📑 차례</b></summary>
 <br>
 
-| 🙊 말을 못 하는 원숭이 | 🙉 안 들리는 원숭이 | 🙈 안 보이는 원숭이 |
-|:---:|:---:|:---:|
-| 📖 **설명서**를 가지고 있어요 | 👀 폭탄을 **색까지** 볼 수 있어요 | ✋ 폭탄을 **만질 수 있는** 유일한 원숭이 |
-| 마이크가 꺼져서<br>감정표현으로만 알려 줘요 | 아무 소리도 들리지 않고<br>점자는 못 읽어요 | 세상이 까맣고<br>숫자는 점자로만 보여요 |
-
-<details>
-<summary>📸 <b>원숭이별 게임 화면 보기</b> (눌러서 펼치기)</summary>
-<br>
-
-| 🙊 | 🙉 | 🙈 |
-|:---:|:---:|:---:|
-| <img src="images/mute.png" width="220"> | <img src="images/deaf.png" width="220"> | <img src="images/blind.png" width="220"> |
-
-</details>
-
-> [!IMPORTANT]
-> 세 명이 **모두** 도와야만 폭탄을 해체할 수 있어요.
-
-</details>
-
-<details>
-<summary><b>🕹️ 시작하는 방법</b></summary>
-<br>
-
-| 순서 | 할 일 |
+| | 내용 |
 |:---:|:---|
-| 1️⃣ | **3명**이 각자 기기로 [게임 링크](https://berryst41.github.io/school/)에 들어가요 |
-| 2️⃣ | 한 명이 **방 만들기**를 누르고, **방 번호 4자리**를 친구들에게 알려 줘요 |
-| 3️⃣ | 친구들은 방 번호를 넣고 **들어가기**를 눌러요 |
-| 4️⃣ | 모두 🎧 **이어폰**을 끼고 **음성 채팅 켜기**를 눌러요 (마이크 허용 창이 뜨면 **허용**) |
-| 5️⃣ | **게임 시작!** 역할은 단계마다 랜덤으로 바뀌어요 |
-
-> [!TIP]
-> 혼자 미리 살펴보고 싶으면 **한 기기로 연습하기**를 눌러 보세요. 세 역할을 모두 볼 수 있어요.
-
-</details>
-
-<details>
-<summary><b>💣 게임 규칙</b></summary>
-<br>
-
-| 걸린 시간 | 등급 | 점수 |
-|:---:|:---:|:---:|
-| ⏱️ 3분 안 | 🥇 **A** | 100점 |
-| ⏱️ 5분 안 | 🥈 **B** | 70점 |
-| ⏱️ 7분 안 | 🥉 **C** | 40점 |
-
-- 모두 **20단계**예요.
-- **7분**이 지나거나 실수를 **3번** 하면 💥 폭탄이 터지고, 라운드별 점수가 나오는 결과 화면이 떠요.
-- 폭탄 종류: ✂️ 선 자르기 · 🔴 버튼 · 🔊 소리 · 💡 모스부호 · 🔣 문양
-- 높은 단계에서는 폭탄이 **최대 3종류**까지 한꺼번에 나와요.
-- **5단계부터** 🙈 원숭이는 안전장치가 줄어들지 않게 계속 펌프를 눌러야 해요.
+| PART 0 | 시작하기 전에 Claude와 친해지기 |
+| PART 1 | 학부모 안내 · 가정통신문과 학급 소식 |
+| PART 2 | 행정 · 업무 문서 기안부터 결과보고까지 |
+| PART 3 | 성적 처리 시즌 평어와 행동특성 |
+| PART 4 | 수업 준비 · 설계에서 학습지까지 |
+| PART 5 | 교실 도구와 학습 게임 직접 만들기 |
+| PART 6 | Claude 200% 쓰기 · 프로젝트·스킬·파일·앱 |
+| PART 7 | 자잘하지만 확실한 꿀팁 100 |
+| PART 8 | 안심하고 쓰는 체크리스트 |
+| 부록 | 한 해 업무 달력과 한 줄 요청문 모음 |
 
 </details>
 
@@ -238,40 +206,72 @@
 
 </details>
 
-<a id="claude-guide"></a>
+<a id="bomb"></a>
 
-### 📘 처음 써 보는 Claude
+### 🐵💣 폭탄원숭이
 
 <details>
 <summary>👉 <b>눌러서 펼치기</b></summary>
 
-> **AI가 처음인 초등 선생님을 위한 Claude 학교 업무 첫걸음 (76쪽 PDF)**
-> 가입부터 가정통신문, 평어, 수업 준비까지 복사해서 바로 쓰는 요청문과 답변 예시로 차근차근 알려 줘요.
-
-<a href="https://berryst41.github.io/school/docs/claude-guide.pdf"><img src="docs/claude-guide-cover.png" width="260" alt="처음 써 보는 Claude 표지"></a>
-
-| 보는 방법 | |
-|:---|:---|
-| 🌐 **[브라우저에서 바로 보기](https://berryst41.github.io/school/docs/claude-guide.pdf)** | 휴대폰·태블릿·컴퓨터 어디서나 바로 열려요 |
-| 🐙 **[깃허브 화면에서 보기](https://github.com/berryst41/school/blob/main/docs/claude-guide.pdf)** | 깃허브 안에서 쪽 넘기며 볼 수 있어요 |
-| ⬇️ **[내려받기](https://github.com/berryst41/school/raw/main/docs/claude-guide.pdf)** | 파일로 저장해 두고 싶을 때 |
+> **세 원숭이가 힘을 합쳐 폭탄을 해체하는 협동 게임**
+> 서로 다른 어려움을 가진 친구들이 어떻게 도우며 함께할 수 있는지 몸으로 느껴 보는 게임이에요.
 
 <details>
-<summary><b>📑 차례</b></summary>
+<summary><b>🙊 🙉 🙈 세 원숭이</b></summary>
 <br>
 
-| | 내용 |
+| 🙊 말을 못 하는 원숭이 | 🙉 안 들리는 원숭이 | 🙈 안 보이는 원숭이 |
+|:---:|:---:|:---:|
+| 📖 **설명서**를 가지고 있어요 | 👀 폭탄을 **색까지** 볼 수 있어요 | ✋ 폭탄을 **만질 수 있는** 유일한 원숭이 |
+| 마이크가 꺼져서<br>감정표현으로만 알려 줘요 | 아무 소리도 들리지 않고<br>점자는 못 읽어요 | 세상이 까맣고<br>숫자는 점자로만 보여요 |
+
+<details>
+<summary>📸 <b>원숭이별 게임 화면 보기</b> (눌러서 펼치기)</summary>
+<br>
+
+| 🙊 | 🙉 | 🙈 |
+|:---:|:---:|:---:|
+| <img src="images/mute.png" width="220"> | <img src="images/deaf.png" width="220"> | <img src="images/blind.png" width="220"> |
+
+</details>
+
+> [!IMPORTANT]
+> 세 명이 **모두** 도와야만 폭탄을 해체할 수 있어요.
+
+</details>
+
+<details>
+<summary><b>🕹️ 시작하는 방법</b></summary>
+<br>
+
+| 순서 | 할 일 |
 |:---:|:---|
-| PART 0 | 시작하기 전에 Claude와 친해지기 |
-| PART 1 | 학부모 안내 · 가정통신문과 학급 소식 |
-| PART 2 | 행정 · 업무 문서 기안부터 결과보고까지 |
-| PART 3 | 성적 처리 시즌 평어와 행동특성 |
-| PART 4 | 수업 준비 · 설계에서 학습지까지 |
-| PART 5 | 교실 도구와 학습 게임 직접 만들기 |
-| PART 6 | Claude 200% 쓰기 · 프로젝트·스킬·파일·앱 |
-| PART 7 | 자잘하지만 확실한 꿀팁 100 |
-| PART 8 | 안심하고 쓰는 체크리스트 |
-| 부록 | 한 해 업무 달력과 한 줄 요청문 모음 |
+| 1️⃣ | **3명**이 각자 기기로 [게임 링크](https://berryst41.github.io/school/)에 들어가요 |
+| 2️⃣ | 한 명이 **방 만들기**를 누르고, **방 번호 4자리**를 친구들에게 알려 줘요 |
+| 3️⃣ | 친구들은 방 번호를 넣고 **들어가기**를 눌러요 |
+| 4️⃣ | 모두 🎧 **이어폰**을 끼고 **음성 채팅 켜기**를 눌러요 (마이크 허용 창이 뜨면 **허용**) |
+| 5️⃣ | **게임 시작!** 역할은 단계마다 랜덤으로 바뀌어요 |
+
+> [!TIP]
+> 혼자 미리 살펴보고 싶으면 **한 기기로 연습하기**를 눌러 보세요. 세 역할을 모두 볼 수 있어요.
+
+</details>
+
+<details>
+<summary><b>💣 게임 규칙</b></summary>
+<br>
+
+| 걸린 시간 | 등급 | 점수 |
+|:---:|:---:|:---:|
+| ⏱️ 3분 안 | 🥇 **A** | 100점 |
+| ⏱️ 5분 안 | 🥈 **B** | 70점 |
+| ⏱️ 7분 안 | 🥉 **C** | 40점 |
+
+- 모두 **20단계**예요.
+- **7분**이 지나거나 실수를 **3번** 하면 💥 폭탄이 터지고, 라운드별 점수가 나오는 결과 화면이 떠요.
+- 폭탄 종류: ✂️ 선 자르기 · 🔴 버튼 · 🔊 소리 · 💡 모스부호 · 🔣 문양
+- 높은 단계에서는 폭탄이 **최대 3종류**까지 한꺼번에 나와요.
+- **5단계부터** 🙈 원숭이는 안전장치가 줄어들지 않게 계속 펌프를 눌러야 해요.
 
 </details>
 
