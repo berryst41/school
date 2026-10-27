@@ -1,0 +1,41 @@
+# 무료 Supabase는 7일 동안 아무도 안 쓰면 잠들어요(일시정지).
+# 폭탄원숭이 게임과 자료 공유 사이트가 같은 Supabase를 쓰니까,
+# 매일 한 번 살짝 불러서 계속 깨어 있게 해요.
+name: 사이트 깨워 두기
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # 매일 오전 9시(한국 시간)
+  workflow_dispatch: # Actions 탭에서 직접 눌러 실행할 수도 있어요
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Supabase 깨우기
+        env:
+          SUPABASE_URL: https://bmfihlddiyfeejrdrigm.supabase.co
+          # 웹페이지에도 들어 있는 공개용(anon) 키예요.
+          SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtZmlobGRkaXlmZWVqcmRyaWdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyNTUwNzIsImV4cCI6MjEwNjgzMTA3Mn0.8EHC-CI5fz0yg9hF2Cp0uSfI1dZuUz5yS-MUaAdcCbc
+        run: |
+          for i in 1 2 3; do
+            code=$(curl -sS -o /dev/null -w "%{http_code}" \
+              "$SUPABASE_URL/rest/v1/room_messages?select=id&limit=1" \
+              -H "apikey: $SUPABASE_KEY" -H "Authorization: Bearer $SUPABASE_KEY" || true)
+            echo "응답 코드: $code"
+            [ "$code" = "200" ] && exit 0
+            sleep 30
+          done
+          echo "::error::Supabase가 응답하지 않아요. 이미 일시정지됐다면 Supabase 대시보드에서 Restore를 눌러 주세요."
+          exit 1
+
+      # GitHub은 저장소에 60일 동안 변화가 없으면 이 예약 작업을 저절로 꺼요.
+      # 매번 스스로 다시 켜 두어서 꺼지지 않게 해요.
+      - name: 예약 작업이 꺼지지 않게 다시 켜 두기
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/keepalive.yml/enable"
