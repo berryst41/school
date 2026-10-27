@@ -93,7 +93,7 @@
   .sub{font-size:12px;color:#777;text-align:center;margin-bottom:8px}
   h4{margin:10px 0 4px;font-size:13px;color:#ff6f61}
   label{display:flex;align-items:center;gap:6px;margin:4px 0;font-size:13px}
-  label>span{width:62px;flex:none}
+  label>span{width:74px;flex:none;white-space:nowrap}
   input[type=text],input[type=tel],input[type=number],select{flex:1;min-width:0;padding:5px 6px;border:1px solid #ccc;border-radius:6px;font:inherit}
   button{width:100%;margin-top:6px;padding:8px;border:0;border-radius:8px;background:#ff6f61;color:#fff;font:700 14px "Malgun Gothic",sans-serif;cursor:pointer}
   button.gray{background:#888}
