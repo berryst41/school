@@ -8,15 +8,20 @@
 
   // 키이스케이프 예약 안내에 적힌 지점별 예약 오픈 시간
   const BRANCHES = [
-    ['직접 입력', ''],
-    ['백산방역 09:30', '09:30:00'],
-    ['더오름점·우주라이크점·LOG_IN 1, 2 10:00', '10:00:00'],
-    ['메모리컴퍼니 10:30', '10:30:00'],
-    ['후즈데어 11:00', '11:00:00'],
-    ['STATION 11:30', '11:30:00'],
-    ['무비무드 13:30', '13:30:00'],
-    ['강남점·부산점·전주점 18:00', '18:00:00'],
-    ['홍대점 20:00', '20:00:00'],
+    ['강남점', '18:00:00'],
+    ['홍대점', '20:00:00'],
+    ['부산점', '18:00:00'],
+    ['전주점', '18:00:00'],
+    ['더오름점', '10:00:00'],
+    ['우주라이크점', '10:00:00'],
+    ['LOG_IN 1', '10:00:00'],
+    ['LOG_IN 2', '10:00:00'],
+    ['메모리컴퍼니', '10:30:00'],
+    ['후즈데어', '11:00:00'],
+    ['STATION', '11:30:00'],
+    ['무비무드', '13:30:00'],
+    ['백산방역', '09:30:00'],
+    ['에버랜드', ''],
   ];
   const KST = 9 * 3600 * 1000;
   const store = chrome.storage.local;
@@ -108,7 +113,9 @@
     <div class="sub" id="acc">서버 시간 맞추는 중…</div>
 
     <h4>① 정시 새로고침</h4>
-    <label><span>지점</span><select id="br">${BRANCHES.map(([n, v]) => `<option value="${v}">${n}</option>`).join('')}</select></label>
+    <label><span>지점</span><select id="br"><option value="">고르기</option>${BRANCHES.map(([n, v]) => `<option value="${n}">${n}${v ? ' ' + v.slice(0, 5) : ''}</option>`).join('')}</select></label>
+    <label><span>테마(선택)</span><input type="text" id="th" placeholder="테마 이름 (안 적어도 돼요)"></label>
+    <label><input type="checkbox" id="pick"> 이 지점·테마 저절로 고르기</label>
     <label><span>열리는 시각</span><input type="text" id="at" placeholder="10:00:00"></label>
     <label><span>여유(초)</span><input type="number" id="lag" step="0.1" min="0" max="5" value="0.3"></label>
     <div id="armbox"></div>
@@ -132,7 +139,14 @@
     box.classList.toggle('min');
     $('tg').textContent = box.classList.contains('min') ? '＋' : '－';
   };
-  $('br').onchange = () => { if ($('br').value) $('at').value = $('br').value; };
+  $('br').onchange = () => {
+    const b = BRANCHES.find(([n]) => n === $('br').value);
+    if (b && b[1]) $('at').value = b[1];
+    savePick();
+  };
+  const savePick = () => set({ pick: { branch: $('br').value, theme: $('th').value.trim(), on: $('pick').checked } });
+  $('th').addEventListener('change', savePick);
+  $('pick').onchange = () => { savePick(); if ($('pick').checked) autoPick(); };
 
   // 저장해 둔 정보 불러오기
   (async () => {
@@ -144,6 +158,13 @@
     const last = (await get('lastTime')) || {};
     if (last.at) $('at').value = last.at;
     if (last.lag != null) $('lag').value = last.lag;
+    const pick = (await get('pick')) || {};
+    $('br').value = pick.branch || '';
+    $('th').value = pick.theme || '';
+    $('pick').checked = !!pick.on;
+    const b = BRANCHES.find(([n]) => n === pick.branch);
+    if (!$('at').value && b && b[1]) $('at').value = b[1];
+    if (pick.on) autoPick();
     if (me.auto) watchForForm();
   })();
   const saveMe = () => set({ me: { name: $('nm').value.trim(), phone: $('ph').value.trim(), people: $('pp').value.trim(), auto: $('auto').checked } });
@@ -317,6 +338,64 @@
     // 입력칸이 바뀌면(다른 시간을 고르면) 다시 채울 수 있게
     document.addEventListener('click', () => { filled = false; }, true);
     check();
+  }
+
+  // ---------- 지점·테마 저절로 고르기 ----------
+  // 화면에서 글자가 지점(테마) 이름과 같은 버튼·링크·목록을 찾아 한 번 누릅니다.
+  const norm = (t) => (t || '').replace(/\s+/g, '').replace(/[_\-]/g, '').toLowerCase();
+  function findChoice(name) {
+    const want = norm(name);
+    const short = want.replace(/점$/, '');
+    if (!want) return null;
+    for (const sel of document.querySelectorAll('select')) {
+      if (host.contains(sel) || !visible(sel)) continue;
+      const o = [...sel.options].find((o) => norm(o.textContent) === want || norm(o.textContent) === short);
+      if (o) return { select: sel, option: o };
+    }
+    let best = null;
+    for (const el of document.querySelectorAll('a,button,li,label,td,span,div,p,img,[onclick]')) {
+      if (host.contains(el) || !visible(el)) continue;
+      const txt = norm(el.tagName === 'IMG' ? el.alt : el.innerText);
+      if (!txt || txt.length > want.length + 8) continue;
+      if (txt === want || txt === short || txt.startsWith(want) || (short.length >= 2 && txt.startsWith(short))) {
+        // 글자를 감싼 것 중 가장 작은(안쪽) 것을 고르고, 누를 수 있는 부모가 있으면 그것을 누릅니다
+        if (!best || best.contains(el)) best = el;
+      }
+    }
+    if (!best) return null;
+    return { el: best.closest('a,button,label,li,[onclick]') || best };
+  }
+  function choose(c) {
+    if (c.select) {
+      c.select.value = c.option.value;
+      c.select.dispatchEvent(new Event('change', { bubbles: true }));
+    } else {
+      c.el.scrollIntoView({ block: 'center' });
+      c.el.click();
+    }
+  }
+  // 이름이 화면에 나타날 때까지 최대 15초 기다립니다
+  function waitAndChoose(name, label) {
+    return new Promise((resolve) => {
+      const until = Date.now() + 15000;
+      const loop = () => {
+        const c = findChoice(name);
+        if (c) { choose(c); resolve(true); return; }
+        if (Date.now() > until) { say(`${label} "${name}"을(를) 화면에서 찾지 못했어요. 직접 골라 주세요.`); resolve(false); return; }
+        setTimeout(loop, 100);
+      };
+      loop();
+    });
+  }
+  let picking = false;
+  async function autoPick() {
+    const branch = $('br').value, theme = $('th').value.trim();
+    if (picking || !branch || !/reserv/i.test(location.pathname)) return;
+    picking = true;
+    if (await waitAndChoose(branch, '지점')) {
+      say(`지점 "${branch}"을(를) 골랐어요.` + (theme ? ' 테마를 찾는 중…' : ' 테마·날짜·시간을 골라 주세요.'));
+      if (theme && await waitAndChoose(theme, '테마')) say(`지점 "${branch}", 테마 "${theme}"을(를) 골랐어요. 날짜·시간을 골라 주세요.`);
+    }
   }
 
   // ---------- 시작 ----------
