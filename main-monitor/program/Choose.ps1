@@ -29,16 +29,16 @@ function Show-ProgramPicker {
     $form.MaximizeBox = $false; $form.MinimizeBox = $false
     $form.TopMost = $true
     $form.AutoScaleMode = 'Font'
-    $form.ClientSize = New-Object System.Drawing.Size(360, 430)
+    $form.ClientSize = New-Object System.Drawing.Size(360, 480)
 
     $label = New-Object System.Windows.Forms.Label
-    $label.Text = "메인 모니터에서 열리게 할 프로그램에`n체크해 주세요."
+    $label.Text = "메인 모니터에서 열리게 할 프로그램에`n체크해 주세요.`n`n※ 한쇼와 파워포인트는 끄는 걸 추천해요.`n   (발표는 전자칠판에 띄우는 경우가 많아서요)"
     $label.Location = New-Object System.Drawing.Point(20, 15)
-    $label.Size = New-Object System.Drawing.Size(320, 50)
+    $label.Size = New-Object System.Drawing.Size(330, 100)
     $form.Controls.Add($label)
 
     $boxes = [ordered]@{}
-    $y = 70
+    $y = 120
     foreach ($name in $ProgramChoices.Keys) {
         $cb = New-Object System.Windows.Forms.CheckBox
         $cb.Text = $name
