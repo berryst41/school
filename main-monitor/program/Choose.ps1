@@ -14,6 +14,9 @@ $ProgramChoices = [ordered]@{
     '아크로뱃(PDF)' = @('AcroRd32', 'Acrobat')
 }
 
+# 처음 설치할 때 체크를 빼 둘 프로그램 (발표는 전자칠판에 띄우는 경우가 많아서)
+$DefaultOff = @('한쇼', '파워포인트')
+
 # 고른 프로그램 이름 목록을 돌려줌 (취소하면 $null)
 function Show-ProgramPicker {
     Add-Type -AssemblyName System.Windows.Forms, System.Drawing
@@ -44,8 +47,12 @@ function Show-ProgramPicker {
         $cb.Text = $name
         $cb.Location = New-Object System.Drawing.Point(30, $y)
         $cb.Size = New-Object System.Drawing.Size(300, 32)
-        # 처음 설치할 때는 모두 체크, 그다음부터는 지난번에 고른 대로
-        $cb.Checked = ($saved.Count -eq 0) -or (@($ProgramChoices[$name] | Where-Object { $saved -contains $_ }).Count -gt 0)
+        # 처음 설치할 때는 한쇼·파워포인트만 빼고 체크, 그다음부터는 지난번에 고른 대로
+        if ($saved.Count -eq 0) {
+            $cb.Checked = $DefaultOff -notcontains $name
+        } else {
+            $cb.Checked = @($ProgramChoices[$name] | Where-Object { $saved -contains $_ }).Count -gt 0
+        }
         $form.Controls.Add($cb)
         $boxes[$name] = $cb
         $y += 36
