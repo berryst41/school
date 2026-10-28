@@ -3,17 +3,11 @@
 # 창이 처음 열릴 때 한 번만 옮기므로, 쓰는 도중에는 다른 모니터로 마음대로 옮겨도 됩니다.
 # 윈도우에 들어 있는 "UI 자동화" 기능만 사용합니다.
 
-# ▼ 메인 모니터에서 열리게 할 프로그램 목록 (원하면 이름을 더하거나 빼세요)
-$Targets = @(
-    'Hwp',       # 한글
-    'HCell',     # 한셀
-    'HShow',     # 한쇼
-    'HwpViewer', # 한글 뷰어
-    'EXCEL',     # 엑셀
-    'WINWORD',   # 워드
-    'POWERPNT',  # 파워포인트
-    'AcroRd32', 'Acrobat'  # PDF (아크로뱃)
-)
+# 메인 모니터에서 열리게 할 프로그램은 programs.txt 에 적혀 있어요.
+# (3_프로그램고르기.ps1 로 고르면 이 파일이 바뀌고, 몇 초 안에 알아서 다시 읽어요)
+# 파일이 없으면 아래 목록 전부에 적용해요.
+$AllTargets = @('Hwp', 'HwpViewer', 'HCell', 'HShow', 'EXCEL', 'WINWORD', 'POWERPNT', 'AcroRd32', 'Acrobat')
+$SettingsFile = Join-Path $env:LOCALAPPDATA 'MainMonitor\programs.txt'
 
 $Host.UI.RawUI.WindowTitle = '메인 모니터로 열기 (작동 중)'
 Write-Host ''
@@ -38,7 +32,16 @@ $MovePat = [System.Windows.Automation.TransformPattern]::Pattern
 $VState  = [System.Windows.Automation.WindowVisualState]
 
 $want = @{}
-foreach ($t in $Targets) { $want[$t.ToLower()] = $true }
+$settingsStamp = $null
+function Update-Targets {
+    $stamp = if (Test-Path $SettingsFile) { (Get-Item $SettingsFile).LastWriteTimeUtc } else { 'none' }
+    if ($stamp -eq $script:settingsStamp) { return }
+    $script:settingsStamp = $stamp
+    $list = if (Test-Path $SettingsFile) { Get-Content $SettingsFile -Encoding UTF8 } else { $AllTargets }
+    $script:want = @{}
+    foreach ($t in $list) { if ($t.Trim()) { $script:want[$t.Trim().ToLower()] = $true } }
+}
+Update-Targets
 $nameOf = @{}
 function Get-ProcName([int]$procId) {
     if (-not $nameOf.ContainsKey($procId)) {
@@ -94,7 +97,9 @@ $waiting = @{}   # 막 나타난 창 (프로그램이 스스로 자리 잡을 �
 # 켜기 전부터 열려 있던 창은 건드리지 않음
 foreach ($w in Get-Windows) { $seen[$w.Id] = $true }
 
+$tick = 0
 while (-not $stopSignal.WaitOne(400)) {
+    if ((++$tick % 10) -eq 0) { Update-Targets }   # 4초마다 고른 프로그램 목록 확인
     $alive = @{}
     foreach ($w in Get-Windows) {
         $alive[$w.Id] = $true
