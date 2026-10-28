@@ -24,7 +24,7 @@ try {
     Save-ProgramChoice $chosen
 
     $ps   = Join-Path $env:WINDIR 'System32\WindowsPowerShell\v1.0\powershell.exe'
-    $opts = "-NoProfile -ExecutionPolicy RemoteSigned -WindowStyle Minimized -File `"$dest`""
+    $opts = "-NoProfile -ExecutionPolicy RemoteSigned -WindowStyle Hidden -File `"$dest`""
     # 예전 버전이 남긴 자동 시작 바로가기 정리
     $old = Join-Path ([Environment]::GetFolderPath('Startup')) 'MainMonitor.lnk'
     if (Test-Path $old) { Remove-Item $old -Force }
@@ -36,13 +36,13 @@ try {
     $sc.Description = '한글·엑셀을 항상 메인 모니터에서 열기'
     $sc.Save()
 
-    Start-Process $ps -ArgumentList $opts -WindowStyle Minimized
+    Start-Process $ps -ArgumentList $opts -WindowStyle Hidden
 
     Write-Host ''
     Write-Host '  설치가 끝났어요!' -ForegroundColor Green
     Write-Host '  이제 고른 프로그램을 열면 메인 모니터에서 열려요.'
     Write-Host '  나중에 바꾸고 싶으면 3_프로그램고르기.bat 을 더블클릭하세요.'
-    Write-Host '  작업 표시줄에 작게 줄어든 파란 창이 프로그램이에요. 닫지 말고 그대로 두세요.'
+    Write-Host '  화면에는 보이지 않고 뒤에서 조용히 작동해요.'
     Write-Host '  컴퓨터를 다시 켜도 자동으로 시작돼요.'
 } catch {
     Write-Host ''

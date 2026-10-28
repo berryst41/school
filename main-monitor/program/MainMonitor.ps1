@@ -9,11 +9,7 @@
 $AllTargets = @('Hwp', 'HwpViewer', 'HCell', 'HShow', 'EXCEL', 'WINWORD', 'POWERPNT', 'AcroRd32', 'Acrobat')
 $SettingsFile = Join-Path $env:LOCALAPPDATA 'MainMonitor\programs.txt'
 
-$Host.UI.RawUI.WindowTitle = '메인 모니터로 열기 (작동 중)'
-Write-Host ''
-Write-Host '  메인 모니터로 열기가 작동하고 있어요.'
-Write-Host '  이 창은 작게 줄여 두기만 하고 닫지 마세요.'
-Write-Host '  (닫으면 다음에 컴퓨터를 켤 때까지 꺼져요)'
+# 화면에 창 없이 뒤에서 작동해요. 끄려면 2_제거하기.bat 을 실행하세요.
 
 # 같은 프로그램이 두 번 켜지지 않게
 $first = $false
