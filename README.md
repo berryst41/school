@@ -26,12 +26,12 @@
 <tr>
 <td>🧾 <a href="#pumui"><b>품의 기안 도우미</b></a></td>
 <td>쇼핑몰 장바구니로 품의 기안을 쓰고 에듀파인에 바로 채워요 (크롬 확장 프로그램)</td>
-<td align="center"><a href="https://github.com/berryst41/school/raw/main/pumui/pumui-extension.zip"><b>⬇️ 받기</b></a></td>
+<td align="center"><a href="https://github.com/berryst41/school/raw/main/pumui/pumui-extension.zip"><b>⬇️ 받기 v0.2.0</b></a></td>
 </tr>
 <tr>
 <td>🖥️ <a href="#main-monitor"><b>메인 모니터로 열기</b></a></td>
 <td>듀얼 모니터에서 한글·엑셀이 늘 메인 모니터에 열려요 (윈도우 프로그램)</td>
-<td align="center"><a href="https://github.com/berryst41/school/raw/main/main-monitor/main-monitor.zip"><b>⬇️ 받기</b></a></td>
+<td align="center"><a href="https://github.com/berryst41/school/raw/main/main-monitor/main-monitor.zip"><b>⬇️ 받기 v1.0.0</b></a></td>
 </tr>
 <tr><td colspan="3"><b>🧑‍🏫 수업에 쓰는 도구</b></td></tr>
 <tr>
@@ -104,7 +104,9 @@
 > **장바구니를 읽어 품의 기안을 만들고, K-에듀파인에 복사·붙여넣기 없이 채워 주는 크롬 확장 프로그램**
 > 쿠팡 · G마켓 · 11번가 · 아이스크림몰 장바구니는 AI 없이 무료로 읽어요.
 
-👉 **[pumui-extension.zip 내려받기](https://github.com/berryst41/school/raw/main/pumui/pumui-extension.zip)**
+👉 **[pumui-extension.zip (v0.2.0) 내려받기](https://github.com/berryst41/school/raw/main/pumui/pumui-extension.zip)**
+
+지금 버전: **v0.2.0** (2026-10-27) · 내가 쓰는 버전은 `chrome://extensions`의 품의 기안 도우미 카드에서 볼 수 있어요.
 
 <details>
 <summary><b>🔧 설치하는 방법</b></summary>
@@ -162,7 +164,9 @@
 > **한글·엑셀 파일을 열면 늘 메인 모니터에서 열리게 해 주는 윈도우 프로그램**
 > 전자칠판으로 옮겨 두고 껐던 창도, 다시 열면 메인 모니터에서 열려요. 쓰는 동안에는 마음대로 옮겨도 돼요.
 
-👉 **[main-monitor.zip 내려받기](https://github.com/berryst41/school/raw/main/main-monitor/main-monitor.zip)**
+👉 **[main-monitor.zip (v1.0.0) 내려받기](https://github.com/berryst41/school/raw/main/main-monitor/main-monitor.zip)**
+
+지금 버전: **v1.0.0** (2026-10-28) · 이번부터 버전을 붙였어요. 새 버전이 나오면 여기 숫자가 바뀌어요.
 
 <details>
 <summary><b>🔧 설치하는 방법</b></summary>
