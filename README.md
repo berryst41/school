@@ -31,7 +31,7 @@
 <tr>
 <td>🖥️ <a href="#main-monitor"><b>메인 모니터로 열기</b></a></td>
 <td>듀얼 모니터에서 한글·엑셀·브라우저가 골라 둔 모니터(메인/서브)에 열려요 (윈도우 프로그램)</td>
-<td align="center"><a href="https://github.com/berryst41/school/raw/main/main-monitor/main-monitor.zip"><b>⬇️ 받기 v1.1.0</b></a></td>
+<td align="center"><a href="https://github.com/berryst41/school/raw/main/main-monitor/main-monitor.zip"><b>⬇️ 받기 v1.2.0</b></a></td>
 </tr>
 <tr><td colspan="3"><b>🧑‍🏫 수업에 쓰는 도구</b></td></tr>
 <tr>
@@ -164,9 +164,9 @@
 > **한글·엑셀 같은 문서와 크롬·엣지·브레이브를, 프로그램마다 골라 둔 모니터(메인 / 서브)에서 열어 주는 윈도우 프로그램**
 > 메인 모니터는 노트북, 서브 모니터는 전자칠판처럼 옆에 연결한 화면이에요. 다른 모니터로 옮겨 두고 껐던 창도, 다시 열면 골라 둔 모니터에서 열려요. 쓰는 동안에는 마음대로 옮겨도 돼요.
 
-👉 **[main-monitor.zip (v1.1.0) 내려받기](https://github.com/berryst41/school/raw/main/main-monitor/main-monitor.zip)**
+👉 **[main-monitor.zip (v1.2.0) 내려받기](https://github.com/berryst41/school/raw/main/main-monitor/main-monitor.zip)**
 
-지금 버전: **v1.1.0** (2026-11-05) · 프로그램마다 메인/서브 모니터 고르기, 브라우저 추가, 엑셀은 처음부터 고른 모니터에 열리게
+지금 버전: **v1.2.0** (2026-11-05) · 한글도 엑셀처럼, 다른 모니터에 잠깐 뜨지 않고 처음부터 고른 모니터에 열리게
 
 <details>
 <summary><b>🔧 설치하는 방법</b></summary>
@@ -191,7 +191,7 @@
 
 - 📄 문서: 한글 · 한셀 · 한쇼 · 엑셀 · 워드 · 파워포인트 · 아크로뱃(PDF)
 - 🌐 브라우저: 크롬 · 엣지 · 브레이브 (처음 켤 때의 창만 옮기고, 탭을 끌어낸 창은 그대로 둬요)
-- ✨ 엑셀은 다른 모니터에 잠깐 떴다가 옮겨지는 일 없이 처음부터 고른 모니터에서 열려요.
+- ✨ 엑셀과 한글은 다른 모니터에 잠깐 떴다가 옮겨지는 일 없이 처음부터 고른 모니터에서 열려요.
 - 🧰 따로 설치할 프로그램 없이 윈도우에 들어 있는 기능(PowerShell)만 써요.
 - 🖥️ 노트북이 메인(주) 모니터인지 먼저 확인해요: 바탕화면 오른쪽 클릭 → **디스플레이 설정** → **이 디스플레이를 주 모니터로 만들기**
 - ⌨️ 창을 옆 모니터로 바로 보내려면 **윈도우 키 + Shift + ← / →**
