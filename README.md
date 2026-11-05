@@ -31,7 +31,7 @@
 <tr>
 <td>🖥️ <a href="#main-monitor"><b>메인 모니터로 열기</b></a></td>
 <td>듀얼 모니터에서 한글·엑셀·브라우저가 골라 둔 모니터(메인/서브)에 열려요 (윈도우 프로그램)</td>
-<td align="center"><a href="https://github.com/berryst41/school/raw/main/main-monitor/main-monitor.zip"><b>⬇️ 받기 v1.2.0</b></a></td>
+<td align="center"><a href="https://github.com/berryst41/school/raw/main/main-monitor/main-monitor.zip"><b>⬇️ 받기 v1.3.0</b></a></td>
 </tr>
 <tr><td colspan="3"><b>🧑‍🏫 수업에 쓰는 도구</b></td></tr>
 <tr>
@@ -164,9 +164,9 @@
 > **한글·엑셀 같은 문서와 크롬·엣지·브레이브를, 프로그램마다 골라 둔 모니터(메인 / 서브)에서 열어 주는 윈도우 프로그램**
 > 메인 모니터는 노트북, 서브 모니터는 전자칠판처럼 옆에 연결한 화면이에요. 다른 모니터로 옮겨 두고 껐던 창도, 다시 열면 골라 둔 모니터에서 열려요. 쓰는 동안에는 마음대로 옮겨도 돼요.
 
-👉 **[main-monitor.zip (v1.2.0) 내려받기](https://github.com/berryst41/school/raw/main/main-monitor/main-monitor.zip)**
+👉 **[main-monitor.zip (v1.3.0) 내려받기](https://github.com/berryst41/school/raw/main/main-monitor/main-monitor.zip)**
 
-지금 버전: **v1.2.0** (2026-11-05) · 한글도 엑셀처럼, 다른 모니터에 잠깐 뜨지 않고 처음부터 고른 모니터에 열리게
+지금 버전: **v1.3.0** (2026-11-05) · 한글이 문서마다 기억하는 창 자리를 고쳐서, 다른 모니터에 잠깐 뜨지 않게
 
 <details>
 <summary><b>🔧 설치하는 방법</b></summary>
