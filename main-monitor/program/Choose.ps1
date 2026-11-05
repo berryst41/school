@@ -9,6 +9,7 @@ $ProgramGroups = [ordered]@{
         '한글'          = @('Hwp', 'HwpViewer')
         '한셀'          = @('HCell')
         '한쇼'          = @('HShow')
+        '한PDF'         = @('Hpdf')
         '엑셀'          = @('EXCEL')
         '워드'          = @('WINWORD')
         '파워포인트'    = @('POWERPNT')

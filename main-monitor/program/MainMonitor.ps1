@@ -1,7 +1,7 @@
 ﻿# 메인 모니터로 열기
 # 한글·엑셀·브라우저 등의 창이 새로 열리면, 프로그램마다 고른 모니터(메인 / 서브) 가운데로 옮겨 줍니다.
 # 창이 처음 열릴 때 한 번만 옮기므로, 쓰는 도중에는 다른 모니터로 마음대로 옮겨도 됩니다.
-# 엑셀·워드·파워포인트·한글·한셀·한쇼·크롬·엣지·브레이브는 기억해 둔 창 자리도 고쳐 두어서,
+# 엑셀·워드·파워포인트·한글·한셀·한쇼·한PDF·크롬·엣지·브레이브는 기억해 둔 창 자리도 고쳐 두어서,
 # 옮기는 게 보이지 않고 처음부터 고른 모니터에 열려요.
 # 윈도우에 들어 있는 "UI 자동화" 기능만 사용합니다. 화면에 창 없이 뒤에서 작동해요.
 # 끄려면 2_제거하기.bat 을 실행하세요.
@@ -9,7 +9,7 @@
 # 프로그램마다 열릴 위치는 programs.txt 에 "프로그램=main" 또는 "프로그램=sub" 로 적혀 있어요.
 # (3_프로그램고르기.bat 으로 고르면 이 파일이 바뀌고, 몇 초 안에 알아서 다시 읽어요)
 # 파일이 없으면 아래 문서 프로그램 전부를 메인 모니터로 열어요.
-$DefaultTargets = @('Hwp', 'HwpViewer', 'HCell', 'HShow', 'EXCEL', 'WINWORD', 'POWERPNT', 'AcroRd32', 'Acrobat')
+$DefaultTargets = @('Hwp', 'HwpViewer', 'HCell', 'HShow', 'Hpdf', 'EXCEL', 'WINWORD', 'POWERPNT', 'AcroRd32', 'Acrobat')
 $SettingsFile = Join-Path $env:LOCALAPPDATA 'MainMonitor\programs.txt'
 
 # 브라우저는 "처음 켤 때" 창만 옮겨요. 탭을 끌어내 새 창을 만들 때마다 옮기면 불편하니까요.
@@ -245,20 +245,20 @@ function Repair-BrowserPosition {
     }
 }
 
-# 한컴 프로그램(한글·한셀·한쇼)은 문서마다 마지막 창 자리를 "최근 문서 목록" 파일
+# 한컴 프로그램(한글·한셀·한쇼·한PDF)은 문서마다 마지막 창 자리를 "최근 문서 목록" 파일
 # %APPDATA%\HNC\User\Common\<버전>\recentInfo.xml 에 <PositionInfo ... Width Height X Y /> 로 적어 두고,
 # 그 문서를 다시 열면 그 자리에 띄워요. (선생님 컴퓨터에서 메인/서브에서 닫아 비교해 확인했어요)
 # 한컴 프로그램이 모두 꺼져 있을 때, 고른 모니터 밖에 있는 자리를 고른 모니터 가운데로 고쳐 써요.
 # 파일 안의 <HCell> <HShow> <Hpdf> 부분은 그 프로그램 몫이고, 나머지는 한글 몫으로 봐요.
 # 문서 이름 등 다른 내용은 건드리지 않고 X, Y (필요하면 Width, Height) 숫자만 바꿔요.
-$HncProcs = @('Hwp', 'HCell', 'HShow')
+$HncProcs = @('Hwp', 'HCell', 'HShow', 'Hpdf')
 $hwpStamp = @{}     # 파일 -> 마지막으로 확인한 시각 (바뀌었을 때만 다시 읽음)
 
 function Repair-HwpPosition {
-    if (-not ($want.ContainsKey('hwp') -or $want.ContainsKey('hcell') -or $want.ContainsKey('hshow'))) { return }
+    if (-not ($want.ContainsKey('hwp') -or $want.ContainsKey('hcell') -or $want.ContainsKey('hshow') -or $want.ContainsKey('hpdf'))) { return }
     if (Get-Process -Name $HncProcs -ErrorAction SilentlyContinue) { return }   # 켜져 있을 때는 건드리지 않음
     $targets = @{}
-    foreach ($n in 'hwp', 'hcell', 'hshow') { if ($want.ContainsKey($n)) { $s = Get-TargetScreen $want[$n]; if ($s) { $targets[$n] = $s } } }
+    foreach ($n in 'hwp', 'hcell', 'hshow', 'hpdf') { if ($want.ContainsKey($n)) { $s = Get-TargetScreen $want[$n]; if ($s) { $targets[$n] = $s } } }
     if ($targets.Count -eq 0) { return }
     $sig = (($targets.Keys | Sort-Object | ForEach-Object { "$_=$($targets[$_].DeviceName)" }) -join ',')
     $root = Join-Path $env:APPDATA 'HNC\User\Common'
@@ -285,7 +285,7 @@ function Repair-HwpPosition {
         foreach ($m in [regex]::Matches($text, '<PositionInfo\b[^>]*>')) {
             $app = 'hwp'
             foreach ($b in $blocks) { if ($m.Index -ge $b.S -and $m.Index -lt $b.E) { $app = $b.App } }
-            if (-not $targets.ContainsKey($app)) { continue }   # 한PDF 등 아직 다루지 않는 부분은 그대로 둠
+            if (-not $targets.ContainsKey($app)) { continue }   # 고르지 않은 프로그램 부분은 그대로 둠
             $screen = $targets[$app]; $work = $screen.WorkingArea
             $tag = $m.Value
             $v = @{}
@@ -321,7 +321,7 @@ function Repair-All {
     try { Repair-BrowserPosition } catch { }
 }
 # 창 자리를 기억하는 프로그램: 이 창이 닫히면 몇 초 동안 자주 확인해서 바로 고쳐요
-$Remembering = @('excel', 'winword', 'powerpnt', 'hwp', 'hcell', 'hshow', 'chrome', 'msedge', 'brave')
+$Remembering = @('excel', 'winword', 'powerpnt', 'hwp', 'hcell', 'hshow', 'hpdf', 'chrome', 'msedge', 'brave')
 $watchIds = @{}
 $fastUntil = [DateTime]::MinValue
 
