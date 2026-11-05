@@ -132,50 +132,61 @@ function Repair-ExcelPosition {
     }
 }
 
-# 한글은 닫을 때 창 자리를 %APPDATA%\HNC\User\Hwp\HWPWM*.HMI 파일의 100번째 바이트부터 4바이트에 적어요.
-# (선생님 컴퓨터에서 메인/서브에서 각각 닫아 비교해 보니 이 4바이트만 바뀌었어요)
-# 숫자의 단위를 정확히 몰라서, 한글을 닫을 때마다 "어느 모니터에서 닫았을 때 어떤 값인지"를 배워 두고,
-# 고른 모니터가 아닌 곳에서 닫았으면 고른 모니터에서 닫았을 때의 값으로 되돌려 써요.
-$HwpDir      = Join-Path $env:APPDATA 'HNC\User\Hwp'
-$HwpOffset   = 100
-$HwpLearned  = Join-Path $env:LOCALAPPDATA 'MainMonitor\hwp-pos.txt'
-$hwpMemory   = @{}   # "파일이름|main" -> "58 22 84 0F"
-if (Test-Path $HwpLearned) {
-    foreach ($line in Get-Content $HwpLearned -Encoding UTF8) {
-        $k, $v = $line -split '=', 2
-        if ($v) { $hwpMemory[$k.Trim()] = $v.Trim() }
-    }
-}
-$hwpRects  = @{}     # 열려 있는 한글 창 -> 마지막으로 본 자리
-$hwpClosed = $null   # 마지막으로 닫힌 한글 창의 자리 (한글이 완전히 꺼지면 처리)
+# 한글은 문서마다 마지막 창 자리를 "최근 문서 목록" 파일
+# %APPDATA%\HNC\User\Common\<버전>\recentInfo.xml 에 <PositionInfo ... Width Height X Y /> 로 적어 두고,
+# 그 문서를 다시 열면 그 자리에 띄워요. (선생님 컴퓨터에서 메인/서브에서 닫아 비교해 확인했어요)
+# 한글이 꺼져 있을 때, 고른 모니터 밖에 있는 자리를 모두 고른 모니터 가운데로 고쳐 써요.
+# 문서 이름 등 다른 내용은 건드리지 않고 X, Y (필요하면 Width, Height) 숫자만 바꿔요.
+$hwpStamp   = @{}     # 파일 -> 마지막으로 확인한 시각 (바뀌었을 때만 다시 읽음)
+$hwpPending = $false  # 한글 창이 닫혔음 -> 한글이 완전히 꺼지면 바로 고침
+$hwpIds     = @{}     # 열려 있는 한글 창
 
-function Get-Place($rect) {
-    $cx = [int]($rect.X + $rect.Width / 2); $cy = [int]($rect.Y + $rect.Height / 2)
-    foreach ($sc in $Screens::AllScreens) {
-        if ($sc.Bounds.Contains($cx, $cy)) { if ($sc.Primary) { return 'main' } else { return 'sub' } }
-    }
-    return ''
-}
-
-function Repair-HwpPosition($closedRect) {
-    $place = Get-Place $closedRect
-    if (-not $place) { return }
-    $target = $want['hwp']
-    foreach ($file in Get-ChildItem $HwpDir -Filter 'HWPWM*.HMI' -ErrorAction SilentlyContinue) {
+function Repair-HwpPosition {
+    if (-not $want.ContainsKey('hwp')) { return }
+    if (Get-Process -Name Hwp -ErrorAction SilentlyContinue) { return }   # 켜져 있을 때는 건드리지 않음
+    $screen = Get-TargetScreen $want['hwp']
+    if (-not $screen) { return }   # 서브 모니터가 연결되어 있지 않음
+    $work = $screen.WorkingArea
+    $root = Join-Path $env:APPDATA 'HNC\User\Common'
+    foreach ($file in Get-ChildItem $root -Recurse -Filter 'recentInfo.xml' -ErrorAction SilentlyContinue) {
+        $key = "$($file.FullName)|$($screen.DeviceName)"
+        if ($hwpStamp[$key] -eq $file.LastWriteTimeUtc) { continue }
         $bytes = [System.IO.File]::ReadAllBytes($file.FullName)
-        if ($bytes.Length -lt $HwpOffset + 4) { continue }
-        $cur = ($bytes[$HwpOffset..($HwpOffset + 3)] | ForEach-Object { $_.ToString('X2') }) -join ' '
-        $hwpMemory["$($file.Name)|$place"] = $cur          # 이 모니터에서 닫으면 이런 값이구나, 하고 배워 둠
-        if (-not $target -or $place -eq $target) { continue }
-        $good = $hwpMemory["$($file.Name)|$target"]
-        if (-not $good -and $target -eq 'main') { $good = 'DC 05 DC 05' }   # 아직 못 배웠으면 메인 모니터 왼쪽 위 근처
-        if (-not $good) { continue }
-        $new = [byte[]]($good -split ' ' | ForEach-Object { [Convert]::ToByte($_, 16) })
-        $fs = [System.IO.File]::Open($file.FullName, 'Open', 'ReadWrite', 'None')
-        try { $fs.Position = $HwpOffset; $fs.Write($new, 0, 4) } finally { $fs.Close() }
+        # 원래 파일과 같은 글자 방식으로 다시 쓰기 위해 앞부분(BOM)을 확인
+        $bom = 0
+        if ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF) { $enc = New-Object System.Text.UTF8Encoding($false); $bom = 3 }
+        elseif ($bytes.Length -ge 2 -and $bytes[0] -eq 0xFF -and $bytes[1] -eq 0xFE) { $enc = New-Object System.Text.UnicodeEncoding($false, $false); $bom = 2 }
+        elseif ($bytes.Length -ge 2 -and $bytes[0] -eq 0x3C -and $bytes[1] -eq 0x00) { $enc = New-Object System.Text.UnicodeEncoding($false, $false) }
+        else { $enc = New-Object System.Text.UTF8Encoding($false) }
+        $text = $enc.GetString($bytes, $bom, $bytes.Length - $bom)
+
+        $sb = New-Object System.Text.StringBuilder
+        $last = 0; $changed = $false
+        foreach ($m in [regex]::Matches($text, '<PositionInfo\b[^>]*>')) {
+            $tag = $m.Value
+            $v = @{}
+            foreach ($n in 'X', 'Y', 'Width', 'Height') {
+                $mm = [regex]::Match($tag, '\b' + $n + '="(-?\d+)"')
+                if ($mm.Success) { $v[$n] = [int]$mm.Groups[1].Value }
+            }
+            if ($v.Count -ne 4) { continue }
+            if ($screen.Bounds.Contains([int]($v.X + $v.Width / 2), [int]($v.Y + $v.Height / 2))) { continue }   # 이미 고른 모니터
+            $w = [Math]::Min($v.Width, $work.Width); $h = [Math]::Min($v.Height, $work.Height)
+            $x = $work.X + [int](($work.Width - $w) / 2); $y = $work.Y + [int](($work.Height - $h) / 2)
+            $newTag = $tag -replace '\bX="-?\d+"', "X=`"$x`"" -replace '\bY="-?\d+"', "Y=`"$y`"" -replace '\bWidth="-?\d+"', "Width=`"$w`"" -replace '\bHeight="-?\d+"', "Height=`"$h`""
+            [void]$sb.Append($text, $last, $m.Index - $last).Append($newTag)
+            $last = $m.Index + $m.Length; $changed = $true
+        }
+        if ($changed) {
+            [void]$sb.Append($text, $last, $text.Length - $last)
+            $body = $enc.GetBytes($sb.ToString())
+            $outBytes = New-Object byte[] ($bom + $body.Length)
+            if ($bom) { [Array]::Copy($bytes, 0, $outBytes, 0, $bom) }
+            [Array]::Copy($body, 0, $outBytes, $bom, $body.Length)
+            [System.IO.File]::WriteAllBytes($file.FullName, $outBytes)
+        }
+        $hwpStamp[$key] = (Get-Item $file.FullName).LastWriteTimeUtc
     }
-    New-Item -ItemType Directory -Force -Path (Split-Path $HwpLearned) | Out-Null
-    $hwpMemory.Keys | Sort-Object | ForEach-Object { "$_=$($hwpMemory[$_])" } | Set-Content -Path $HwpLearned -Encoding UTF8
 }
 
 $seen = @{}      # 이미 확인한 창
@@ -185,23 +196,23 @@ $waiting = @{}   # 막 나타난 창 (프로그램이 스스로 자리 잡을 �
 foreach ($w in Get-Windows) { $seen[$w.Id] = $true }
 
 try { Repair-ExcelPosition } catch { }
+try { Repair-HwpPosition } catch { }
 $tick = 0
 while (-not $stopSignal.WaitOne(400)) {
     if ((++$tick % 10) -eq 0) {   # 4초마다
         Update-Targets                            # 고른 설정 다시 읽기
         try { Repair-ExcelPosition } catch { }    # 엑셀이 기억한 창 자리 고치기
+        try { Repair-HwpPosition } catch { }      # 한글이 기억한 창 자리 고치기
     }
     $windows = @(Get-Windows)
     $alive = @{}
-    foreach ($w in $windows) {
-        $alive[$w.Id] = $true
-        if ($w.Name -eq 'hwp') { try { $r = $w.El.Current.BoundingRectangle; if (-not $r.IsEmpty) { $hwpRects[$w.Id] = $r } } catch { } }
-    }
-    # 닫힌 한글 창의 마지막 자리를 기억해 두었다가, 한글이 완전히 꺼지면 기억한 창 자리를 고쳐 씀
-    foreach ($k in @($hwpRects.Keys)) { if (-not $alive.ContainsKey($k)) { $hwpClosed = $hwpRects[$k]; $hwpRects.Remove($k) } }
-    if ($hwpClosed -and $hwpRects.Count -eq 0 -and -not (Get-Process -Name Hwp -ErrorAction SilentlyContinue)) {
-        if ($want.ContainsKey('hwp')) { try { Repair-HwpPosition $hwpClosed } catch { } }
-        $hwpClosed = $null
+    foreach ($w in $windows) { $alive[$w.Id] = $true }
+    # 한글 창이 하나라도 닫히면, 한글이 완전히 꺼지는 즉시 기억한 창 자리를 고쳐 씀
+    foreach ($k in @($seen.Keys)) { if (-not $alive.ContainsKey($k) -and $hwpIds.ContainsKey($k)) { $hwpPending = $true; $hwpIds.Remove($k) } }
+    foreach ($w in $windows) { if ($w.Name -eq 'hwp') { $hwpIds[$w.Id] = $true } }
+    if ($hwpPending -and -not (Get-Process -Name Hwp -ErrorAction SilentlyContinue)) {
+        try { Repair-HwpPosition } catch { }
+        $hwpPending = $false
     }
     foreach ($w in $windows) {
         if ($seen.ContainsKey($w.Id)) { continue }
