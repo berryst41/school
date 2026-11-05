@@ -8,7 +8,7 @@ try {
     # 어떤 프로그램에 적용할지 고르기
     . (Join-Path $PSScriptRoot 'Choose.ps1')
     Write-Host ''
-    Write-Host '  화면에 뜬 창에서 메인 모니터로 열 프로그램을 골라 주세요.'
+    Write-Host '  화면에 뜬 창에서 프로그램마다 열릴 모니터를 골라 주세요.'
     $chosen = Show-ProgramPicker
     if ($null -eq $chosen) { throw '설치를 취소했어요.' }
 
@@ -40,7 +40,7 @@ try {
 
     Write-Host ''
     Write-Host '  설치가 끝났어요!' -ForegroundColor Green
-    Write-Host '  이제 고른 프로그램을 열면 메인 모니터에서 열려요.'
+    Write-Host '  이제 고른 프로그램을 열면 골라 둔 모니터에서 열려요.'
     Write-Host '  나중에 바꾸고 싶으면 3_프로그램고르기.bat 을 더블클릭하세요.'
     Write-Host '  화면에는 보이지 않고 뒤에서 조용히 작동해요.'
     Write-Host '  컴퓨터를 다시 켜도 자동으로 시작돼요.'
