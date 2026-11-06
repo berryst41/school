@@ -74,7 +74,8 @@
 
 | 보는 방법 | |
 |:---|:---|
-| 🌐 **[브라우저에서 바로 보기](https://berryst41.github.io/school/docs/claude-guide.pdf)** | 휴대폰·태블릿·컴퓨터 어디서나 바로 열려요 |
+| 📱 **[웹페이지로 보기](https://berryst41.github.io/school/docs/claude-guide.html)** | 핵심만 한 화면에 정리했어요. 요청문을 복사 단추로 바로 가져가요 |
+| 🌐 **[PDF 바로 보기](https://berryst41.github.io/school/docs/claude-guide.pdf)** | 답변 예시까지 담긴 76쪽 원본이에요. 휴대폰·태블릿·컴퓨터 어디서나 열려요 |
 | 🐙 **[깃허브 화면에서 보기](https://github.com/berryst41/school/blob/main/docs/claude-guide.pdf)** | 깃허브 안에서 쪽 넘기며 볼 수 있어요 |
 | ⬇️ **[내려받기](https://github.com/berryst41/school/raw/main/docs/claude-guide.pdf)** | 파일로 저장해 두고 싶을 때 |
 
@@ -372,7 +373,8 @@ school/
 │   ├── program/         🖥️ 메인 모니터로 열기 (윈도우 프로그램)
 │   └── main-monitor.zip     내려받기용 압축 파일
 ├── docs/
-│   ├── claude-guide.pdf  📘 처음 써 보는 Claude (PDF 안내서)
+│   ├── claude-guide.html 📘 처음 써 보는 Claude (웹 안내서)
+│   ├── claude-guide.pdf  📘 처음 써 보는 Claude (PDF 원본)
 │   └── github-guide.html 🐙 깃허브 첫걸음 (웹 안내서)
 └── images/              원숭이별 게임 화면
 ```
