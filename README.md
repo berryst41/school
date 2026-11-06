@@ -20,8 +20,8 @@
 <tr><td colspan="3"><b>💼 업무에 쓰는 도구</b></td></tr>
 <tr>
 <td>📘 <a href="#claude-guide"><b>처음 써 보는 Claude</b></a></td>
-<td>AI가 처음인 선생님을 위한 Claude 안내서 (PDF)</td>
-<td align="center"><a href="https://berryst41.github.io/school/docs/claude-guide.pdf"><b>📖 보기</b></a></td>
+<td>AI가 처음인 선생님을 위한 Claude 안내서 (웹페이지·PDF)</td>
+<td align="center"><a href="https://berryst41.github.io/school/docs/claude-guide.html"><b>📖 보기</b></a></td>
 </tr>
 <tr>
 <td>🐙 <a href="#github-guide"><b>깃허브 첫걸음</b></a></td>
