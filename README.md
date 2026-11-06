@@ -24,6 +24,11 @@
 <td align="center"><a href="https://berryst41.github.io/school/docs/claude-guide.pdf"><b>📖 보기</b></a></td>
 </tr>
 <tr>
+<td>🐙 <a href="#github-guide"><b>깃허브 첫걸음</b></a></td>
+<td>깃허브가 처음인 선생님을 위한 안내서 (웹페이지)</td>
+<td align="center"><a href="https://berryst41.github.io/school/docs/github-guide.html"><b>📖 보기</b></a></td>
+</tr>
+<tr>
 <td>🧾 <a href="#pumui"><b>품의 기안 도우미</b></a></td>
 <td>쇼핑몰 장바구니로 품의 기안을 쓰고 에듀파인에 바로 채워요 (크롬 확장 프로그램)</td>
 <td align="center"><a href="https://github.com/berryst41/school/raw/main/pumui/pumui-extension.zip"><b>⬇️ 받기 v0.2.0</b></a></td>
@@ -89,6 +94,35 @@
 | PART 7 | 자잘하지만 확실한 꿀팁 100 |
 | PART 8 | 안심하고 쓰는 체크리스트 |
 | 부록 | 한 해 업무 달력과 한 줄 요청문 모음 |
+
+</details>
+
+</details>
+
+<a id="github-guide"></a>
+
+### 🐙 깃허브 첫걸음
+
+<details>
+<summary>👉 <b>눌러서 펼치기</b></summary>
+
+> **컴퓨터를 잘 몰라도 따라 할 수 있는 깃허브 안내서**
+> 계정 만들기부터 저장소, 웹사이트 공개, Claude와 함께 고치기, 학교 컴퓨터에서 설치가 막힐 때까지 실제로 막혔던 곳을 모아 차근차근 알려 줘요.
+
+👉 **[브라우저에서 바로 보기](https://berryst41.github.io/school/docs/github-guide.html)**
+
+<details>
+<summary><b>📑 차례</b></summary>
+<br>
+
+| | 내용 |
+|:---:|:---|
+| 1~2 | 깃허브가 뭐예요? · 꼭 알아야 할 낱말 (저장소, README, 커밋, PR, 머지…) |
+| 3~5 | 계정 만들기 · 첫 저장소 만들기 · 파일 올리고 고치기 |
+| 6~8 | 웹사이트로 공개하기 · 저장소·프로필 꾸미기 · 다른 사람과 나누기 |
+| 9 | Claude와 함께 쓰기 (연결하기, PR 적용하기) |
+| 10~11 | Claude Code·GitHub CLI 설치 · 학교 컴퓨터에서 막힐 때 (winget, 인증서 오류, 핫스팟, GitHub Mobile 승인) |
+| 12~13 | 자주 묻는 질문 · 한 장 정리 체크리스트 |
 
 </details>
 
@@ -338,7 +372,8 @@ school/
 │   ├── program/         🖥️ 메인 모니터로 열기 (윈도우 프로그램)
 │   └── main-monitor.zip     내려받기용 압축 파일
 ├── docs/
-│   └── claude-guide.pdf  📘 처음 써 보는 Claude (PDF 안내서)
+│   ├── claude-guide.pdf  📘 처음 써 보는 Claude (PDF 안내서)
+│   └── github-guide.html 🐙 깃허브 첫걸음 (웹 안내서)
 └── images/              원숭이별 게임 화면
 ```
 

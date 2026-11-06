@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>깃허브 첫걸음</title>
+<meta name="description" content="깃허브를 처음 쓰는 선생님을 위한 안내서예요. 계정 만들기부터 저장소, 웹사이트 공개, Claude와 함께 쓰기, 학교 컴퓨터에서 막힐 때까지 차근차근 알려 드려요.">
+<style>
+:root{
+  --bg:#fff8f3; --card:#ffffff; --ink:#2b2b2b; --muted:#6b6b6b; --line:#f0dcd3;
+  --brand:#e8505b; --brand-dark:#c93a45; --soft:#ffeef0; --tip:#eef8f0; --tip-line:#9fd3ab;
+  --warn:#fff6e0; --warn-line:#f0c96a; --code:#2b2733; --code-ink:#f7f3ff; --mark:#fff1a8;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#1c1a1a; --card:#262323; --ink:#f3eeea; --muted:#b9aea8; --line:#3d3434;
+    --brand:#ff7680; --brand-dark:#ff5964; --soft:#3a2a2c; --tip:#1f3326; --tip-line:#3f7a50;
+    --warn:#3a3020; --warn-line:#8f7430; --code:#121014; --code-ink:#f7f3ff; --mark:#5a5020;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+  line-height:1.75;font-size:17px;-webkit-text-size-adjust:100%;word-break:keep-all;overflow-wrap:anywhere}
+a{color:var(--brand-dark)}
+.wrap{max-width:860px;margin:0 auto;padding:24px 16px 80px}
+.hero{background:linear-gradient(135deg,#ff8a95,#e8505b);color:#fff;border-radius:22px;padding:28px 22px;margin-bottom:22px}
+.hero h1{margin:0 0 6px;font-size:30px;line-height:1.3}
+.hero p{margin:0;opacity:.95}
+.hero .meta{margin-top:12px;font-size:14px;opacity:.9}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px 20px 8px;margin-bottom:18px}
+h2{font-size:23px;margin:4px 0 12px;line-height:1.4;scroll-margin-top:12px}
+h2 .no{display:inline-block;background:var(--brand);color:#fff;border-radius:10px;padding:0 10px;margin-right:8px;font-size:18px;vertical-align:2px}
+h3{font-size:19px;margin:22px 0 8px}
+ol,ul{padding-left:24px}
+li{margin:4px 0}
+.toc ol{columns:2;column-gap:28px;margin:0 0 12px}
+@media (max-width:600px){.toc ol{columns:1}}
+.toc a{text-decoration:none}
+.box{border-radius:14px;padding:12px 16px;margin:14px 0;border:1px solid}
+.tip{background:var(--tip);border-color:var(--tip-line)}
+.warn{background:var(--warn);border-color:var(--warn-line)}
+.box b:first-child{display:block;margin-bottom:2px}
+.box p{margin:4px 0}
+kbd{font-family:inherit;background:var(--soft);border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:0 6px;font-size:.92em;white-space:nowrap}
+.btn{display:inline-block;background:#2da44e;color:#fff;border-radius:6px;padding:0 8px;font-size:.9em;font-weight:600;white-space:nowrap}
+.btn.gray{background:#6e7781}
+.btn.red{background:#cf222e}
+code{font-family:Consolas,"D2Coding",Menlo,monospace;background:var(--soft);border-radius:6px;padding:1px 6px;font-size:.92em}
+.cmd{position:relative;background:var(--code);color:var(--code-ink);border-radius:12px;padding:14px 16px;margin:10px 0;
+  font-family:Consolas,"D2Coding",Menlo,monospace;font-size:15px;line-height:1.6;white-space:pre-wrap;word-break:break-all;padding-right:64px}
+.cmd .copy{position:absolute;top:8px;right:8px;background:#ffffff22;color:#fff;border:1px solid #ffffff44;border-radius:8px;
+  font-size:13px;padding:2px 10px;cursor:pointer;font-family:inherit}
+.cmd .copy:hover{background:#ffffff38}
+.cmd-wrap{position:relative}
+table{border-collapse:collapse;width:100%;margin:10px 0 16px;font-size:16px}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+th{background:var(--soft)}
+.words td:first-child{white-space:nowrap;font-weight:700}
+@media (max-width:600px){.words td:first-child{white-space:normal}}
+details{border:1px solid var(--line);border-radius:12px;padding:8px 14px;margin:10px 0;background:var(--card)}
+details summary{cursor:pointer;font-weight:700}
+details[open] summary{margin-bottom:6px}
+mark{background:var(--mark);color:inherit;border-radius:4px;padding:0 3px}
+.check li{list-style:none;margin-left:-22px}
+.check input{transform:scale(1.25);margin-right:8px}
+footer{text-align:center;color:var(--muted);font-size:14px;margin-top:30px}
+.top{position:fixed;right:14px;bottom:14px;background:var(--brand);color:#fff;border-radius:999px;width:46px;height:46px;
+  display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:20px;box-shadow:0 4px 12px #0003}
+@media print{.top,.copy{display:none}.card{break-inside:avoid-page}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>🐙 깃허브 첫걸음</h1>
+  <p>컴퓨터를 잘 몰라도 괜찮아요. 깃허브가 무엇인지부터, 내 도구를 웹사이트로 올리고 Claude와 함께 고치는 데까지 하나씩 따라 해 봐요.</p>
+  <div class="meta">🍓 딸기농장 · 실제로 처음 시작하면서 막혔던 곳을 그대로 모았어요</div>
+</header>
+
+<nav class="card toc">
+  <h2>📑 차례</h2>
+  <ol>
+    <li><a href="#what">깃허브가 뭐예요?</a></li>
+    <li><a href="#words">꼭 알아야 할 낱말</a></li>
+    <li><a href="#account">계정 만들기</a></li>
+    <li><a href="#repo">첫 저장소 만들기</a></li>
+    <li><a href="#upload">파일 올리고 고치기</a></li>
+    <li><a href="#pages">웹사이트로 공개하기</a></li>
+    <li><a href="#decorate">저장소·프로필 꾸미기</a></li>
+    <li><a href="#share">다른 사람과 나누기</a></li>
+    <li><a href="#claude">Claude와 함께 쓰기</a></li>
+    <li><a href="#install">내 컴퓨터에 도구 설치하기</a></li>
+    <li><a href="#school">학교 컴퓨터에서 막힐 때</a></li>
+    <li><a href="#faq">자주 묻는 질문</a></li>
+    <li><a href="#checklist">한 장 정리</a></li>
+  </ol>
+</nav>
+
+<!-- 1 -->
+<section class="card" id="what">
+  <h2><span class="no">1</span>깃허브가 뭐예요?</h2>
+  <p><b>깃허브(GitHub)</b>는 내가 만든 파일을 인터넷에 올려 두는 <b>온라인 보관함</b>이에요. 구글 드라이브와 비슷하지만 두 가지가 특별해요.</p>
+  <ul>
+    <li>📜 <b>고친 기록이 모두 남아요.</b> 언제, 무엇을, 왜 바꿨는지 하나하나 적혀 있어서 예전 모습으로 되돌릴 수도 있어요.</li>
+    <li>🌐 <b>올린 파일을 웹사이트로 바로 열 수 있어요.</b> 수업용 게임이나 자료 공유 사이트를 만들어 주소 하나로 학생들에게 나눠 줄 수 있어요.</li>
+  </ul>
+  <p>원래는 프로그램을 만드는 사람들이 쓰는 곳이지만, 요즘은 Claude 같은 AI가 코드를 대신 써 주기 때문에 <b>선생님도 충분히 쓸 수 있어요.</b> 내가 할 일은 “무엇을 만들고 싶은지” 말하고, 결과를 확인하는 것뿐이에요.</p>
+  <div class="box tip"><b>💡 이렇게 생각하면 쉬워요</b>
+    <p>깃허브 = 내 작품을 넣어 두는 <b>서랍장</b>. 서랍 하나하나가 “저장소”예요. 서랍마다 안내문(README)이 붙어 있고, 서랍을 열 때마다 언제 무엇을 넣고 뺐는지 기록장이 남아요.</p>
+  </div>
+</section>
+
+<!-- 2 -->
+<section class="card" id="words">
+  <h2><span class="no">2</span>꼭 알아야 할 낱말</h2>
+  <p>깃허브 화면은 대부분 영어예요. 아래 낱말만 알면 거의 다 읽을 수 있어요. 처음엔 다 외우지 말고, 막힐 때 돌아와서 보세요.</p>
+  <table class="words">
+    <tr><th>낱말</th><th>뜻</th></tr>
+    <tr><td>계정 (Account)</td><td>깃허브에서 쓰는 내 이름표예요. 아이디가 곧 주소가 돼요. 예) <code>github.com/berryst41</code></td></tr>
+    <tr><td>저장소 (Repository, 레포)</td><td>파일을 모아 두는 서랍 하나예요. 도구 하나, 프로젝트 하나마다 저장소를 하나씩 만들어요.</td></tr>
+    <tr><td>README (리드미)</td><td>“나를 먼저 읽어 주세요”라는 뜻의 <b>안내문</b>이에요. 저장소를 열면 파일 목록 아래에 자동으로 보여요. 이름 끝의 <code>.md</code>는 글자를 꾸밀 수 있는 문서라는 표시예요.</td></tr>
+    <tr><td>공개 / 비공개 (Public / Private)</td><td>공개는 누구나 볼 수 있고, 비공개는 나와 내가 초대한 사람만 봐요. <b>웹사이트로 쓰려면 보통 공개</b>로 둬요.</td></tr>
+    <tr><td>커밋 (Commit)</td><td>“이렇게 바꿨어요” 하고 <b>저장 도장</b>을 찍는 거예요. 짧은 메모(커밋 메시지)를 함께 남겨요. 초록색 <span class="btn">Commit changes</span> 단추가 바로 이거예요.</td></tr>
+    <tr><td>브랜치 (Branch)</td><td>원본을 건드리지 않고 따로 고쳐 보는 <b>연습장</b>이에요. 원본 연습장 이름은 보통 <code>main</code>이에요.</td></tr>
+    <tr><td>PR (Pull Request, 풀 리퀘스트)</td><td>연습장(브랜치)에서 고친 걸 원본에 넣어도 되는지 묻는 <b>변경 요청서</b>예요. Claude가 고친 내용은 보통 PR로 올라와요.</td></tr>
+    <tr><td>머지 (Merge, 합치기)</td><td>PR의 내용을 원본(main)에 <b>실제로 적용</b>하는 거예요. 머지하기 전에는 첫 화면에 바뀐 게 안 보여요.</td></tr>
+    <tr><td>협업자 (Collaborator)</td><td>내 저장소를 함께 고칠 수 있게 초대한 사람이에요.</td></tr>
+    <tr><td>깃허브 페이지 (GitHub Pages)</td><td>저장소에 올린 파일을 <b>무료 웹사이트</b>로 열어 주는 기능이에요. 주소는 <code>아이디.github.io/저장소이름/</code> 모양이에요.</td></tr>
+    <tr><td>깃허브 액션 (GitHub Actions)</td><td>정해 둔 시간마다 깃허브가 <b>혼자 알아서 하는 일</b>이에요. 예) 매일 아침 사이트 깨우기, 프로필 목록 새로 고치기.</td></tr>
+    <tr><td>2단계 인증 (2FA)</td><td>비밀번호에 더해 휴대폰으로 한 번 더 “나 맞아요” 확인하는 안전장치예요.</td></tr>
+    <tr><td>GitHub Mobile</td><td>휴대폰용 깃허브 앱이에요. 로그인할 때 “승인” 단추를 누르는 데 쓰여요.</td></tr>
+    <tr><td>터미널 / PowerShell</td><td>마우스 대신 <b>글자로 명령을 입력하는 검은(파란) 창</b>이에요. 윈도우에서는 PowerShell이라고 불러요.</td></tr>
+    <tr><td>CLI</td><td>터미널에서 쓰는 프로그램이라는 뜻이에요. 예) <b>Claude Code</b>(터미널에서 쓰는 Claude), <b>GitHub CLI</b>(<code>gh</code>, 터미널에서 쓰는 깃허브).</td></tr>
+  </table>
+</section>
+
+<!-- 3 -->
+<section class="card" id="account">
+  <h2><span class="no">3</span>계정 만들기</h2>
+  <ol>
+    <li><a href="https://github.com/signup" target="_blank" rel="noopener">github.com/signup</a>에 들어가요.</li>
+    <li>이메일, 비밀번호, <b>아이디(Username)</b>를 적어요.
+      <ul><li>아이디는 내 사이트 주소에 그대로 들어가요. 예) 아이디가 <code>berryst41</code>이면 사이트는 <code>berryst41.github.io</code></li>
+      <li>영어 소문자·숫자로 짧고 기억하기 쉽게 지어요. 학교 이름이나 실명은 넣지 않는 게 좋아요.</li></ul></li>
+    <li>이메일로 온 숫자 코드를 넣으면 가입 끝이에요.</li>
+    <li><b>2단계 인증 켜기:</b> 오른쪽 위 내 사진 → <b>Settings</b> → 왼쪽 <b>Password and authentication</b> → <b>Enable two-factor authentication</b>. 이때 휴대폰에 <b>GitHub Mobile</b> 앱을 깔고 같은 계정으로 로그인해 두면 나중에 편해요.</li>
+  </ol>
+  <div class="box warn"><b>⚠️ 아이디는 함부로 바꾸지 마세요</b>
+    <p>아이디를 바꾸면 사이트 주소도 같이 바뀌어요. 예전 주소로 나눠 준 링크와 인쇄해 둔 QR코드는 더 이상 열리지 않아요. 바꿔야 한다면 처음에 바꾸세요.</p>
+  </div>
+</section>
+
+<!-- 4 -->
+<section class="card" id="repo">
+  <h2><span class="no">4</span>첫 저장소 만들기</h2>
+  <ol>
+    <li>깃허브 오른쪽 위 <kbd>+</kbd> 단추 → <b>New repository</b>를 눌러요.</li>
+    <li><b>Repository name</b>에 이름을 적어요. 예) <code>my-first-repo</code>, <code>school</code> (영어 소문자와 <code>-</code>를 써요)</li>
+    <li><b>Public(공개)</b> 또는 <b>Private(비공개)</b>를 골라요. 연습용이면 비공개, 웹사이트로 쓸 거면 공개.</li>
+    <li><b>Add a README file</b>을 <b>켜요(On / 체크)</b>. 빈 저장소보다 시작하기 훨씬 편해요.</li>
+    <li>.gitignore, license(라이선스)는 그대로 두고 초록색 <span class="btn">Create repository</span>를 누르면 끝!</li>
+  </ol>
+  <div class="box tip"><b>🎁 특별한 저장소 하나</b>
+    <p>저장소 이름을 <b>내 아이디와 똑같이</b> 지으면(예: 아이디 <code>berryst41</code> → 저장소 <code>berryst41</code>) “프로필 꾸미기용” 특별 저장소가 돼요. 거기 README에 쓴 글이 내 깃허브 프로필 첫 화면에 소개글로 보여요. 만들 때 파란 안내문이 뜨는 게 그 뜻이에요.</p>
+  </div>
+</section>
+
+<!-- 5 -->
+<section class="card" id="upload">
+  <h2><span class="no">5</span>파일 올리고 고치기</h2>
+  <h3>📤 파일 올리기</h3>
+  <ol>
+    <li>저장소 화면에서 <b>Add file</b> → <b>Upload files</b>를 눌러요.</li>
+    <li>컴퓨터에 있는 파일을 화면에 끌어다 놓아요.</li>
+    <li>아래 메모 칸에 “첫 파일 올리기”처럼 짧게 적고 <span class="btn">Commit changes</span>를 눌러요.</li>
+  </ol>
+  <h3>✏️ README(안내문) 고치기</h3>
+  <ol>
+    <li>저장소 첫 화면 아래 README 상자의 오른쪽 위 <b>연필 아이콘 ✏️</b>을 눌러요.</li>
+    <li>“깃허브 연습 중입니다.” 같은 한 줄을 적어요.</li>
+    <li>오른쪽 위 <span class="btn">Commit changes</span>를 누르고, 뜨는 창에서 한 번 더 눌러요. (두 번 눌러야 저장돼요)</li>
+  </ol>
+  <div class="box tip"><b>💡 README에는 무엇을 쓰나요?</b>
+    <p>“이 저장소가 무엇이고, 어떻게 쓰는지”를 적어요. 책의 머리말, 폴더에 붙이는 표지라고 생각하면 돼요. 내가 만든 사이트 주소들을 모아 적어 두는 곳으로 써도 좋아요.</p>
+  </div>
+  <div class="box warn"><b>⚠️ 공개 저장소에는 개인정보를 올리지 마세요</b>
+    <p>학생 이름, 사진, 전화번호, 비밀번호 같은 건 공개 저장소에 올리면 누구나 볼 수 있어요. 한 번 올라간 건 기록에 남으니 처음부터 조심해요.</p>
+  </div>
+</section>
+
+<!-- 6 -->
+<section class="card" id="pages">
+  <h2><span class="no">6</span>웹사이트로 공개하기 (GitHub Pages)</h2>
+  <p>저장소에 <code>index.html</code> 파일이 있으면, 그 파일을 웹사이트로 열 수 있어요. 수업용 게임이나 자료 공유 사이트를 이렇게 올려요.</p>
+  <ol>
+    <li>저장소 위쪽 <b>Settings</b> → 왼쪽 <b>Pages</b>를 눌러요.</li>
+    <li><b>Source</b>는 <b>Deploy from a branch</b>, <b>Branch</b>는 <code>main</code> 과 <code>/ (root)</code>를 고르고 <b>Save</b>.</li>
+    <li>1~2분 기다린 뒤 새로고침하면 위쪽에 <b>“Your site is live at …”</b>과 주소가 나와요.</li>
+  </ol>
+  <p>주소 모양: <code>https://아이디.github.io/저장소이름/</code><br>
+     폴더 안의 파일은 주소 뒤에 폴더 이름을 붙여요. 예) <code>…/school/share/</code>, <code>…/school/docs/claude-guide.pdf</code></p>
+  <div class="box tip"><b>💡 고쳤는데 사이트가 그대로예요</b>
+    <p>사이트에 반영되기까지 1~2분 걸려요. 기다린 뒤 <kbd>Ctrl</kbd> + <kbd>F5</kbd>로 새로고침해 보세요.</p>
+  </div>
+  <div class="box warn"><b>⚠️ 무료 저장 서비스는 안 쓰면 잠들어요</b>
+    <p>학생들이 올린 파일처럼 데이터를 저장하는 사이트는 Supabase 같은 바깥 서비스를 함께 써요. 무료 요금제는 <b>일주일쯤 아무도 안 쓰면 일시 정지</b>되고 “곧 멈춘다”는 메일이 와요. 데이터가 지워지는 건 아니고 대시보드의 <b>Restore</b>로 다시 켤 수 있어요. 깃허브 액션으로 매일 한 번 자동으로 깨워 두면 걱정 없어요(Claude에게 “사이트가 안 잠들게 해 줘”라고 하면 돼요).</p>
+  </div>
+</section>
+
+<!-- 7 -->
+<section class="card" id="decorate">
+  <h2><span class="no">7</span>저장소·프로필 꾸미기</h2>
+  <h3>📘 저장소 첫 화면(README) 꾸미기</h3>
+  <p>README에는 표, 굵은 글씨, 그림, 눌러서 펼치는 칸까지 넣을 수 있어요. 직접 쓰기 어려우면 Claude에게 이렇게 말해 보세요.</p>
+  <div class="cmd-wrap"><div class="cmd">school 저장소 첫 화면을 한눈에 보기 좋게 꾸며 줘.
+맨 위에 도구 목록 표를 넣고, 자세한 설명은 눌러서 펼치게 해 줘.</div></div>
+  <ul>
+    <li>저장소 맨 위 파일 목록과 그 옆의 회색 글씨(커밋 메시지)는 깃허브가 모든 저장소에 똑같이 보여 주는 화면이라 숨길 수 없어요. 보는 사람은 대부분 그 아래 README를 봐요.</li>
+    <li>저장소 오른쪽 <b>About</b> 옆 ⚙️ → <b>Description</b>에 한 줄 소개를 적으면 목록에서 보기 좋아요.</li>
+  </ul>
+  <h3>🙋 프로필 꾸미기</h3>
+  <ol>
+    <li>아이디와 같은 이름의 저장소(<a href="#repo">4번</a>의 특별 저장소)를 만들고 README에 소개를 적어요.</li>
+    <li>내 사진 → <b>Your profile</b> → <b>Edit profile</b>에서 사진, 이름, 한 줄 소개(Bio)를 바꿔요. (이건 본인만 할 수 있어요)</li>
+    <li>프로필의 <b>Customize your pins</b>를 누르고 자랑하고 싶은 저장소에 체크 → <b>Save pins</b>. 프로필에 카드로 크게 보여요. (이것도 본인만 할 수 있어요)</li>
+  </ol>
+</section>
+
+<!-- 8 -->
+<section class="card" id="share">
+  <h2><span class="no">8</span>다른 사람과 나누기</h2>
+  <table>
+    <tr><th>이럴 때</th><th>이렇게 해요</th></tr>
+    <tr><td>👀 구경만 하게</td><td>저장소 주소(<code>github.com/아이디/저장소</code>)나 프로필 주소를 카톡·메일로 보내요. 공개 저장소는 계정이 없어도 볼 수 있어요.</td></tr>
+    <tr><td>🎮 도구만 쓰게</td><td>사이트 주소(<code>아이디.github.io/저장소/</code>)를 보내요. 가장 간단해요.</td></tr>
+    <tr><td>🤝 같이 고치게</td><td>저장소 → <b>Settings</b> → <b>Collaborators</b> → <b>Add people</b> → 상대 아이디나 이메일 입력. 상대가 메일로 온 초대를 <b>수락</b>해야 끝나요. 코드를 고칠 수 있게 되니 믿을 수 있는 사람만 초대해요.</td></tr>
+  </table>
+  <div class="box tip"><b>💡 계정이 두 개일 때</b>
+    <p>계정을 바꾸지 않아도 돼요. 쓰는 계정을 다른 계정 저장소의 <b>협업자로 초대하고 수락</b>하면 두 저장소를 모두 쓸 수 있어요. 다만 초대는 저장소마다 따로 해야 해요.</p>
+  </div>
+</section>
+
+<!-- 9 -->
+<section class="card" id="claude">
+  <h2><span class="no">9</span>Claude와 함께 쓰기</h2>
+  <p>Claude에게 깃허브를 연결해 두면 “이런 게 필요해” 한마디로 Claude가 파일을 만들고 고쳐서 저장소에 올려 줘요.</p>
+  <h3>🔗 연결하기</h3>
+  <ol>
+    <li>claude.ai에 로그인한 상태에서 <a href="https://claude.ai/connect-github" target="_blank" rel="noopener">claude.ai/connect-github</a>에 들어가요.</li>
+    <li>깃허브 로그인 창이 뜨면 <b>Claude가 써도 되는 계정</b>으로 로그인해요.</li>
+    <li>“Claude 앱을 어느 저장소에 설치할까요?” 하고 물으면 <b>All repositories</b>(모든 저장소) 또는 쓸 저장소만 골라 <b>Install</b>.</li>
+  </ol>
+  <h3>🔁 Claude가 고친 걸 적용하는 흐름</h3>
+  <ol>
+    <li>Claude가 연습장(브랜치)에서 고치고 <b>PR(변경 요청서)</b>을 올려요.</li>
+    <li>PR 링크를 열어 <b>Files changed</b> 탭에서 바뀐 내용을 볼 수 있어요.</li>
+    <li>괜찮으면 아래쪽 <span class="btn">Merge pull request</span> → <span class="btn">Confirm merge</span>. 이제 원본에 적용돼요.</li>
+  </ol>
+  <div class="box tip"><b>💡 매번 누르기 귀찮다면</b>
+    <p>Claude에게 “앞으로 고친 건 묻지 말고 알아서 적용(머지)해 줘”라고 말해 두세요. 프로젝트를 쓰고 있다면 프로젝트 지침에 적어 두면 새 대화에서도 그대로 지켜요.</p>
+  </div>
+  <div class="box warn"><b>⚠️ Claude도 못 하는 일 (본인만 할 수 있어요)</b>
+    <p>저장소 <b>삭제</b>, 프로필 <b>저장소 고정</b>(pins), 프로필 사진·Bio 바꾸기, 2단계 인증 승인. 이런 건 깃허브가 일부러 본인만 할 수 있게 막아 뒀어요.</p>
+  </div>
+  <details>
+    <summary>“main 브랜치를 보호하세요(Protect your main branch)” 안내가 떠요</summary>
+    <p>여러 사람이 함께 쓸 때 원본을 실수로 덮어쓰지 못하게 막는 기능이에요. 혼자 쓰고, Claude가 PR로 올리는 방식이라면 꼭 필요하지 않아요. <b>Dismiss</b>(닫기)를 눌러도 괜찮아요. 괜히 켜면 적용할 때 막히는 일이 생길 수 있어요.</p>
+  </details>
+</section>
+
+<!-- 10 -->
+<section class="card" id="install">
+  <h2><span class="no">10</span>내 컴퓨터에 도구 설치하기</h2>
+  <p>여기부터는 <b>선택</b>이에요. 웹 화면에서 Claude로만 써도 충분해요. 내 컴퓨터의 파일을 Claude가 직접 다루게 하거나, 프로그램을 내 컴퓨터에서 실행해야 할 때 설치해요.</p>
+
+  <h3>🥇 가장 쉬운 길: Claude 데스크톱 앱</h3>
+  <ol>
+    <li><a href="https://claude.ai/download" target="_blank" rel="noopener">claude.ai/download</a>에서 Claude 앱을 받아 설치해요.</li>
+    <li>시작 메뉴의 <b>주황색 Claude 아이콘</b>을 열고 로그인해요.</li>
+    <li>위쪽(또는 왼쪽 위)의 <b>Chat · Cowork · Code</b> 중 <b>Code</b>를 누르고, 작업할 폴더를 골라요.</li>
+  </ol>
+  <table>
+    <tr><th>Chat</th><th>Code</th></tr>
+    <tr><td>대화만 해요. 결과를 글로 보여 주고, 파일은 내가 직접 복사해서 써요.</td><td>내 컴퓨터 폴더 안에서 직접 일해요. 파일을 만들고 고치고 실행해서 확인까지 해 줘요.</td></tr>
+  </table>
+
+  <h3>⌨️ 터미널에서 쓰는 Claude Code</h3>
+  <p><b>PowerShell 여는 법:</b> 시작 단추를 누르고 “PowerShell”이라고 친 뒤 <b>Windows PowerShell</b>을 눌러요. 아래 줄을 복사해 붙여 넣고(<kbd>마우스 오른쪽 클릭</kbd> 또는 <kbd>Ctrl</kbd>+<kbd>V</kbd>) <kbd>Enter</kbd>를 눌러요.</p>
+  <div class="cmd-wrap"><div class="cmd">irm https://claude.ai/install.ps1 | iex</div></div>
+  <p>맥이라면 터미널에서 이 줄을 넣어요.</p>
+  <div class="cmd-wrap"><div class="cmd">curl -fsSL https://claude.ai/install.sh | bash</div></div>
+  <ol>
+    <li>1~2분 동안 아무 표시가 없을 수 있어요. 끝나면 <code>PS C:\...&gt;</code> 줄이 다시 나와요.</li>
+    <li>설치가 끝나면 <b>PowerShell 창을 닫고 새로 열어요.</b> (새 창에서만 <code>claude</code>를 알아들어요)</li>
+    <li><b>작업용 폴더를 따로 만들어요.</b> 내 사용자 폴더 전체를 맡기는 것보다 안전해요.
+      <div class="cmd-wrap"><div class="cmd">mkdir claude-work; cd claude-work
+claude</div></div></li>
+    <li>처음 한 번은 이렇게 물어요.
+      <ul>
+        <li>화면 색 고르기 → 그대로 <kbd>Enter</kbd></li>
+        <li>로그인 방법 → <b>Claude account</b>를 고르고, 열리는 브라우저에서 로그인</li>
+        <li>안전 안내(Claude도 실수할 수 있어요) → <kbd>Enter</kbd></li>
+        <li>“이 폴더를 믿나요?” → 작업용 폴더라면 <b>Yes, I trust this folder</b>. 사용자 폴더 전체(<code>C:\Users\…</code>)를 묻는다면 <b>No, exit</b>로 나가서 위의 작업용 폴더로 다시 시작해요.</li>
+      </ul></li>
+    <li>맨 아래 <code>&gt;</code> 옆에 <b>한국어로 하고 싶은 일</b>을 적고 <kbd>Enter</kbd>. 끝낼 때는 <code>/exit</code>를 입력하거나 창을 닫아요.</li>
+  </ol>
+  <p>다음부터는 PowerShell을 열고 이렇게만 치면 돼요.</p>
+  <div class="cmd-wrap"><div class="cmd">cd claude-work
+claude</div></div>
+  <div class="box tip"><b>💡 Git이 없다고 나오면</b>
+    <p><a href="https://git-scm.com/download/win" target="_blank" rel="noopener">Git for Windows</a>를 먼저 설치해요. 설치 창은 모두 기본값 그대로 <b>Next</b>만 눌러도 돼요.</p>
+  </div>
+
+  <h3>🐙 GitHub CLI(gh) 설치하고 로그인하기</h3>
+  <p>터미널에서 깃허브를 쓰게 해 주는 도구예요. Claude Code가 내 컴퓨터에서 깃허브에 올리거나 PR을 만들 때 필요해요.</p>
+  <div class="cmd-wrap"><div class="cmd">winget install --id GitHub.cli --source winget</div></div>
+  <ol>
+    <li>다 받고 설치 창이 뜨면 <b>예</b>를 눌러요. <b>Successfully installed</b>가 나오면 성공.</li>
+    <li>PowerShell을 <b>닫고 새로 연 뒤</b> 로그인해요.
+      <div class="cmd-wrap"><div class="cmd">gh auth login</div></div></li>
+    <li>질문이 차례로 나오면 화살표 키로 고르고 <kbd>Enter</kbd>.
+      <table>
+        <tr><th>물어보는 것</th><th>고를 것</th></tr>
+        <tr><td>Where do you use GitHub?</td><td><b>GitHub.com</b></td></tr>
+        <tr><td>preferred protocol (연결 방식)</td><td><b>HTTPS</b></td></tr>
+        <tr><td>Authenticate Git with your GitHub credentials?</td><td><b>Yes</b> (<kbd>Y</kbd>)</td></tr>
+        <tr><td>How would you like to authenticate?</td><td><b>Login with a web browser</b></td></tr>
+      </table></li>
+    <li>화면에 <code>XXXX-XXXX</code> 같은 <b>한 번만 쓰는 코드</b>가 나와요. <kbd>Enter</kbd>를 누르면 브라우저가 열리니, 그 코드를 넣고 <b>Authorize</b>를 눌러요.</li>
+    <li>휴대폰 <b>GitHub Mobile</b>로 확인을 하라고 하면, 앱에 뜬 숫자 중 <b>컴퓨터 화면에 나온 숫자</b>(예: 75)를 누르고 승인해요. 그러면 컴퓨터 화면이 저절로 넘어가요.</li>
+    <li>PowerShell에 <b>Logged in as 아이디</b>가 나오면 끝!</li>
+  </ol>
+  <details>
+    <summary>📱 GitHub Mobile 알림이 안 와요</summary>
+    <ol>
+      <li>알림을 기다리지 말고 휴대폰에서 <b>GitHub 앱을 직접 열어</b> 보세요. 앱 안에 확인 요청이 떠 있는 경우가 많아요.</li>
+      <li>없으면 앱 화면을 아래로 당겨 새로고침하고, 앱이 <b>같은 계정</b>으로 로그인돼 있는지 확인해요.</li>
+      <li>그래도 안 되면 컴퓨터 화면 아래쪽의 다른 확인 방법(인증 앱 코드, 비밀번호, 이메일 등)을 눌러서 확인해요.</li>
+    </ol>
+  </details>
+</section>
+
+<!-- 11 -->
+<section class="card" id="school">
+  <h2><span class="no">11</span>학교 컴퓨터에서 막힐 때</h2>
+  <p>학교 인터넷은 보안 장비가 중간에서 연결을 검사하기 때문에, 집에서는 잘 되는 설치가 학교에서만 막히는 일이 많아요. 아래 순서대로 해 보세요.</p>
+  <table>
+    <tr><th>이런 화면이 나와요</th><th>이렇게 해 보세요</th></tr>
+    <tr><td>설치 줄을 넣고 <b>몇 분째 아무 반응이 없어요</b></td><td>① <kbd>Enter</kbd>를 눌렀는지 확인 → ② 5분 기다리기 → ③ 그래도 그대로면 창을 닫고 새로 열어 한 번 더. 계속 안 되면 학교망이 막고 있는 거예요. 아래 <b>winget</b>이나 <b>핫스팟</b> 방법으로 가요.</td></tr>
+    <tr><td>내려받다가 <b>연결이 끊겼다</b>는 빨간 글씨</td><td>같은 줄을 한 번 더 실행해요. 또 끊기면 아래 방법으로 가요.</td></tr>
+    <tr><td><b>winget</b>으로 설치하다 <b>msstore(마이크로소프트 스토어) 오류</b></td><td>스토어 쪽만 막힌 거예요. 줄 끝에 <code>--source winget</code>을 붙여 어디서 받을지 정해 줘요.
+      <div class="cmd-wrap"><div class="cmd">winget install Anthropic.ClaudeCode --source winget</div></div></td></tr>
+    <tr><td><b>“인증서가 맞지 않습니다”</b>(certificate) 오류</td><td>학교망 보안 장비 때문에 자주 나요. <b>휴대폰 핫스팟</b>에 연결한 뒤 처음 설치 줄(<code>irm https://claude.ai/install.ps1 | iex</code>)을 다시 실행하는 게 가장 확실해요. <b>설치만 핫스팟으로 하면 그다음부터는 학교망에서 써도 돼요.</b></td></tr>
+    <tr><td>설치는 됐는데 <code>claude</code>를 치면 <b>“인식되지 않습니다”</b></td><td>PowerShell 창을 <b>닫고 새로 열어서</b> 다시 쳐요. 설치 직후에는 새 창에서만 알아들어요. (<code>gh</code>도 똑같아요)</td></tr>
+    <tr><td>앱 다운로드 자체가 안 돼요</td><td>학교 정보 담당 선생님께 <code>claude.ai</code>, <code>github.com</code> 접속 허용을 부탁드려요.</td></tr>
+  </table>
+  <div class="box tip"><b>💡 휴대폰 핫스팟 켜는 법</b>
+    <p>휴대폰 <b>설정 → 연결(또는 네트워크) → 모바일 핫스팟</b>을 켜요. 컴퓨터 오른쪽 아래 와이파이 아이콘에서 휴대폰 이름을 골라 연결해요. 설치가 끝나면 다시 학교 와이파이(또는 유선)로 돌아와도 돼요.</p>
+  </div>
+  <div class="box tip"><b>💡 막혔을 때 Claude에게 물어보는 법</b>
+    <p>PowerShell 창을 <b>캡처</b>(<kbd>윈도우키</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd>)해서 보여 주거나, 빨간 글씨를 그대로 복사해 붙여 넣고 “이거 뭐야?”라고 물어보세요. 캡처 첨부가 실패하면 글자만 붙여 넣어도 돼요.</p>
+  </div>
+</section>
+
+<!-- 12 -->
+<section class="card" id="faq">
+  <h2><span class="no">12</span>자주 묻는 질문</h2>
+  <details><summary>Claude가 고쳤다는데 저장소 화면이 그대로예요</summary>
+    <p>아직 <b>PR이 머지(적용)되기 전</b>이라 그래요. PR 링크에서 <span class="btn">Merge pull request</span>를 누르거나 Claude에게 “적용해 줘”라고 하세요. 머지했는데도 그대로면 <kbd>F5</kbd>로 새로고침해요.</p></details>
+  <details><summary>저장소를 지우고 싶어요</summary>
+    <p>지울 저장소 → <b>Settings</b> → 맨 아래 빨간 <b>Danger Zone</b> → <span class="btn red">Delete this repository</span> → 확인 단추를 몇 번 누르고, 마지막에 <code>아이디/저장소이름</code>을 그대로 따라 적으면 지워져요.</p>
+    <p>⚠️ <b>되돌릴 수 없어요.</b> 그 저장소로 열던 사이트도 함께 사라져요. 지우기 전에 남길 파일이 없는지 꼭 확인해요. (Claude는 대신 지워 줄 수 없어요)</p></details>
+  <details><summary>“워크플로가 실패했어요(Run failed)” 메일이 왔어요</summary>
+    <p>깃허브 액션(정해진 시간마다 저절로 도는 일)이 한 번 실패했다는 알림이에요. 메일 내용을 Claude에게 보여 주면 원인을 찾아 고쳐 줘요. 이미 고쳐진 뒤라면 무시해도 돼요.</p></details>
+  <details><summary>깃허브 액션을 쓰면 돈이나 Claude 사용량이 드나요?</summary>
+    <p>공개 저장소의 깃허브 액션은 무료예요. 한 번 설치한 뒤에는 깃허브가 혼자 돌리기 때문에 Claude 사용량(토큰)도 거의 들지 않아요.</p></details>
+  <details><summary>다른 저장소에 새로 올린 게 프로필에 자동으로 나오나요?</summary>
+    <p>기본으로는 안 나와요. 프로필 README도 그냥 글이 적힌 파일이라서요. 깃허브 액션으로 “한 시간마다 내 저장소 목록을 읽어 프로필 표를 새로 쓰기”를 달아 두면 자동으로 바뀌어요. Claude에게 부탁하면 설치해 줘요.</p></details>
+  <details><summary>“차단됨”, “업로드 실패” 같은 표시가 떠요 (Claude 프로젝트)</summary>
+    <p>“차단됨”은 고장이 아니라 Claude가 <b>내 답을 기다리는 중</b>이라는 뜻이에요. 그 대화에 한 줄 답을 남기면 바뀌어요. 사진 첨부가 실패하면 새로고침한 뒤 다시 올리거나, 글로 적어 보내요.</p></details>
+  <details><summary>남들은 깃허브를 어떻게 꾸며요?</summary>
+    <ul>
+      <li><a href="https://github.com/abhisheknaiidu/awesome-github-profile-readme" target="_blank" rel="noopener">예쁜 프로필 모음</a></li>
+      <li><a href="https://github.com/topics/education" target="_blank" rel="noopener">교육 관련 저장소 모음</a></li>
+      <li><a href="https://github.com/trending" target="_blank" rel="noopener">요즘 인기 있는 저장소</a></li>
+    </ul>
+    <p>마음에 드는 걸 찾으면 링크를 Claude에게 주고 “이런 느낌으로 꾸며 줘”라고 하면 돼요.</p></details>
+</section>
+
+<!-- 13 -->
+<section class="card" id="checklist">
+  <h2><span class="no">13</span>한 장 정리</h2>
+  <p>하나씩 체크하면서 따라가 보세요. (체크는 이 화면에서만 표시돼요)</p>
+  <ul class="check">
+    <li><label><input type="checkbox"> 깃허브 계정 만들기 (아이디는 짧고 오래 쓸 이름으로)</label></li>
+    <li><label><input type="checkbox"> 2단계 인증 켜고 휴대폰에 GitHub Mobile 깔기</label></li>
+    <li><label><input type="checkbox"> 첫 저장소 만들기 (Add README 켜기)</label></li>
+    <li><label><input type="checkbox"> 파일 하나 올리고 README 한 줄 고쳐 보기</label></li>
+    <li><label><input type="checkbox"> claude.ai/connect-github 에서 Claude 연결하기</label></li>
+    <li><label><input type="checkbox"> Claude에게 만들고 싶은 것 말하기 → PR 확인 → 머지</label></li>
+    <li><label><input type="checkbox"> Settings → Pages 켜고 내 사이트 주소 열어 보기</label></li>
+    <li><label><input type="checkbox"> 프로필 꾸미고 저장소 고정(pins)하기</label></li>
+    <li><label><input type="checkbox"> (선택) Claude Code·GitHub CLI 설치 — 학교망에서 막히면 핫스팟</label></li>
+  </ul>
+  <div class="box tip"><b>🍓 기억할 것 세 가지</b>
+    <p>① 고친 건 <b>머지해야</b> 적용돼요. ② 공개 저장소에는 <b>개인정보를 올리지 않아요.</b> ③ 막히면 <b>화면을 캡처해서 Claude에게</b> 물어봐요.</p>
+  </div>
+</section>
+
+<footer>🍓 딸기농장 · 깃허브 첫걸음 · 2026년 11월</footer>
+</div>
+<a class="top" href="#" aria-label="맨 위로">↑</a>
+
+<script>
+document.querySelectorAll('.cmd').forEach(function(box){
+  var b=document.createElement('button');
+  b.className='copy'; b.type='button'; b.textContent='복사';
+  b.addEventListener('click',function(){
+    var text=box.childNodes[0].textContent.trim();
+    var done=function(){b.textContent='복사됨 ✓';setTimeout(function(){b.textContent='복사';},1500);};
+    if(navigator.clipboard){navigator.clipboard.writeText(text).then(done,function(){});}
+    else{var t=document.createElement('textarea');t.value=text;document.body.appendChild(t);t.select();try{document.execCommand('copy');done();}catch(e){}document.body.removeChild(t);}
+  });
+  box.appendChild(b);
+});
+</script>
+</body>
+</html>
