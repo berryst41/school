@@ -138,6 +138,16 @@
 
 </details>
 
+<details>
+<summary><b>🕘 업데이트 기록</b></summary>
+<br>
+
+| 날짜 | 바뀐 점 |
+|:---:|:---|
+| 2026-11-06 | 웹페이지 안내서를 처음 올렸어요. |
+
+</details>
+
 </details>
 
 <a id="pumui"></a>
@@ -152,7 +162,7 @@
 
 👉 **[pumui-extension.zip (v0.2.0) 내려받기](https://github.com/berryst41/school/raw/main/pumui/pumui-extension.zip)**
 
-지금 버전: **v0.2.0** (2026-10-27) · 내가 쓰는 버전은 `chrome://extensions`의 품의 기안 도우미 카드에서 볼 수 있어요.
+지금 버전: **v0.2.0** (2026-10-27) · 내가 쓰는 버전은 `chrome://extensions`의 품의 기안 도우미 카드에서 볼 수 있어요. 바뀐 점은 아래 **🕘 버전 기록**에 있어요.
 
 <details>
 <summary><b>🔧 설치하는 방법</b></summary>
