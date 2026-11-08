@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>우리반 마니또 뽑기</title>
+<style>
+  :root {
+    --bg: #fff8ef; --card: #ffffff; --ink: #2d2a32; --muted: #7a7380;
+    --accent: #ff7a59; --accent2: #5b8def; --ok: #2fa66a; --line: #eadfd2;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 24px 16px 60px; }
+  h1 { text-align: center; font-size: 2.2rem; margin: 8px 0 20px; }
+  .card { background: var(--card); border-radius: 20px; padding: 28px;
+    box-shadow: 0 6px 24px rgba(0,0,0,.07); }
+  .hidden { display: none !important; }
+  button { font-family: inherit; cursor: pointer; border: 0; border-radius: 14px;
+    padding: 12px 22px; font-size: 1.1rem; font-weight: 700; }
+  .btn-main { background: var(--accent); color: #fff; }
+  .btn-blue { background: var(--accent2); color: #fff; }
+  .btn-ghost { background: #f1ebe4; color: var(--ink); }
+  button:disabled { opacity: .45; cursor: default; }
+  textarea { width: 100%; height: 340px; font-size: 1.1rem; padding: 12px;
+    border: 2px solid var(--line); border-radius: 12px; font-family: inherit; line-height: 1.5; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: center; margin-top: 16px; }
+  .muted { color: var(--muted); }
+  .warn { color: #c0392b; font-weight: 700; }
+
+  /* 뽑기 화면 */
+  .turn-no { font-size: 1.6rem; color: var(--muted); text-align: center; }
+  .turn-name { font-size: 4rem; font-weight: 800; text-align: center; margin: 6px 0 24px; }
+  .big-btn { display: block; margin: 0 auto; font-size: 2.2rem; padding: 26px 70px; border-radius: 24px; }
+  .slot { font-size: 4.2rem; font-weight: 800; text-align: center; min-height: 1.4em;
+    color: var(--accent2); margin: 10px 0; }
+  .result-label { text-align: center; font-size: 1.6rem; }
+  .progress { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 26px; }
+  .dot { min-width: 36px; height: 36px; border-radius: 10px; background: #f1ebe4;
+    display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--muted); }
+  .dot.done { background: var(--ok); color: #fff; }
+  .dot.now { background: var(--accent); color: #fff; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 1.15rem; margin-top: 12px; }
+  th, td { border-bottom: 1px solid var(--line); padding: 10px 8px; text-align: center; }
+  th { background: #fbf3ea; }
+
+  @media print {
+    body { background: #fff; }
+    .no-print { display: none !important; }
+    .card { box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🎁 우리반 마니또 뽑기 🎁</h1>
+
+  <!-- 1. 명단 입력 -->
+  <section id="setup" class="card">
+    <h2>1. 아이들 명단 입력</h2>
+    <p class="muted">번호 순서대로 <b>한 줄에 한 명씩</b> 이름을 적어 주세요. (첫 줄 = 1번)</p>
+    <textarea id="names" placeholder="홍길동&#10;김철수&#10;이영희&#10;..."></textarea>
+    <p id="countInfo" class="muted"></p>
+    <p id="setupError" class="warn"></p>
+    <div class="row">
+      <button class="btn-main" id="startBtn">마니또 뽑기 시작하기</button>
+    </div>
+  </section>
+
+  <!-- 2. 한 명씩 뽑기 -->
+  <section id="draw" class="card hidden">
+    <div class="turn-no" id="turnNo"></div>
+    <div class="turn-name" id="turnName"></div>
+
+    <div id="beforeDraw">
+      <button class="btn-main big-btn" id="drawBtn">뽑기!</button>
+    </div>
+
+    <div id="afterDraw" class="hidden">
+      <div class="result-label" id="resultLabel"></div>
+      <div class="slot" id="slot"></div>
+      <div class="row">
+        <button class="btn-blue" id="hideBtn" disabled>확인했어요 (화면 가리기)</button>
+      </div>
+    </div>
+
+    <div class="progress" id="progress"></div>
+  </section>
+
+  <!-- 3. 다음 사람 대기 (결과 가림 화면) -->
+  <section id="cover" class="card hidden" style="text-align:center">
+    <p style="font-size:1.5rem">결과를 가렸어요 🙈</p>
+    <p class="turn-no" id="nextInfo"></p>
+    <button class="btn-main big-btn" id="nextBtn">다음 친구 차례</button>
+  </section>
+
+  <!-- 4. 끝 -->
+  <section id="finish" class="card hidden" style="text-align:center">
+    <p style="font-size:2rem;font-weight:800">🎉 모두 뽑았어요! 🎉</p>
+    <p class="muted">아래 버튼은 선생님만 눌러 주세요.</p>
+    <button class="btn-blue" id="showAllBtn">전체 결과 보기 (선생님용)</button>
+  </section>
+
+  <!-- 5. 전체 결과 -->
+  <section id="results" class="card hidden">
+    <h2>마니또 전체 결과 <span class="muted" id="resultDate" style="font-size:1rem"></span></h2>
+    <p class="muted">왼쪽 친구가 오른쪽 친구의 마니또예요. (왼쪽 친구가 오른쪽 친구를 몰래 챙겨 줘요)</p>
+    <table>
+      <thead><tr><th>번호</th><th>마니또 (챙겨 주는 사람)</th><th>→</th><th>챙겨 줄 친구</th></tr></thead>
+      <tbody id="resultBody"></tbody>
+    </table>
+    <p id="checkMsg" style="font-weight:700"></p>
+    <div class="row no-print">
+      <button class="btn-main" id="dlXlsBtn">엑셀 파일로 다운로드</button>
+      <button class="btn-ghost" id="dlTxtBtn">메모장 파일로 다운로드</button>
+      <button class="btn-ghost" id="printBtn">인쇄</button>
+      <button class="btn-ghost" id="hideResultsBtn">결과 닫기</button>
+    </div>
+  </section>
+
+  <div class="row no-print" style="margin-top:28px">
+    <button class="btn-ghost hidden" id="resetBtn" style="font-size:.9rem">처음부터 다시 (새로 뽑기)</button>
+  </div>
+</div>
+
+<script>
+/* ===== MANITTO-CORE-START ===== (테스트 프로그램이 이 부분을 그대로 가져가 검사함) */
+
+// 섞기 (피셔-예이츠, 브라우저의 안전한 난수 사용)
+function randInt(n) {
+  if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+    const buf = new Uint32Array(1);
+    const limit = Math.floor(0x100000000 / n) * n;
+    do { crypto.getRandomValues(buf); } while (buf[0] >= limit);
+    return buf[0] % n;
+  }
+  return Math.floor(Math.random() * n);
+}
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = randInt(i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// 전체 짝을 처음에 한꺼번에 정함.
+// 아이들을 무작위로 한 줄로 세운 뒤, 각자 자기 "다음 사람"의 마니또가 되고
+// 맨 끝 사람은 맨 앞 사람의 마니또가 됨 (하나의 큰 원).
+// -> 자기 자신 X, 중복 X, 빠지는 사람 X, 서로 마니또(A↔B) X 가 항상 보장됨 (3명 이상일 때)
+// 반환: target[i] = i번째 아이가 챙겨 줄 친구의 인덱스
+function makeManitto(n) {
+  if (n < 3) throw new Error("3명 이상이어야 합니다");
+  const order = shuffle([...Array(n).keys()]);
+  const target = new Array(n);
+  for (let k = 0; k < n; k++) target[order[k]] = order[(k + 1) % n];
+  return target;
+}
+
+// 조건 검사. 문제가 없으면 빈 배열, 있으면 문제 목록을 돌려줌
+function checkManitto(target, n) {
+  const problems = [];
+  if (target.length !== n) problems.push("인원 수가 맞지 않음");
+  const received = new Array(n).fill(0);
+  for (let i = 0; i < n; i++) {
+    const t = target[i];
+    if (!Number.isInteger(t) || t < 0 || t >= n) { problems.push((i + 1) + "번: 대상 없음"); continue; }
+    if (t === i) problems.push((i + 1) + "번: 자기 자신을 뽑음");
+    if (target[t] === i) problems.push((i + 1) + "번과 " + (t + 1) + "번이 서로 마니또");
+    received[t]++;
+  }
+  received.forEach((c, i) => {
+    if (c !== 1) problems.push((i + 1) + "번을 챙겨 주는 사람이 " + c + "명");
+  });
+  return problems;
+}
+/* ===== MANITTO-CORE-END ===== */
+
+const KEY = "manitto-draw-v1";
+let state = null; // { names:[], target:[], current:0, revealed:false, date:"" }
+
+const $ = id => document.getElementById(id);
+const show = (...ids) => ids.forEach(id => $(id).classList.remove("hidden"));
+const hide = (...ids) => ids.forEach(id => $(id).classList.add("hidden"));
+
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+function load() { try { return JSON.parse(localStorage.getItem(KEY)); } catch (e) { return null; } }
+
+function parseNames() {
+  return $("names").value.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+}
+$("names").addEventListener("input", () => {
+  $("countInfo").textContent = "지금 " + parseNames().length + "명";
+});
+
+$("startBtn").onclick = () => {
+  const names = parseNames();
+  $("setupError").textContent = "";
+  if (names.length < 3) { $("setupError").textContent = "3명 이상 입력해 주세요."; return; }
+  const dup = names.filter((x, i) => names.indexOf(x) !== i);
+  if (dup.length) { $("setupError").textContent = "이름이 겹쳐요: " + [...new Set(dup)].join(", ") + " (예: 김민준A, 김민준B 처럼 구분해 주세요)"; return; }
+  if (!confirm(names.length + "명으로 마니또를 정할게요. 시작할까요?")) return;
+
+  let target, problems;
+  do { // 혹시라도 문제가 있으면 다시 정함 (이론상 일어나지 않음)
+    target = makeManitto(names.length);
+    problems = checkManitto(target, names.length);
+  } while (problems.length);
+
+  state = { names, target, current: 0, revealed: false, date: new Date().toLocaleString("ko-KR") };
+  save();
+  render();
+};
+
+function renderProgress() {
+  $("progress").innerHTML = state.names.map((_, i) =>
+    `<div class="dot ${i < state.current ? "done" : i === state.current ? "now" : ""}">${i + 1}</div>`
+  ).join("");
+}
+
+function render() {
+  hide("setup", "draw", "cover", "finish", "results");
+  if (!state) { show("setup"); hide("resetBtn"); return; }
+  show("resetBtn");
+  const n = state.names.length;
+  if (state.current >= n) { show("finish"); return; }
+
+  const i = state.current;
+  if (state.revealed) { // 결과 본 뒤 가림 화면
+    show("cover");
+    $("nextInfo").textContent = "다음: " + (i + 2) + "번 " + (state.names[i + 1] || "");
+    $("nextBtn").textContent = i + 1 >= n ? "마치기" : "다음 친구 차례";
+    return;
+  }
+  show("draw", "beforeDraw");
+  hide("afterDraw");
+  $("turnNo").textContent = (i + 1) + "번 / 전체 " + n + "명";
+  $("turnName").textContent = state.names[i];
+  $("drawBtn").disabled = false;
+  renderProgress();
+}
+
+$("drawBtn").onclick = () => {
+  const i = state.current, names = state.names;
+  $("drawBtn").disabled = true;
+  hide("beforeDraw"); show("afterDraw");
+  $("resultLabel").textContent = "두근두근...";
+  $("hideBtn").disabled = true;
+  // 이름이 빙글빙글 돌다가 멈추는 연출 (결과는 이미 정해져 있음)
+  const others = names.filter((_, k) => k !== i);
+  let ticks = 0, total = 28;
+  (function spin() {
+    ticks++;
+    if (ticks < total) {
+      $("slot").textContent = others[randInt(others.length)];
+      setTimeout(spin, 40 + ticks * 6);
+    } else {
+      $("slot").textContent = names[state.target[i]];
+      $("resultLabel").innerHTML = "<b>" + names[i] + "</b>(이)가 몰래 챙겨 줄 친구는";
+      $("hideBtn").disabled = false;
+    }
+  })();
+};
+
+$("hideBtn").onclick = () => {
+  $("slot").textContent = "";
+  state.revealed = true;
+  save();
+  render();
+};
+
+$("nextBtn").onclick = () => {
+  state.current++;
+  state.revealed = false;
+  save();
+  render();
+};
+
+$("showAllBtn").onclick = () => {
+  if (!confirm("선생님용 전체 결과를 열까요? (아이들이 보지 않게 해 주세요)")) return;
+  const { names, target } = state;
+  $("resultBody").innerHTML = names.map((nm, i) =>
+    `<tr><td>${i + 1}</td><td><b>${esc(nm)}</b></td><td>→</td><td>${esc(names[target[i]])} <span class="muted">(${target[i] + 1}번)</span></td></tr>`
+  ).join("");
+  $("resultDate").textContent = "(" + state.date + " 뽑음)";
+  const problems = checkManitto(target, names.length);
+  $("checkMsg").innerHTML = problems.length
+    ? '<span class="warn">문제 발견: ' + problems.join(", ") + "</span>"
+    : '<span style="color:var(--ok)">✔ 조건 점검 완료: 자기 자신 없음 · 중복 없음 · 빠진 사람 없음 · 서로 마니또 없음</span>';
+  hide("finish"); show("results");
+};
+$("hideResultsBtn").onclick = () => { hide("results"); show("finish"); };
+$("printBtn").onclick = () => window.print();
+
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+
+function fileStamp() {
+  const d = new Date(), p = x => String(x).padStart(2, "0");
+  return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate());
+}
+function download(filename, text, type) {
+  const blob = new Blob(["﻿" + text], { type }); // 한글 깨짐 방지
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+$("dlXlsBtn").onclick = () => {
+  const { names, target } = state;
+  const q = s => '"' + String(s).replace(/"/g, '""') + '"';
+  const lines = ["번호,마니또(챙겨 주는 사람),챙겨 줄 친구 번호,챙겨 줄 친구"];
+  names.forEach((nm, i) => lines.push([i + 1, q(nm), target[i] + 1, q(names[target[i]])].join(",")));
+  download("마니또결과_" + fileStamp() + ".csv", lines.join("\r\n"), "text/csv;charset=utf-8");
+};
+$("dlTxtBtn").onclick = () => {
+  const { names, target } = state;
+  const lines = ["우리반 마니또 결과 (" + state.date + ")", "왼쪽 친구가 오른쪽 친구의 마니또", ""];
+  names.forEach((nm, i) => lines.push((i + 1) + ". " + nm + "  →  " + names[target[i]]));
+  download("마니또결과_" + fileStamp() + ".txt", lines.join("\r\n"), "text/plain;charset=utf-8");
+};
+
+$("resetBtn").onclick = () => {
+  if (!confirm("지금까지 뽑은 결과가 모두 사라지고 새로 뽑아요. 정말 처음부터 할까요?")) return;
+  if (!confirm("한 번 더 확인할게요. 정말 지울까요?")) return;
+  const names = state ? state.names : [];
+  state = null;
+  try { localStorage.removeItem(KEY); } catch (e) {}
+  $("names").value = names.join("\n");
+  $("names").dispatchEvent(new Event("input"));
+  render();
+};
+
+// 실수로 창을 닫거나 새로고침해도 이어서 진행
+state = load();
+if (state && !(state.names && state.target)) state = null;
+render();
+</script>
+</body>
+</html>

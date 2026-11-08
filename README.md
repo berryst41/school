@@ -50,6 +50,11 @@
 <td>3명이 협동해서 폭탄을 해체하는 장애이해교육 게임</td>
 <td align="center"><a href="https://berryst41.github.io/school/"><b>🎮&nbsp;하&#8288;기</b></a></td>
 </tr>
+<tr>
+<td>🎁 <a href="https://github.com/berryst41/school/tree/main/manitto"><b>마니또 뽑기</b></a></td>
+<td>아이들이 한 명씩 나와 버튼을 눌러 마니또를 뽑아요 (자기 자신·중복·서로 마니또 없음)</td>
+<td align="center"><a href="https://berryst41.github.io/school/manitto/"><b>🎁&nbsp;열&#8288;기</b></a></td>
+</tr>
 </table>
 
 > [!TIP]
@@ -67,6 +72,9 @@ school/
 ├── index.html        🐵 폭탄원숭이 게임
 ├── bomb-monkey/
 │   └── README.md        폭탄원숭이 설명
+├── manitto/
+│   ├── index.html    🎁 마니또 뽑기
+│   └── README.md        설명
 ├── share/
 │   ├── index.html    📮 자료 공유 사이트
 │   ├── qrcode.js        QR코드 만들기
