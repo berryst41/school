@@ -75,6 +75,9 @@ school/
 ├── manitto/
 │   ├── index.html    🎁 마니또 뽑기
 │   └── README.md        설명
+├── couple/
+│   ├── index.html    💑 우리 둘 (둘만 쓰는 커플 앱)
+│   └── README.md        설명
 ├── share/
 │   ├── index.html    📮 자료 공유 사이트
 │   ├── qrcode.js        QR코드 만들기
