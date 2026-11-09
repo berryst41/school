@@ -60,7 +60,14 @@
   <!-- 1. 명단 입력 -->
   <section id="setup" class="card">
     <h2>1. 아이들 명단 입력</h2>
-    <p class="muted">번호 순서대로 <b>한 줄에 한 명씩</b> 이름을 적어 주세요. (첫 줄 = 1번)</p>
+    <div class="row" style="justify-content:flex-start;margin:0 0 12px">
+      <button class="btn-blue" id="xlsBtn">📂 엑셀 명렬표 불러오기</button>
+      <input type="file" id="xlsFile" accept=".xlsx,.xls,.csv,.cell" class="hidden">
+      <span class="muted">또는 아래 칸에 엑셀 파일을 끌어다 놓아도 돼요</span>
+    </div>
+    <p id="xlsInfo" style="font-weight:700;color:var(--ok)"></p>
+    <p class="muted">번호 순서대로 <b>한 줄에 한 명씩</b> 이름을 적어 주세요. (첫 줄 = 1번)<br>
+      엑셀에서 이름 칸을 복사해서 그대로 붙여넣어도 돼요.</p>
     <textarea id="names" placeholder="홍길동&#10;김철수&#10;이영희&#10;..."></textarea>
     <p id="countInfo" class="muted"></p>
     <p id="setupError" class="warn"></p>
@@ -125,6 +132,7 @@
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 /* ===== MANITTO-CORE-START ===== (테스트 프로그램이 이 부분을 그대로 가져가 검사함) */
 
@@ -194,6 +202,59 @@ function parseNames() {
 }
 $("names").addEventListener("input", () => {
   $("countInfo").textContent = "지금 " + parseNames().length + "명";
+});
+
+// ===== 엑셀 명렬표 불러오기 =====
+// "이름/성명" 제목 칸이 있으면 그 열을, "번호" 칸이 있으면 번호 순으로 정렬해요.
+// 제목 칸이 없으면 글자(숫자가 아닌 것)가 가장 많은 열을 이름으로 봐요.
+function namesFromRows(rows) {
+  const clean = v => String(v == null ? "" : v).trim();
+  const key = v => clean(v).replace(/\s/g, "");
+  const isName = v => /^(이름|성명|학생명|학생이름|성함)$/.test(key(v));
+  const isNum = v => /^(번호|번|출석번호|학생번호|순번)$/.test(key(v));
+  let head = -1, nameCol = -1, numCol = -1;
+  for (let r = 0; r < Math.min(rows.length, 15) && head < 0; r++) {
+    const c = rows[r].findIndex(isName);
+    if (c >= 0) { head = r; nameCol = c; numCol = rows[r].findIndex(isNum); }
+  }
+  let body = rows.slice(head + 1);
+  if (nameCol < 0) { // 제목 칸이 없을 때
+    const width = Math.max(0, ...rows.map(r => r.length));
+    let best = 0;
+    for (let c = 0; c < width; c++) {
+      const cnt = rows.filter(r => clean(r[c]) && isNaN(clean(r[c]))).length;
+      if (cnt > best) { best = cnt; nameCol = c; }
+    }
+    if (nameCol < 0) return [];
+    body = rows.filter(r => clean(r[nameCol]) && isNaN(clean(r[nameCol])));
+  }
+  let list = body.map((r, i) => ({ name: clean(r[nameCol]), no: numCol >= 0 ? parseFloat(r[numCol]) : NaN, i }))
+                 .filter(x => x.name && !isName(x.name));
+  if (numCol >= 0 && list.every(x => !isNaN(x.no))) list.sort((a, b) => a.no - b.no || a.i - b.i);
+  return list.map(x => x.name);
+}
+
+async function loadRoster(file) {
+  $("xlsInfo").textContent = ""; $("setupError").textContent = "";
+  if (typeof XLSX === "undefined") { $("setupError").textContent = "엑셀 읽기 도구를 불러오지 못했어요. 인터넷 연결을 확인하거나, 엑셀에서 이름 칸을 복사해 붙여넣어 주세요."; return; }
+  try {
+    const wb = XLSX.read(await file.arrayBuffer(), { type: "array" });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const names = namesFromRows(XLSX.utils.sheet_to_json(ws, { header: 1, defval: "", raw: false }));
+    if (!names.length) { $("setupError").textContent = "파일에서 이름을 찾지 못했어요. 첫 번째 시트에 '이름' 칸이 있는지 확인해 주세요."; return; }
+    $("names").value = names.join("\n");
+    $("names").dispatchEvent(new Event("input"));
+    $("xlsInfo").textContent = "✔ '" + file.name + "'에서 " + names.length + "명을 불러왔어요. 아래 명단과 순서가 맞는지 확인해 주세요.";
+  } catch (e) {
+    $("setupError").textContent = "파일을 읽지 못했어요: " + e.message;
+  }
+}
+$("xlsBtn").onclick = () => $("xlsFile").click();
+$("xlsFile").onchange = e => { if (e.target.files[0]) loadRoster(e.target.files[0]); e.target.value = ""; };
+$("names").addEventListener("dragover", e => e.preventDefault());
+$("names").addEventListener("drop", e => {
+  const f = e.dataTransfer.files && e.dataTransfer.files[0];
+  if (f) { e.preventDefault(); loadRoster(f); }
 });
 
 $("startBtn").onclick = () => {
