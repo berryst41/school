@@ -346,10 +346,12 @@ function bodyOf(text) {
   return lines.join('\n').trim();
 }
 
-function classify(text) {
+// kindPicked: 사람이 종류를 직접 골랐으면 그 종류에 맞춰 요일을 정함
+function classify(text, kindPicked) {
   const tags = tagsOf(text);
   const has = t => tags.includes(t);
-  let kind = null, why = '';
+  let kind = kindPicked || null, why = '';
+  if (!kind)
   for (const [k, words] of TAG_RULES) {
     const w = words.find(has);
     if (w) { kind = k; why = '#' + w; break; }
@@ -420,7 +422,7 @@ function editItem(i = {}) {
   const fill = () => {
     const t = $('f-text').value;
     if (!t.trim()) { $('f-guess').style.display = 'none'; return; }
-    const g = classify(t);
+    const g = classify(t, touched.has('f-kind') ? $('f-kind').value : null);
     const set = (id, v) => { if (!touched.has(id)) $(id).value = v ?? ''; };
     set('f-kind', g.kind); set('f-day', g.day); set('f-year', g.year); set('f-month', g.month); set('f-week', g.week);
     // 종류·주차·요일을 바꾸면 제목도 다시 (아침멘트 제목은 주차·요일로 만듦)
