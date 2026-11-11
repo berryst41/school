@@ -407,7 +407,9 @@ async function viewPeople() {
   $('mk').onclick = async () => {
     const name = $('nm').value.trim();
     if (!name) { toast('이름을 써 주세요'); return; }
-    const m = await rpc('cls_member_add', { p_code: S.code, p_name: name });
+    let m;
+    try { m = await rpc('cls_member_add', { p_code: S.code, p_name: name }); }
+    catch { toast('코드를 못 만들었어요. 다시 해 주세요'); return; }
     await copy(invite(name, m.code), '코드를 만들고 초대 글을 복사했어요');
     viewPeople();
   };
