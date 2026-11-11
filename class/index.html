@@ -70,11 +70,17 @@ label{display:block;font-weight:700;font-size:14px;margin:12px 0 5px}
 const SUPABASE_URL = 'https://bmfihlddiyfeejrdrigm.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtZmlobGRkaXlmZWVqcmRyaWdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyNTUwNzIsImV4cCI6MjEwNjgzMTA3Mn0.8EHC-CI5fz0yg9hF2Cp0uSfI1dZuUz5yS-MUaAdcCbc';
 const CODE_KEY = 'cls-code';
-const KINDS = ['아침멘트', '중간놀이', '목힘', '인성교육', '수업놀이', '단단멘트', '기타'];
-const KIND_ICON = { 아침멘트: '🌅', 중간놀이: '🤸', 목힘: '🫠', 인성교육: '💚', 수업놀이: '🎲', 단단멘트: '💪', 기타: '📎' };
+// 종류 이름은 구글 시트 칸에서 정해져요 (supabase/cls-sync/parse.js의 COLS)
+const KINDS = ['아침멘트', '중간놀이', '목힘', '금요놀이', '단단마인드', '수업놀이', '교사마인드', '주간교육', '기타'];
+const KIND_ICON = { 아침멘트: '🌅', 중간놀이: '🤸', 목힘: '🫠', 금요놀이: '💚', 단단마인드: '💪', 수업놀이: '🎲', 교사마인드: '🧑‍🏫', 주간교육: '📅', 기타: '📎' };
+const KIND_LABEL = { 목힘: '목힘(특별활동)', 금요놀이: '금요 인성놀이' };
+const label = k => KIND_LABEL[k] || k;
 const DAYS = ['일', '월', '화', '수', '목', '금', '토'];
 // 요일마다 「오늘」에 보여 줄 종류
-const TODAY_KINDS = { 월: ['아침멘트'], 화: ['아침멘트'], 수: ['아침멘트', '중간놀이'], 목: ['아침멘트', '목힘'], 금: ['아침멘트', '인성교육'] };
+const TODAY_KINDS = { 월: ['아침멘트'], 화: ['아침멘트'], 수: ['아침멘트', '중간놀이'], 목: ['아침멘트', '목힘'], 금: ['아침멘트', '금요놀이'] };
+// 학년도 안에서 달 순서 (3월 → 2월)
+const monthRank = m => m == null ? 99 : (m + 9) % 12;
+const weekKey = i => i.year * 10000 + monthRank(i.month) * 100 + (i.week || 0);
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
