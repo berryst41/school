@@ -37,10 +37,11 @@ function makeItem(text, extraUrls) {
   return { title: title || '(제목 없음)', body, tags, links: urls.map(url => ({ name: linkName(url), url })) };
 }
 
-// 한 칸 안에 "#목힘2"처럼 해시태그만 있는 줄이나 "(1)" "(2)"처럼 번호 매긴 줄이 나오면(맨 처음은 빼고)
-// 거기서부터 새 자료로 쪼개요. 시트는 한 칸 그대로 두고, 자료실에서만 자료 여러 개로 나눠 보여 주려고.
-function splitChunks(text) {
-  const isBoundary = l => /^\s*(#[^\s#]+\s*)+$/.test(l.trim()) || /^\s*\(\d+\)\s*\S/.test(l);
+// 한 칸 안에 "#목힘2"처럼 해시태그만 있는 줄이 나오면(맨 처음은 빼고) 거기서부터 새 자료로 쪼개요.
+// "(1)" "(2)" 괄호 번호는 목힘 칸에서만 경계로 봐요(중간놀이 등은 번호가 한 주제 안의 여러 멘트일 뿐이라 나누면 안 됨).
+// 시트는 한 칸 그대로 두고, 자료실에서만 자료 여러 개로 나눠 보여 주려고.
+function splitChunks(text, kind) {
+  const isBoundary = l => /^\s*(#[^\s#]+\s*)+$/.test(l.trim()) || (kind === '목힘' && /^\s*\(\d+\)\s*\S/.test(l));
   const lines = text.split('\n');
   const chunks = [];
   let cur = [];
@@ -70,7 +71,7 @@ export function parseWorkbook(X, wb, year, skipTexts = new Set()) {
         const [kind, day] = kindOf(head[ci]) || ['기타'];
         const addr = X.utils.encode_cell({ r: ri + 1, c: ci });
         const hl = ws[addr]?.l?.Target;
-        const chunks = splitChunks(text).filter(c => clean(c).length >= 5);
+        const chunks = splitChunks(text, kind).filter(c => clean(c).length >= 5);
         chunks.forEach((chunk, pi) => {
           out.push({
             ...makeItem(chunk, pi === 0 && hl ? [hl] : []),
