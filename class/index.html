@@ -367,9 +367,18 @@ function editItem(i = {}) {
 // ── 허용 코드 관리 (관리자만) ─────────────────────────────
 async function viewPeople() {
   $('view').innerHTML = '<div class="empty">불러오는 중…</div>';
-  const list = await rpc('cls_members_list', { p_code: S.code });
+  const [list, info] = await Promise.all([rpc('cls_members_list', { p_code: S.code }), rpc('cls_sync_info', { p_code: S.code })]);
   const link = location.origin + location.pathname;
   $('view').innerHTML = `
+    <div class="card">
+      <b>📝 구글 시트에서 가져오기</b>
+      <div class="meta">시트에 쓰면 자료실을 열 때 저절로 가져와요(10분에 한 번). 바로 보고 싶으면 아래 단추를 누르세요.<br>
+        마지막: ${info.last_sync ? new Date(info.last_sync).toLocaleString('ko-KR') + ' · ' + esc(info.last_result || '') : '아직 없음'}</div>
+      <div class="row" style="margin-top:10px">
+        <button class="main" id="sync">🔄 지금 가져오기</button>
+        ${(info.sheets || []).map(s => `<button class="ghost" data-sheet="${s.year}">${s.year}년 시트 열기</button>`).join('')}
+      </div>
+    </div>
     <div class="card">
       <b>새 사람에게 코드 주기</b>
       <div class="meta">사람마다 다른 코드가 만들어져요. 끄면 그 사람만 바로 못 들어와요.</div>
@@ -384,6 +393,15 @@ async function viewPeople() {
           <button data-tog="${esc(m.code)}" data-on="${m.active}">${m.active ? '끄기' : '켜기'}</button>
           <button class="danger" data-rm="${esc(m.code)}" data-name="${esc(m.name)}">삭제</button>`}
       </div>`).join('')}</div>`;
+  $('sync').onclick = async () => {
+    $('sync').disabled = true; $('sync').textContent = '가져오는 중… (1분쯤)';
+    try {
+      const out = await sync(true);
+      toast(out.map(r => r.result || r.error || '').join(' / '));
+    } catch { toast('가져오기가 안 됐어요'); }
+    viewPeople();
+  };
+  document.querySelectorAll('[data-sheet]').forEach(b => b.onclick = () => openSheet(+b.dataset.sheet));
   const invite = (name, code) => `${name}, 4원칙 학급 운영 자료실이에요 📚\n${link}\n허용 코드: ${code}`;
   $('mk').onclick = async () => {
     const name = $('nm').value.trim();
