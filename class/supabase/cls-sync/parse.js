@@ -31,21 +31,21 @@ function makeItem(text, extraUrls) {
   while (lines.length && /^\s*(#[^\s#]+\s*)*$/.test(lines[0])) lines.shift();
   const body = lines.join('\n').trim();
   const first = (body.match(/<([^<>\n]{2,40})>/) || [])[1] ||
-    (body.split('\n').map(l => l.replace(/^["“'*■●▶\s-]+/, '').trim()).find(l => l && !/^https?:/.test(l)) || '');
+    (body.split('\n').map(l => l.replace(/^["“'*■●▶\s-]+/, '').replace(/^\(\d+\)\s*/, '').trim()).find(l => l && !/^https?:/.test(l)) || '');
   const title = first.length > 42 ? first.slice(0, 40) + '…' : first;
   const urls = [...new Set([...extraUrls, ...(text.match(/https?:\/\/[^\s<>"')]+/g) || [])])];
   return { title: title || '(제목 없음)', body, tags, links: urls.map(url => ({ name: linkName(url), url })) };
 }
 
-// 한 칸 안에 "#목힘2"처럼 해시태그만 있는 줄이 여러 번 나오면(처음은 빼고) 거기서부터 새 자료로 쪼개요.
-// 시트는 한 칸 그대로 두고, 자료실에서만 자료 여러 개로 나눠 보여 주려고.
+// 한 칸 안에 "#목힘2"처럼 해시태그만 있는 줄이나 "(1)" "(2)"처럼 번호 매긴 줄이 나오면(맨 처음은 빼고)
+// 거기서부터 새 자료로 쪼개요. 시트는 한 칸 그대로 두고, 자료실에서만 자료 여러 개로 나눠 보여 주려고.
 function splitChunks(text) {
-  const isTagLine = l => /^\s*(#[^\s#]+\s*)+$/.test(l.trim());
+  const isBoundary = l => /^\s*(#[^\s#]+\s*)+$/.test(l.trim()) || /^\s*\(\d+\)\s*\S/.test(l);
   const lines = text.split('\n');
   const chunks = [];
   let cur = [];
   for (const line of lines) {
-    if (isTagLine(line) && cur.some(l => l.trim())) { chunks.push(cur); cur = []; }
+    if (isBoundary(line) && cur.some(l => l.trim())) { chunks.push(cur); cur = []; }
     cur.push(line);
   }
   if (cur.length) chunks.push(cur);
