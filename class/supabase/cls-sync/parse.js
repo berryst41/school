@@ -29,7 +29,7 @@ function makeItem(text, extraUrls) {
   while (lines.length && /^\s*(#[^\s#]+\s*)*$/.test(lines[0])) lines.shift();
   const body = lines.join('\n').trim();
   const first = (body.match(/<([^<>\n]{2,40})>/) || [])[1] ||
-    (body.split('\n').map(l => l.replace(/^["“'*\s\d.()-]+/, '').trim()).find(l => l && !/^https?:/.test(l)) || '');
+    (body.split('\n').map(l => l.replace(/^["“'*■●▶\s-]+/, '').trim()).find(l => l && !/^https?:/.test(l)) || '');
   const title = first.length > 42 ? first.slice(0, 40) + '…' : first;
   const urls = [...new Set([...extraUrls, ...(text.match(/https?:\/\/[^\s<>"')]+/g) || [])])];
   return { title: title || '(제목 없음)', body, tags, links: urls.map(url => ({ name: linkName(url), url })) };
@@ -55,6 +55,7 @@ export function parseWorkbook(X, wb, year, skipTexts = new Set()) {
         const hl = ws[addr]?.l?.Target;
         out.push({
           ...makeItem(text, hl ? [hl] : []),
+          ...(kind === '아침멘트' && week ? { title: `${week}주차 ${day}요일 아침 멘트` } : {}),
           year, month, week, kind, day: day || null,
           sort: ci, src: `${year}|${tab}|${addr}`, raw: text
         });
