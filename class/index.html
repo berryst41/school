@@ -315,45 +315,142 @@ async function openSheet(year) {
   if (s) w.location = `https://docs.google.com/spreadsheets/d/${s.id}/edit`; else w.close();
 }
 
+// ── 멘트를 붙여 넣으면 태그를 보고 알아서 나누기 ─────────────────────────────
+// 1) 먼저 아래 규칙(위에 있을수록 먼저) 2) 규칙에 없으면 기존 자료에서 그 태그가 가장 많이 쓰인 종류 3) 그래도 없으면 기타
+const TAG_RULES = [
+  ['아침멘트', ['아침멘트', '월밀', '월밀자료']],
+  ['목힘', ['목힘', '수힘', '특별활동']],
+  ['수업놀이', ['수업놀이1픽', '수업놀이', '수업놀이추천']],
+  ['중간놀이', ['중간놀이', '짧은놀이', '수요일']],
+  ['금요놀이', ['금요놀이', '금놀이', '인성놀이', '금요일', '교실놀이추천']],
+  ['교사마인드', ['교사마인드']],
+  ['주간교육', ['주간교육']],
+  ['단단마인드', ['단단마인드']]
+];
+// 종류마다 하는 요일
+const KIND_DAY = { 중간놀이: '수', 목힘: '목', 금요놀이: '금' };
+const tagsOf = text => [...new Set((text.match(/#[^\s#]+/g) || []).map(t => t.slice(1)))];
+const urlsOf = text => [...new Set(text.match(/https?:\/\/[^\s<>"')]+/g) || [])];
+// 시트 가져오기(supabase/cls-sync/parse.js)와 같은 방식
+function linkName(u) {
+  if (/youtu\.?be/.test(u)) return '영상';
+  if (/blog\.naver/.test(u)) return '블로그';
+  if (/drive\.google|docs\.google/.test(u)) return '자료 파일';
+  if (/padlet/.test(u)) return '패들렛';
+  if (/canva/.test(u)) return '캔바';
+  return '링크';
+}
+function bodyOf(text) {
+  const lines = text.replace(/\r\n?/g, '\n').trim().split('\n');
+  while (lines.length && /^\s*(#[^\s#]+\s*)*$/.test(lines[0])) lines.shift();
+  return lines.join('\n').trim();
+}
+
+function classify(text) {
+  const tags = tagsOf(text);
+  const has = t => tags.includes(t);
+  let kind = null, why = '';
+  for (const [k, words] of TAG_RULES) {
+    const w = words.find(has);
+    if (w) { kind = k; why = '#' + w; break; }
+  }
+  if (!kind) {
+    // 기존 자료에서 태그마다 어느 종류에 많이 쓰였는지 세어 봄
+    const score = {};
+    for (const i of S.items) for (const t of i.tags || []) {
+      if (has(t) && t !== '이종대왕' && !/주차/.test(t)) score[i.kind] = (score[i.kind] || 0) + 1;
+    }
+    const best = Object.entries(score).sort((a, b) => b[1] - a[1])[0];
+    if (best) { kind = best[0]; why = '비슷한 태그가 쓰인 자료'; }
+  }
+  kind = kind || '기타';
+
+  const now = new Date();
+  const dayTag = tags.map(t => (t.match(/^(월|화|수|목|금)요일$/) || [])[1]).find(Boolean);
+  let day = dayTag || KIND_DAY[kind] || '';
+  if (!day && kind === '아침멘트') day = DAYS[now.getDay()].replace(/[토일]/, '월');
+
+  // 주차: #34주차 태그 → 없으면 이번 주(올해 가장 최근 주차)
+  const latest = S.items.filter(i => i.year === now.getFullYear() && i.week).sort((a, b) => weekKey(b) - weekKey(a))[0];
+  const weekTag = tags.map(t => +((t.match(/^(\d+)(?:~\d+)?주차$/) || [])[1])).find(Boolean);
+  const week = weekTag || latest?.week || '';
+  const same = S.items.find(i => i.year === now.getFullYear() && i.week === week && i.month);
+  const month = same?.month || now.getMonth() + 1;
+
+  const body = bodyOf(text);
+  const first = (body.match(/<([^<>\n]{2,40})>/) || [])[1] ||
+    (body.split('\n').map(l => l.replace(/^["“'*■●▶\s-]+/, '').trim()).find(l => l && !/^https?:/.test(l)) || '');
+  const title = kind === '아침멘트' && week && day ? `${week}주차 ${day}요일 아침 멘트` : (first.length > 42 ? first.slice(0, 40) + '…' : first);
+  return { kind, why, day, week, month, year: now.getFullYear(), title, body, tags };
+}
+
 function editItem(i = {}) {
   const now = new Date();
-  const links = (i.links || []).map(l => (l.name ? l.name + ' | ' : '') + l.url).join('\n');
+  // 고칠 때는 태그를 맨 위 줄에 다시 붙여서 보여 줌
+  const text = i.id ? ((i.tags || []).length ? i.tags.map(t => '#' + t).join(' ') + '\n\n' : '') + (i.body || '') : '';
+  const extra = (i.links || []).filter(l => !(i.body || '').includes(l.url)).map(l => (l.name ? l.name + ' | ' : '') + l.url).join('\n');
   openModal(`
     <h2>${i.id ? '✏️ 자료 고치기' : '＋ 자료 추가'}</h2>
+    <div class="meta">카톡 등에서 멘트를 <b>#태그까지 통째로</b> 붙여 넣으면 종류·요일·주차를 알아서 정해요. 아래에서 바꿀 수도 있어요.</div>
+    <textarea id="f-text" style="min-height:200px;margin-top:10px" placeholder="#이종대왕 #목힘 #35주차&#10;&#10;여기에 멘트나 자료 설명을 붙여 넣으세요">${esc(text)}</textarea>
+    <div class="card" id="f-guess" style="margin:10px 0 0;background:var(--accent-soft);border:0;padding:12px 14px;display:none"></div>
+    <div class="row">
+      <div><label>종류</label><select id="f-kind">${KINDS.map(k => `<option value="${k}" ${k === (i.kind || '아침멘트') ? 'selected' : ''}>${KIND_ICON[k]} ${label(k)}</option>`).join('')}</select></div>
+      <div><label>요일</label><select id="f-day"><option value="">-</option>${['월', '화', '수', '목', '금'].map(d => `<option ${d === i.day ? 'selected' : ''}>${d}</option>`).join('')}</select></div>
+    </div>
     <div class="row">
       <div><label>연도</label><input id="f-year" type="number" value="${i.year || now.getFullYear()}"></div>
-      <div><label>종류</label><select id="f-kind">${KINDS.map(k => `<option ${k === (i.kind || S.kind || '아침멘트') ? 'selected' : ''}>${k}</option>`).join('')}</select></div>
+      <div><label>월</label><input id="f-month" type="number" min="1" max="12" value="${i.month ?? ''}"></div>
+      <div><label>주차</label><input id="f-week" type="number" min="1" value="${i.week ?? ''}"></div>
     </div>
-    <div class="row">
-      <div><label>주차 (선택)</label><input id="f-week" type="number" min="1" value="${i.week ?? ''}"></div>
-      <div><label>요일 (선택)</label><select id="f-day"><option value="">-</option>${['월', '화', '수', '목', '금'].map(d => `<option ${d === i.day ? 'selected' : ''}>${d}</option>`).join('')}</select></div>
-    </div>
-    <label>하는 날짜 (선택)</label><input id="f-date" type="date" value="${i.date || ''}">
     <label>제목</label><input id="f-title" value="${esc(i.title || '')}">
-    <label>내용·멘트</label><textarea id="f-body">${esc(i.body || '')}</textarea>
-    <label>자료 링크 (한 줄에 하나, "이름 | 주소"처럼 써도 돼요)</label>
-    <textarea id="f-links" style="min-height:70px" placeholder="목힘 PPT | https://drive.google.com/...">${esc(links)}</textarea>
-    <label>태그 (쉼표로 나눠요, 선택)</label><input id="f-tags" value="${esc((i.tags || []).join(', '))}">
+    <label>더 붙일 링크 (선택, 멘트 속 주소는 저절로 들어가요)</label>
+    <textarea id="f-links" style="min-height:60px" placeholder="목힘 PPT | https://drive.google.com/...">${esc(extra)}</textarea>
     <div class="row" style="margin-top:18px">
       <button class="main" id="sv">저장</button>
       ${i.id ? '<button class="danger" id="dl">지우기</button>' : ''}
       <button class="ghost" id="cl">취소</button>
     </div>`);
   $('cl').onclick = closeModal;
+
+  // 사람이 직접 바꾼 칸은 그대로 두고, 나머지만 멘트를 보고 채움
+  const touched = new Set(i.id ? ['f-kind', 'f-day', 'f-year', 'f-month', 'f-week', 'f-title'] : []);
+  ['f-kind', 'f-day', 'f-year', 'f-month', 'f-week', 'f-title'].forEach(id => $(id).addEventListener('input', () => touched.add(id)));
+  const fill = () => {
+    const t = $('f-text').value;
+    if (!t.trim()) { $('f-guess').style.display = 'none'; return; }
+    const g = classify(t);
+    const set = (id, v) => { if (!touched.has(id)) $(id).value = v ?? ''; };
+    set('f-kind', g.kind); set('f-day', g.day); set('f-year', g.year); set('f-month', g.month); set('f-week', g.week);
+    // 종류가 바뀌면 제목도 다시 (아침멘트 제목은 주차·요일로 만듦)
+    if (!touched.has('f-title')) $('f-title').value = classify(t).title;
+    const k = $('f-kind').value;
+    $('f-guess').style.display = 'block';
+    $('f-guess').innerHTML = `🪄 <b>${KIND_ICON[k]} ${esc(label(k))}</b>${$('f-day').value ? ' · ' + $('f-day').value + '요일' : ''}${$('f-week').value ? ' · ' + $('f-week').value + '주차' : ''}로 넣을게요
+      <div class="meta">${g.why ? '찾은 근거: ' + esc(g.why) : '맞는 태그가 없어서 기타로 넣어요'}${urlsOf(t).length ? ` · 링크 ${urlsOf(t).length}개` : ''}</div>`;
+  };
+  $('f-text').addEventListener('input', fill);
+  ['f-kind', 'f-day', 'f-week'].forEach(id => $(id).addEventListener('change', fill));
+  if (!i.id) setTimeout(() => $('f-text').focus(), 50); else fill();
+
   $('sv').onclick = async () => {
+    const t = $('f-text').value;
+    const extraLinks = $('f-links').value.split('\n').map(s => s.trim()).filter(Boolean).map(s => {
+      const m = s.split('|'); return m.length > 1 ? { name: m[0].trim(), url: m.slice(1).join('|').trim() } : { name: linkName(s), url: s };
+    });
     const p = {
       id: i.id || null,
       year: +$('f-year').value || now.getFullYear(),
+      month: $('f-month').value,
       kind: $('f-kind').value,
-      week: $('f-week').value, day: $('f-day').value, date: $('f-date').value,
+      week: $('f-week').value, day: $('f-day').value, date: i.date || '',
       title: $('f-title').value.trim(),
-      body: $('f-body').value.trim(),
-      links: $('f-links').value.split('\n').map(s => s.trim()).filter(Boolean).map(s => {
-        const m = s.split('|'); return m.length > 1 ? { name: m[0].trim(), url: m.slice(1).join('|').trim() } : { name: '', url: s };
-      }),
-      tags: $('f-tags').value.split(',').map(s => s.trim()).filter(Boolean)
+      body: bodyOf(t),
+      links: [...urlsOf(t).map(url => ({ name: linkName(url), url })), ...extraLinks],
+      tags: tagsOf(t)
     };
-    if (!p.title) { toast('제목을 써 주세요'); return; }
+    if (!p.body) { toast('멘트를 붙여 넣어 주세요'); return; }
+    if (!p.title) p.title = p.body.split('\n')[0].slice(0, 40);
     $('sv').disabled = true;
     try { await rpc('cls_save', { p_code: S.code, p }); closeModal(); toast('저장했어요'); S.year = p.year; await load(); }
     catch { toast('저장이 안 됐어요. 다시 해 주세요'); $('sv').disabled = false; }
