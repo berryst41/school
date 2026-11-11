@@ -147,6 +147,20 @@ async function start(code, me) {
   S.code = code; S.me = me;
   $('app').innerHTML = '<div class="empty">불러오는 중…</div>';
   await load();
+  // 마지막으로 시트를 가져온 지 10분이 지났으면 서버가 새로 가져와요(아니면 바로 끝남)
+  sync(false).catch(() => {});
+}
+
+async function sync(all) {
+  const call = year => fetch(`${SUPABASE_URL}/functions/v1/cls-sync`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code: S.code, year })
+  }).then(r => r.json());
+  const years = all ? yearsOf() : [null];
+  const out = [];
+  for (const y of years) out.push(await call(y));
+  if (out.some(r => r.ok && !r.skipped)) await load();
+  return out;
 }
 
 async function load() {
@@ -163,7 +177,7 @@ function yearsOf() {
 
 // ── 화면 ─────────────────────────────
 function render() {
-  const tabs = [['today', '☀️ 오늘'], ['all', '📂 모아보기'], ...(S.me.admin ? [['people', '🔑 허용 코드']] : [])];
+  const tabs = [['today', '☀️ 오늘'], ['all', '📂 모아보기'], ...(S.me.admin ? [['people', '⚙️ 관리']] : [])];
   $('app').innerHTML = `
     <header>
       <h1>📚 4원칙 자료실</h1>
