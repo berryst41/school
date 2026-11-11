@@ -380,9 +380,10 @@ function classify(text) {
   const body = bodyOf(text);
   const first = (body.match(/<([^<>\n]{2,40})>/) || [])[1] ||
     (body.split('\n').map(l => l.replace(/^["“'*■●▶\s-]+/, '').trim()).find(l => l && !/^https?:/.test(l)) || '');
-  const title = kind === '아침멘트' && week && day ? `${week}주차 ${day}요일 아침 멘트` : (first.length > 42 ? first.slice(0, 40) + '…' : first);
-  return { kind, why, day, week, month, year: now.getFullYear(), title, body, tags };
+  const plain = first.length > 42 ? first.slice(0, 40) + '…' : first;
+  return { kind, why, day, week, month, year: now.getFullYear(), plain, title: titleFor(kind, week, day, plain), body, tags };
 }
+const titleFor = (kind, week, day, plain) => kind === '아침멘트' && week && day ? `${week}주차 ${day}요일 아침 멘트` : plain;
 
 function editItem(i = {}) {
   const now = new Date();
@@ -422,9 +423,9 @@ function editItem(i = {}) {
     const g = classify(t);
     const set = (id, v) => { if (!touched.has(id)) $(id).value = v ?? ''; };
     set('f-kind', g.kind); set('f-day', g.day); set('f-year', g.year); set('f-month', g.month); set('f-week', g.week);
-    // 종류가 바뀌면 제목도 다시 (아침멘트 제목은 주차·요일로 만듦)
-    if (!touched.has('f-title')) $('f-title').value = classify(t).title;
+    // 종류·주차·요일을 바꾸면 제목도 다시 (아침멘트 제목은 주차·요일로 만듦)
     const k = $('f-kind').value;
+    if (!touched.has('f-title')) $('f-title').value = titleFor(k, $('f-week').value, $('f-day').value, g.plain);
     $('f-guess').style.display = 'block';
     $('f-guess').innerHTML = `🪄 <b>${KIND_ICON[k]} ${esc(label(k))}</b>${$('f-day').value ? ' · ' + $('f-day').value + '요일' : ''}${$('f-week').value ? ' · ' + $('f-week').value + '주차' : ''}로 넣을게요
       <div class="meta">${g.why ? '찾은 근거: ' + esc(g.why) : '맞는 태그가 없어서 기타로 넣어요'}${urlsOf(t).length ? ` · 링크 ${urlsOf(t).length}개` : ''}</div>`;
