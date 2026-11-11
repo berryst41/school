@@ -469,6 +469,18 @@ function editItem(i = {}) {
         }).then(r => r.json());
         if (r.error) throw new Error(r.error);
         toast('저장했어요 (시트에도 반영됨)');
+      } else if (!i.id && p.week) {
+        // 새로 넣는 자료는 그 주차의 빈 분류 칸을 찾아 시트에도 써요. 빈 칸이 없으면 자료실 안에만 저장해요.
+        const r = await fetch(`${SUPABASE_URL}/functions/v1/cls-sheet-write`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code: S.code, place: true, year: p.year, month: p.month, week: p.week, kind: p.kind,
+            title: p.title, body: p.body, tags: p.tags, links: p.links
+          })
+        }).then(r => r.json());
+        if (r.error) throw new Error(r.error);
+        if (r.placed) toast('저장했어요 (시트에도 반영됨)');
+        else { await rpc('cls_save', { p_code: S.code, p }); toast('저장했어요 (시트에는 빈 칸이 없어 자료실에만 넣었어요)'); }
       } else {
         await rpc('cls_save', { p_code: S.code, p });
         toast('저장했어요');
