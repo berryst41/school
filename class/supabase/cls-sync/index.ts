@@ -1,5 +1,6 @@
 // 학급 운영 자료실: 구글 시트 → cls_items 가져오기
-// 부르는 곳: ① pg_cron (x-cron-secret 헤더) ② 자료실의 관리자 "시트에서 새로 가져오기" 단추 ({ code })
+// 부르는 곳: ① 자료실을 열 때 마지막으로 가져온 지 10분이 지났으면 (허용 코드가 있는 누구나, { code })
+//          ② 관리자 "시트에서 새로 가져오기" 단추 (관리자 코드, 언제든·지난해도) ③ x-cron-secret 헤더
 // 시트에서 온 자료는 src(연도|탭|칸)로 맞춰 넣고, 시트에서 사라진 칸은 지워요. 손으로 넣은 자료(src 없음)는 건드리지 않아요.
 import * as X from 'npm:xlsx@0.18.5';
 import { createClient } from 'npm:@supabase/supabase-js@2';
