@@ -12,6 +12,8 @@ const COLS = {
 
 const clean = s => String(s ?? '').replace(/\r\n?/g, '\n').trim();
 const colName = s => clean(s).replace(/\s+/g, ' ');
+// 같은 종류 칸이 여러 개 필요하면 시트에 "특별활동2"처럼 끝에 숫자를 붙인 칸을 추가해도 같은 종류로 인식해요.
+const kindOf = h => COLS[h] || COLS[h.replace(/\s*\d+$/, '')];
 
 function linkName(u) {
   if (/youtu\.?be/.test(u)) return '영상';
@@ -50,7 +52,7 @@ export function parseWorkbook(X, wb, year, skipTexts = new Set()) {
         if (ci === 0) return;
         const text = clean(cell);
         if (text.length < 5 || skipTexts.has(text)) return;
-        const [kind, day] = COLS[head[ci]] || ['기타'];
+        const [kind, day] = kindOf(head[ci]) || ['기타'];
         const addr = X.utils.encode_cell({ r: ri + 1, c: ci });
         const hl = ws[addr]?.l?.Target;
         out.push({
