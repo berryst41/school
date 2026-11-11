@@ -37,6 +37,21 @@ function makeItem(text, extraUrls) {
   return { title: title || '(제목 없음)', body, tags, links: urls.map(url => ({ name: linkName(url), url })) };
 }
 
+// 한 칸 안에 "#목힘2"처럼 해시태그만 있는 줄이 여러 번 나오면(처음은 빼고) 거기서부터 새 자료로 쪼개요.
+// 시트는 한 칸 그대로 두고, 자료실에서만 자료 여러 개로 나눠 보여 주려고.
+function splitChunks(text) {
+  const isTagLine = l => /^\s*(#[^\s#]+\s*)+$/.test(l.trim());
+  const lines = text.split('\n');
+  const chunks = [];
+  let cur = [];
+  for (const line of lines) {
+    if (isTagLine(line) && cur.some(l => l.trim())) { chunks.push(cur); cur = []; }
+    cur.push(line);
+  }
+  if (cur.length) chunks.push(cur);
+  return chunks.map(c => c.join('\n'));
+}
+
 // skipTexts: 다른 해 시트에 똑같이 있는 칸(복사해 둔 탭)은 건너뛰려고 받음
 export function parseWorkbook(X, wb, year, skipTexts = new Set()) {
   const out = [];
@@ -55,11 +70,14 @@ export function parseWorkbook(X, wb, year, skipTexts = new Set()) {
         const [kind, day] = kindOf(head[ci]) || ['기타'];
         const addr = X.utils.encode_cell({ r: ri + 1, c: ci });
         const hl = ws[addr]?.l?.Target;
-        out.push({
-          ...makeItem(text, hl ? [hl] : []),
-          ...(kind === '아침멘트' && week ? { title: `${week}주차 ${day}요일 아침 멘트` } : {}),
-          year, month, week, kind, day: day || null,
-          sort: ci, src: `${year}|${tab}|${addr}`, raw: text
+        const chunks = splitChunks(text).filter(c => clean(c).length >= 5);
+        chunks.forEach((chunk, pi) => {
+          out.push({
+            ...makeItem(chunk, pi === 0 && hl ? [hl] : []),
+            ...(kind === '아침멘트' && week ? { title: `${week}주차 ${day}요일 아침 멘트` } : {}),
+            year, month, week, kind, day: day || null,
+            sort: ci, src: `${year}|${tab}|${addr}${pi ? '#' + (pi + 1) : ''}`, raw: text
+          });
         });
       });
     });

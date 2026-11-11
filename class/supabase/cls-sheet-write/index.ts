@@ -140,6 +140,11 @@ async function handle(req: Request) {
   if (!id) return json({ error: 'bad request' }, 400);
   const { data: item } = await db.from('cls_items').select('*').eq('id', id).single();
   if (!item || !item.src) return json({ error: 'not a sheet item' }, 400);
+  // 한 칸에 자료가 여러 개 쪼개져 있으면(src에 #2 등, 또는 그 짝이 있으면) 여기서 고치면 다른 자료가 지워지니 막아요
+  const baseSrc = item.src.split('#')[0];
+  if (item.src.includes('#')) return json({ error: '한 칸에 자료가 여러 개 들어있어요. 구글 시트에서 직접 고쳐 주세요.' }, 400);
+  const { count: siblings } = await db.from('cls_items').select('id', { count: 'exact', head: true }).like('src', `${baseSrc}#%`);
+  if (siblings) return json({ error: '한 칸에 자료가 여러 개 들어있어요. 구글 시트에서 직접 고쳐 주세요.' }, 400);
   const [, tab, addr] = item.src.split('|');
 
   const { data: cfg } = await db.from('cls_config').select('sheets').eq('id', 1).single();
