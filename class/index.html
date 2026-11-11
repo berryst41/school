@@ -430,7 +430,7 @@ function editItem(i = {}) {
     if (!touched.has('f-title')) $('f-title').value = titleFor(k, $('f-week').value, $('f-day').value, g.plain);
     $('f-guess').style.display = 'block';
     $('f-guess').innerHTML = `🪄 <b>${KIND_ICON[k]} ${esc(label(k))}</b>${$('f-day').value ? ' · ' + $('f-day').value + '요일' : ''}${$('f-week').value ? ' · ' + $('f-week').value + '주차' : ''}로 넣을게요
-      <div class="meta">${g.why ? '찾은 근거: ' + esc(g.why) : '맞는 태그가 없어서 기타로 넣어요'}${urlsOf(t).length ? ` · 링크 ${urlsOf(t).length}개` : ''}</div>`;
+      <div class="meta">${touched.has('f-kind') ? '직접 고른 종류예요' : g.why ? '찾은 근거: ' + esc(g.why) : '맞는 태그가 없어서 기타로 넣어요'}${urlsOf(t).length ? ` · 링크 ${urlsOf(t).length}개` : ''}</div>`;
   };
   $('f-text').addEventListener('input', fill);
   ['f-kind', 'f-day', 'f-week'].forEach(id => $(id).addEventListener('change', fill));
