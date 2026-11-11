@@ -299,7 +299,7 @@ function openItem(i) {
     ${i.tags?.length ? `<div class="meta" style="margin-top:10px">${i.tags.map(t => `<a href="#" data-tag="${esc(t)}" style="color:inherit">#${esc(t)}</a>`).join(' ')}</div>` : ''}
     <div class="row" style="margin-top:18px">
       ${i.body ? '<button id="cp">📋 내용 복사</button>' : ''}
-      ${S.me.admin ? (i.src ? '<button id="sh">📝 시트에서 고치기</button>' : '<button id="ed">✏️ 고치기</button>') : ''}
+      ${S.me.admin ? '<button id="ed">✏️ 고치기</button>' + (i.src ? '<button id="sh">📝 시트에서 고치기</button>' : '') : ''}
       <button class="ghost" id="cl">닫기</button>
     </div>`);
   if ($('cp')) $('cp').onclick = () => copy(i.body);
@@ -393,22 +393,24 @@ const titleFor = (kind, week, day, plain) => kind === '아침멘트' && week && 
 
 function editItem(i = {}) {
   const now = new Date();
+  const fromSheet = !!i.src;
   // 고칠 때는 태그를 맨 위 줄에 다시 붙여서 보여 줌
   const text = i.id ? ((i.tags || []).length ? i.tags.map(t => '#' + t).join(' ') + '\n\n' : '') + (i.body || '') : '';
   const extra = (i.links || []).filter(l => !(i.body || '').includes(l.url)).map(l => (l.name ? l.name + ' | ' : '') + l.url).join('\n');
+  const dis = fromSheet ? 'disabled' : '';
   openModal(`
     <h2>${i.id ? '✏️ 자료 고치기' : '＋ 자료 추가'}</h2>
-    <div class="meta">카톡 등에서 멘트를 <b>#태그까지 통째로</b> 붙여 넣으면 종류·요일·주차를 알아서 정해요. 아래에서 바꿀 수도 있어요.</div>
+    <div class="meta">${fromSheet ? '📝 시트에서 온 자료예요. 여기서 고치면 <b>구글 시트 칸에도 바로</b> 반영돼요. 종류·요일·주차·연도는 시트 칸 자리로 정해져서 여기서는 못 바꿔요.' : '카톡 등에서 멘트를 <b>#태그까지 통째로</b> 붙여 넣으면 종류·요일·주차를 알아서 정해요. 아래에서 바꿀 수도 있어요.'}</div>
     <textarea id="f-text" style="min-height:200px;margin-top:10px" placeholder="#이종대왕 #목힘 #35주차&#10;&#10;여기에 멘트나 자료 설명을 붙여 넣으세요">${esc(text)}</textarea>
     <div class="card" id="f-guess" style="margin:10px 0 0;background:var(--accent-soft);border:0;padding:12px 14px;display:none"></div>
     <div class="row">
-      <div><label>종류</label><select id="f-kind">${KINDS.map(k => `<option value="${k}" ${k === (i.kind || '아침멘트') ? 'selected' : ''}>${KIND_ICON[k]} ${label(k)}</option>`).join('')}</select></div>
-      <div><label>요일</label><select id="f-day"><option value="">-</option>${['월', '화', '수', '목', '금'].map(d => `<option ${d === i.day ? 'selected' : ''}>${d}</option>`).join('')}</select></div>
+      <div><label>종류</label><select id="f-kind" ${dis}>${KINDS.map(k => `<option value="${k}" ${k === (i.kind || '아침멘트') ? 'selected' : ''}>${KIND_ICON[k]} ${label(k)}</option>`).join('')}</select></div>
+      <div><label>요일</label><select id="f-day" ${dis}><option value="">-</option>${['월', '화', '수', '목', '금'].map(d => `<option ${d === i.day ? 'selected' : ''}>${d}</option>`).join('')}</select></div>
     </div>
     <div class="row">
-      <div><label>연도</label><input id="f-year" type="number" value="${i.year || now.getFullYear()}"></div>
-      <div><label>월</label><input id="f-month" type="number" min="1" max="12" value="${i.month ?? ''}"></div>
-      <div><label>주차</label><input id="f-week" type="number" min="1" value="${i.week ?? ''}"></div>
+      <div><label>연도</label><input id="f-year" type="number" value="${i.year || now.getFullYear()}" ${dis}></div>
+      <div><label>월</label><input id="f-month" type="number" min="1" max="12" value="${i.month ?? ''}" ${dis}></div>
+      <div><label>주차</label><input id="f-week" type="number" min="1" value="${i.week ?? ''}" ${dis}></div>
     </div>
     <label>제목</label><input id="f-title" value="${esc(i.title || '')}">
     <label>더 붙일 링크 (선택, 멘트 속 주소는 저절로 들어가요)</label>
@@ -459,7 +461,20 @@ function editItem(i = {}) {
     if (!p.body) { toast('멘트를 붙여 넣어 주세요'); return; }
     if (!p.title) p.title = p.body.split('\n')[0].slice(0, 40);
     $('sv').disabled = true;
-    try { await rpc('cls_save', { p_code: S.code, p }); closeModal(); toast('저장했어요'); S.year = p.year; await load(); }
+    try {
+      if (fromSheet) {
+        const r = await fetch(`${SUPABASE_URL}/functions/v1/cls-sheet-write`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: S.code, id: i.id, title: p.title, body: p.body, tags: p.tags, links: p.links })
+        }).then(r => r.json());
+        if (r.error) throw new Error(r.error);
+        toast('저장했어요 (시트에도 반영됨)');
+      } else {
+        await rpc('cls_save', { p_code: S.code, p });
+        toast('저장했어요');
+      }
+      closeModal(); S.year = p.year; await load();
+    }
     catch { toast('저장이 안 됐어요. 다시 해 주세요'); $('sv').disabled = false; }
   };
   if ($('dl')) $('dl').onclick = async () => {
