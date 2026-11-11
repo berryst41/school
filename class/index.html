@@ -282,22 +282,36 @@ function openModal(html) { $('sheet').innerHTML = html; $('modal').classList.add
 function closeModal() { $('modal').classList.remove('on'); }
 $('modal').onclick = e => { if (e.target.id === 'modal') closeModal(); };
 
+// 본문 속 주소는 누를 수 있게
+const linkify = s => esc(s).replace(/https?:\/\/[^\s<>"')]+/g, u => `<a href="${u}" target="_blank" rel="noopener">${u}</a>`);
+
 function openItem(i) {
-  const meta = [i.year + '년', i.week ? i.week + '주차' : '', i.day ? i.day + '요일' : '', i.date || ''].filter(Boolean).join(' · ');
   openModal(`
-    <div class="meta">${KIND_ICON[i.kind] || '📎'} ${esc(i.kind)} · ${esc(meta)}</div>
+    <div class="meta">${KIND_ICON[i.kind] || '📎'} ${esc(label(i.kind))} · ${esc(metaOf(i))}</div>
     <h2>${esc(i.title)}</h2>
-    ${i.body ? `<div class="body" style="margin-top:12px">${esc(i.body)}</div>` : ''}
-    ${i.links?.length ? `<div class="links">${i.links.map(l => `<a href="${esc(l.url)}" target="_blank" rel="noopener">📎 ${esc(l.name || '자료 열기')}</a>`).join('')}</div>` : ''}
-    ${i.tags?.length ? `<div class="meta" style="margin-top:10px">${i.tags.map(t => '#' + esc(t)).join(' ')}</div>` : ''}
+    ${i.body ? `<div class="body" style="margin-top:12px">${linkify(i.body)}</div>` : ''}
+    ${i.links?.length ? `<div class="links">${i.links.map(l => `<a href="${esc(l.url)}" target="_blank" rel="noopener">🔗 ${esc(l.name || '자료 열기')}</a>`).join('')}</div>` : ''}
+    ${i.tags?.length ? `<div class="meta" style="margin-top:10px">${i.tags.map(t => `<a href="#" data-tag="${esc(t)}" style="color:inherit">#${esc(t)}</a>`).join(' ')}</div>` : ''}
     <div class="row" style="margin-top:18px">
       ${i.body ? '<button id="cp">📋 내용 복사</button>' : ''}
-      ${S.me.admin ? '<button id="ed">✏️ 고치기</button>' : ''}
+      ${S.me.admin ? (i.src ? '<button id="sh">📝 시트에서 고치기</button>' : '<button id="ed">✏️ 고치기</button>') : ''}
       <button class="ghost" id="cl">닫기</button>
     </div>`);
   if ($('cp')) $('cp').onclick = () => copy(i.body);
   if ($('ed')) $('ed').onclick = () => editItem(i);
+  if ($('sh')) $('sh').onclick = () => openSheet(i.year);
+  document.querySelectorAll('[data-tag]').forEach(a => a.onclick = e => {
+    e.preventDefault(); closeModal(); S.tab = 'all'; S.year = i.year; S.kind = null; S.q = a.dataset.tag; render();
+  });
   $('cl').onclick = closeModal;
+}
+
+// 시트 주소는 공개 저장소에 적지 않고, 관리자에게만 서버가 알려 줘요
+async function openSheet(year) {
+  const w = window.open('', '_blank');
+  const info = await rpc('cls_sync_info', { p_code: S.code });
+  const s = (info.sheets || []).find(x => x.year === year) || (info.sheets || [])[0];
+  if (s) w.location = `https://docs.google.com/spreadsheets/d/${s.id}/edit`; else w.close();
 }
 
 function editItem(i = {}) {
