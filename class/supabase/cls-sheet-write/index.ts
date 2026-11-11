@@ -1,6 +1,19 @@
-// 학급 운영 자료실: 관리자가 웹에서 "시트에서 온 자료"를 고치면 구글 시트 칸에도 바로 써요.
-// 종류·요일·주차·연도는 시트 칸 자리로 정해지므로 안 바꿈. 제목·내용·태그·링크만 받아 시트 칸 글로 되돌려 씀.
+// 학급 운영 자료실: ① 관리자가 "시트에서 온 자료"를 고치면 그 시트 칸에 바로 써요.
+//              ② 자료실에서 새로 넣는 자료도 그 주차 줄의 빈 분류 칸(왼쪽부터)을 찾아 시트에 써요(빈 칸이 없으면 자료실 안에만 저장).
+// 종류·요일·주차·연도는 시트 칸 자리로 정해지므로 안 바꿈. 제목·내용·태그·링크만 받아 시트 칸 글로 씀.
 import { createClient } from 'npm:@supabase/supabase-js@2';
+
+// parse.js의 COLS와 같아야 해요(칸 이름 → [종류, 요일])
+const COLS: Record<string, [string, string?]> = {
+  '월 멘트': ['아침멘트', '월'], '화 멘트': ['아침멘트', '화'], '수 멘트': ['아침멘트', '수'],
+  '목 멘트': ['아침멘트', '목'], '금 멘트': ['아침멘트', '금'],
+  '중간 놀이': ['중간놀이', '수'], '금 놀이': ['금요놀이', '금'],
+  '단단 마인드': ['단단마인드'], '수업놀이 추천': ['수업놀이'], '특별활동': ['목힘', '목'],
+  '교사마인드': ['교사마인드'], '주간 교육': ['주간교육']
+};
+const clean = (s: unknown) => String(s ?? '').replace(/\r\n?/g, '\n').trim();
+const colName = (s: unknown) => clean(s).replace(/\s+/g, ' ');
+const colLetter = (ci: number) => String.fromCharCode(65 + ci);
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -40,8 +53,7 @@ async function sheetToken(sa: { client_email: string; private_key: string; token
   return d.access_token as string;
 }
 
-async function writeCell(sa: any, spreadsheetId: string, tab: string, addr: string, text: string) {
-  const token = await sheetToken(sa);
+async function writeCell(token: string, spreadsheetId: string, tab: string, addr: string, text: string) {
   const range = encodeURIComponent(`'${tab.replace(/'/g, "''")}'!${addr}`);
   const r = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?valueInputOption=RAW`, {
     method: 'PUT', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -50,25 +62,47 @@ async function writeCell(sa: any, spreadsheetId: string, tab: string, addr: stri
   if (!r.ok) throw new Error('시트 쓰기 실패: ' + await r.text());
 }
 
+async function readValues(token: string, spreadsheetId: string, range: string) {
+  const r = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if (!r.ok) throw new Error('시트 읽기 실패: ' + await r.text());
+  return ((await r.json()).values || []) as string[][];
+}
+
+async function tabsOf(token: string, spreadsheetId: string) {
+  const r = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?fields=sheets.properties.title`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if (!r.ok) throw new Error('시트 목록 못 읽음: ' + await r.text());
+  return ((await r.json()).sheets || []).map((s: any) => s.properties.title as string);
+}
+
+// 그 달 탭에서 이 주차 줄의 빈 분류 칸을 왼쪽부터 찾아요. kindWanted가 있으면 그 칸을 먼저 보고, 없거나 이미 찼으면 아무 빈 칸이나.
+async function findSlot(token: string, spreadsheetId: string, tab: string, week: number, kindWanted?: string) {
+  const rows = await readValues(token, spreadsheetId, `'${tab.replace(/'/g, "''")}'!A1:Z80`);
+  const head = (rows[0] || []).map(colName);
+  const ri = rows.slice(1).findIndex(row => +((clean(row[0]).match(/(\d+)/) || [])[1]) === week);
+  if (ri < 0) return null;
+  const row = rows[1 + ri];
+  const cols = head.map((h, ci) => ({ ci, kind: COLS[h] })).filter(c => c.kind && c.ci > 0);
+  const empty = cols.filter(c => !clean(row[c.ci]));
+  if (!empty.length) return null;
+  const pick = (kindWanted && empty.find(c => c.kind[0] === kindWanted)) || empty[0];
+  return { addr: `${colLetter(pick.ci)}${ri + 2}`, kind: pick.kind[0], day: pick.kind[1] || null };
+}
+
 Deno.serve(async req => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
   const body = await req.json().catch(() => ({}));
-  const { code, id, title, body: text, tags, links } = body;
-  if (!code || !id) return json({ error: 'bad request' }, 400);
+  const { code, id, title, body: text, tags, links, place, year, week, month, kind } = body;
+  if (!code) return json({ error: 'bad request' }, 400);
   if (!(await db.rpc('cls_is_admin', { p_code: code })).data) return json({ error: 'denied' }, 403);
-
-  const { data: item } = await db.from('cls_items').select('*').eq('id', id).single();
-  if (!item || !item.src) return json({ error: 'not a sheet item' }, 400);
-  const [, tab, addr] = item.src.split('|');
 
   let sa;
   try { sa = JSON.parse(Deno.env.get('CLS_SHEET_SA') || ''); }
   catch { return json({ error: '구글 열쇠(CLS_SHEET_SA)가 설정 안 됐어요' }, 500); }
-
-  const { data: cfg } = await db.from('cls_config').select('sheets').eq('id', 1).single();
-  const s = (cfg?.sheets || []).find((x: any) => x.year === item.year);
-  if (!s) return json({ error: `${item.year}년 시트를 못 찾았어요` }, 404);
 
   const safeText = String(text || '');
   const extraLinks = (links || []).filter((l: any) => l?.url && !safeText.includes(l.url));
@@ -78,8 +112,45 @@ Deno.serve(async req => {
     ...extraLinks.map((l: any) => (l.name ? l.name + ': ' : '') + l.url)
   ].filter(Boolean).join('\n\n');
 
+  // ② 자료실에서 새로 넣는 자료: 그 주차 줄의 빈 분류 칸(왼쪽부터)을 찾아 시트에 써요
+  if (place) {
+    if (!year || !week) return json({ error: 'bad request' }, 400);
+    const { data: cfg } = await db.from('cls_config').select('sheets').eq('id', 1).single();
+    const s = (cfg?.sheets || []).find((x: any) => x.year === +year);
+    if (!s) return json({ error: `${year}년 시트를 못 찾았어요` }, 404);
+    try {
+      const token = await sheetToken(sa);
+      const tabs = (await tabsOf(token, s.id)).filter(t => !/사본|copy/i.test(t));
+      const tab = tabs.find(t => +((t.match(/(\d+)\s*월/) || [])[1]) === +month) || tabs[0];
+      if (!tab) return json({ error: '달 탭을 못 찾았어요' }, 404);
+      const slot = await findSlot(token, s.id, tab, +week, kind);
+      if (!slot) return json({ ok: false, placed: false, reason: '그 주차에 빈 칸이 없어요' });
+      await writeCell(token, s.id, tab, slot.addr, cellText);
+      const src = `${year}|${tab}|${slot.addr}`;
+      const { data: r, error } = await db.from('cls_items').upsert({
+        year: +year, month: +month, week: +week, kind: slot.kind, day: slot.day,
+        title, body: safeText, links: links || [], tags: tags || [],
+        sort: slot.addr.charCodeAt(0) - 65, src, updated_at: new Date().toISOString()
+      }, { onConflict: 'src' }).select().single();
+      if (error) return json({ error: error.message }, 500);
+      return json({ ok: true, placed: true, kind: slot.kind, item: r });
+    } catch (e) {
+      return json({ error: (e as Error).message }, 500);
+    }
+  }
+
+  // ① 시트에서 이미 온 자료를 고침: 그 칸에 그대로 다시 씀
+  if (!id) return json({ error: 'bad request' }, 400);
+  const { data: item } = await db.from('cls_items').select('*').eq('id', id).single();
+  if (!item || !item.src) return json({ error: 'not a sheet item' }, 400);
+  const [, tab, addr] = item.src.split('|');
+
+  const { data: cfg } = await db.from('cls_config').select('sheets').eq('id', 1).single();
+  const s = (cfg?.sheets || []).find((x: any) => x.year === item.year);
+  if (!s) return json({ error: `${item.year}년 시트를 못 찾았어요` }, 404);
+
   try {
-    await writeCell(sa, s.id, tab, addr, cellText);
+    await writeCell(await sheetToken(sa), s.id, tab, addr, cellText);
   } catch (e) {
     return json({ error: (e as Error).message }, 500);
   }
