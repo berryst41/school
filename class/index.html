@@ -74,7 +74,7 @@ const CODE_KEY = 'cls-code';
 // 종류 이름은 구글 시트 칸에서 정해져요 (supabase/cls-sync/parse.js의 COLS)
 const KINDS = ['아침멘트', '중간놀이', '목힘', '금요놀이', '단단마인드', '수업놀이', '교사마인드', '주간교육', '기타'];
 const KIND_ICON = { 아침멘트: '🌅', 중간놀이: '🤸', 목힘: '🫠', 금요놀이: '💚', 단단마인드: '💪', 수업놀이: '🎲', 교사마인드: '🧑‍🏫', 주간교육: '📅', 기타: '📎' };
-const KIND_LABEL = { 목힘: '목힘(특별활동)', 금요놀이: '금요 인성놀이' };
+const KIND_LABEL = { 목힘: '목힘(특별활동)', 금요놀이: '금요 인성교육' };
 const label = k => KIND_LABEL[k] || k;
 const DAYS = ['일', '월', '화', '수', '목', '금', '토'];
 // 요일마다 「오늘」에 보여 줄 종류
@@ -219,22 +219,24 @@ function viewToday() {
   const w0 = week[0];
   let html = `<div class="today-h">${now.getMonth() + 1}월 ${now.getDate()}일 ${day}요일${w0 ? ` · 이번 주 = ${w0.month}월 ${w0.week}주차` : ''}</div>`;
   if (!kinds) {
-    html += `<div class="card empty">주말이에요 😊<br>푹 쉬고, 틈틈이 <b>모아보기</b>에서 지난 자료를 둘러보세요.</div>`;
+    html += `<div class="card empty">주말이에요 😊<br>푹 쉬고, 다음 주 준비는 아래 이번 주 자료나 <b>모아보기</b>에서 해요.</div>`;
   }
   const shown = new Set();
-  for (const k of kinds || []) {
-    // 오늘 날짜로 정해 둔 것 → 이번 주 오늘 요일 것 → 이번 주 그 종류 → 그 종류의 가장 최근 것
+  // 오늘의 ○○: 그날 요일 것 / 이번 주 ○○: 요일 상관없이 이번 주 것 전부 (중간놀이·금요 인성교육은 미리 준비하게 매일 보임)
+  const sections = [...(kinds || []).map(k => [k, 'today']), ...WEEK_KINDS.map(k => [k, 'week'])];
+  for (const [k, mode] of sections) {
+    // 오늘 날짜로 정해 둔 것 → 이번 주 (오늘 요일) 것 → 이번 주 그 종류 → 그 종류의 가장 최근 것
     const ofKind = S.items.filter(i => i.kind === k);
-    let pick = ofKind.filter(i => i.date === today);
-    if (!pick.length) pick = week.filter(i => i.kind === k && (!i.day || i.day === day));
+    let pick = mode === 'today' ? ofKind.filter(i => i.date === today) : [];
+    if (!pick.length && mode === 'today') pick = week.filter(i => i.kind === k && (!i.day || i.day === day));
     if (!pick.length) pick = week.filter(i => i.kind === k);
     let old = false;
     if (!pick.length && ofKind.length) {
-      const last = ofKind.filter(i => !i.day || i.day === day).sort((a, b) => weekKey(b) - weekKey(a))[0];
+      const last = ofKind.filter(i => mode === 'week' || !i.day || i.day === day).sort((a, b) => weekKey(b) - weekKey(a))[0];
       if (last) { pick = [last]; old = true; }
     }
     pick.forEach(i => shown.add(i.id));
-    html += `<h2 class="sec">${KIND_ICON[k]} 오늘의 ${label(k)}</h2>`;
+    html += `<h2 class="sec">${KIND_ICON[k]} ${mode === 'today' ? '오늘의' : '이번 주'} ${label(k)}</h2>`;
     if (old) html += `<div class="meta" style="margin:-4px 0 8px">이번 주 자료가 아직 없어서 가장 최근 것을 보여 줘요.</div>`;
     html += pick.length ? pick.map(card).join('') : `<div class="card empty">아직 ${label(k)} 자료가 없어요.</div>`;
   }
