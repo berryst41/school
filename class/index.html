@@ -193,10 +193,11 @@ function render() {
   ({ today: viewToday, all: viewAll, people: viewPeople })[S.tab]();
 }
 
+const metaOf = i => [i.year + '년', i.month ? i.month + '월' : '', i.week ? i.week + '주차' : '', i.day ? i.day + '요일' : '', i.date || ''].filter(Boolean).join(' · ');
+
 function card(i) {
-  const meta = [i.year + '년', i.week ? i.week + '주차' : '', i.day ? i.day + '요일' : '', i.date || ''].filter(Boolean).join(' · ');
   return `<div class="card item" data-id="${i.id}">
-    <div class="meta">${KIND_ICON[i.kind] || '📎'} ${esc(i.kind)} · ${esc(meta)}${i.links?.length ? ' · 📎' + i.links.length : ''}</div>
+    <div class="meta">${KIND_ICON[i.kind] || '📎'} ${esc(label(i.kind))} · ${esc(metaOf(i))}${i.links?.length ? ' · 🔗' + i.links.length : ''}</div>
     <h3>${esc(i.title)}</h3>
     ${i.body ? `<div class="preview">${esc(i.body)}</div>` : ''}
   </div>`;
