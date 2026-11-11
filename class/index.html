@@ -291,15 +291,19 @@ $('modal').onclick = e => { if (e.target.id === 'modal') closeModal(); };
 const linkify = s => esc(s).replace(/https?:\/\/[^\s<>"')]+/g, u => `<a href="${u}" target="_blank" rel="noopener">${u}</a>`);
 
 function openItem(i) {
+  // 한 시트 칸에 자료가 여러 개 쪼개져 있으면(#2 등, 또는 그 짝이 있으면) 여기서 고치면 다른 자료가 지워지니 못 고치게 해요
+  const base = i.src?.split('#')[0];
+  const split = !!base && S.items.some(x => x.id !== i.id && x.src?.split('#')[0] === base);
   openModal(`
     <div class="meta">${KIND_ICON[i.kind] || '📎'} ${esc(label(i.kind))} · ${esc(metaOf(i))}</div>
     <h2>${esc(i.title)}</h2>
     ${i.body ? `<div class="body" style="margin-top:12px">${linkify(i.body)}</div>` : ''}
     ${i.links?.length ? `<div class="links">${i.links.map(l => `<a href="${esc(l.url)}" target="_blank" rel="noopener">🔗 ${esc(l.name || '자료 열기')}</a>`).join('')}</div>` : ''}
     ${i.tags?.length ? `<div class="meta" style="margin-top:10px">${i.tags.map(t => `<a href="#" data-tag="${esc(t)}" style="color:inherit">#${esc(t)}</a>`).join(' ')}</div>` : ''}
+    ${split ? '<div class="meta" style="margin-top:10px">📎 이 칸에는 자료가 여러 개 들어있어요. 자료실에서 고치면 다른 자료가 지워질 수 있어 시트에서만 고칠 수 있어요.</div>' : ''}
     <div class="row" style="margin-top:18px">
       ${i.body ? '<button id="cp">📋 내용 복사</button>' : ''}
-      ${S.me.admin ? '<button id="ed">✏️ 고치기</button>' + (i.src ? '<button id="sh">📝 시트에서 고치기</button>' : '') : ''}
+      ${S.me.admin ? (!i.src || !split ? '<button id="ed">✏️ 고치기</button>' : '') + (i.src ? '<button id="sh">📝 시트에서 고치기</button>' : '') : ''}
       <button class="ghost" id="cl">닫기</button>
     </div>`);
   if ($('cp')) $('cp').onclick = () => copy(i.body);
