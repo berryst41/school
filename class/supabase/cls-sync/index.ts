@@ -21,7 +21,15 @@ Deno.serve(async req => {
   const secret = req.headers.get('x-cron-secret');
   const body = await req.json().catch(() => ({}));
   let ok = !!secret && secret === cfg.cron_secret;
-  if (!ok && body.code) ok = !!(await db.rpc('cls_is_admin', { p_code: body.code })).data;
+  if (!ok && body.code) {
+    if ((await db.rpc('cls_is_admin', { p_code: body.code })).data) ok = true;
+    else if ((await db.rpc('cls_enter', { p_code: body.code })).data) {
+      // 관리자가 아니면 올해 것만, 10분에 한 번만
+      if (cfg.last_sync && Date.now() - Date.parse(cfg.last_sync) < 10 * 60 * 1000) return json({ ok: true, skipped: true });
+      body.year = null;
+      ok = true;
+    }
+  }
   if (!ok) return json({ error: 'denied' }, 403);
 
   // 한 번에 한 해만 읽어요(한꺼번에 읽으면 서버 힘이 모자람). year가 없으면 가장 최근 해.
