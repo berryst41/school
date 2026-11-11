@@ -12,6 +12,13 @@
 
 ## 📚 class/ — 4원칙 학급 운영 자료실 (2026-11-11 시작)
 폰·웹 Claude도 이 파일만 읽으니, class를 고치면 이 칸도 같이 고쳐요.
+
+### 폰·웹(클라우드) Claude Code에서 이어서 고칠 때
+- 사용자는 학교 PC → 폰 → 집 PC를 오가며 고친다. 작업 시작 전에 `git pull origin main`부터.
+- 화면은 `class/index.html` 한 파일(빌드 없음). **GitHub Pages는 `main`만 배포**하니, 작업 브랜치에서 고쳤으면 **main에 합쳐야** https://berryst41.github.io/school/class/ 에 반영된다. 사용자는 비전문가이니 끝까지 합치고 주소에서 반영됐는지 확인해 준다(1~2분 걸림).
+- Supabase(표·함수·Edge Function `cls-sync`)를 고쳐야 하면 Supabase 연결(MCP)이 필요하다. 없으면 고칠 SQL/코드를 만들어 두고 "PC에서 마저 반영"이라고 아래 남은 일에 적는다. Edge Function을 고쳤으면 원본 `class/supabase/cls-sync/`도 같이 고친다.
+- 로그인해서 시험하려면 관리자 코드가 필요한데 이 저장소에는 없다(아래 참고). 화면만 고친 거면 코드 없이 문법·동작을 확인하고, 사용자에게 폰에서 열어 봐 달라고 한다.
+- 고칠 때마다 `class/README.md` "업데이트 기록" 맨 위에 한 줄, 그리고 이 칸도 함께 고친다.
 - **무엇:** 이종대왕 선생님의 "4원칙" 학급 운영 자료(아침 멘트·중간놀이·목힘·금요 인성놀이·단단마인드·수업놀이 등)를 허용 코드가 있는 사람만 보는 페이지. 주소 https://berryst41.github.io/school/class/
 - **이 저장소는 공개라서 자료 글·시트 주소·코드를 절대 커밋하지 않는다.** 자료는 Supabase `bombanana`(id `bmfihlddiyfeejrdrigm`, 자료 공유 사이트와 같은 프로젝트)의 잠긴 표에만 있다.
   - 표: `cls_members`(code, name, is_admin, active, last_seen) · `cls_items`(year, month, week, kind, day, date, title, body, links jsonb, tags, src = 시트 칸 "연도|탭|칸", sort) · `cls_config`(id=1, sheets [{year, id}], cron_secret, last_sync, last_result). RLS 켜고 정책 없음 → anon은 표를 직접 못 읽음.
