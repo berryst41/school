@@ -5,7 +5,7 @@
   - 도구 설명 페이지(도구 폴더의 `README.md`)의 내려받기 링크 글자, "지금 버전: **v…** (날짜)" 줄도 바꾸고, "버전 기록" 표 맨 위에 새 버전·날짜·바뀐 점을 한 줄 더해요.
   - 프로필(berryst41 저장소 README의 `TOOLS:START`~`TOOLS:END`)에도 "한눈에 보기" 표를 그대로 옮겨 넣어요.
   - 커밋 메시지에도 버전을 넣어요.
-- 도구마다 설명 페이지가 따로 있어요: `pumui/`, `main-monitor/`, `share/`, `manitto/`, `bomb-monkey/`, `docs/claude-guide/`, `docs/github-guide/` 의 `README.md`.
+- 도구마다 설명 페이지가 따로 있어요: `pumui/`, `main-monitor/`, `share/`, `class/`, `manitto/`, `bomb-monkey/`, `docs/claude-guide/`, `docs/github-guide/` 의 `README.md`.
   - 버전이 없는 도구(안내서, 웹사이트, 게임)도 눈에 띄게 바뀌면 그 페이지의 "업데이트 기록" 표 맨 위에 날짜와 바뀐 점을 더해요.
   - 새 도구를 만들면 폴더에 설명 페이지(README.md)를 만들고, 루트 README 표와 파일 구성에 더해요.
 - 설명은 초등학교 선생님이 읽기 쉬운 우리말로 써요.
