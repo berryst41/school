@@ -24,11 +24,14 @@ function linkName(u) {
   return '링크';
 }
 
+// 태그만 있거나 빈 줄인지(실제 내용이 없는지)
+const isEmptyLine = l => /^\s*(#[^\s#]+\s*)*$/.test(l.trim());
+
 function makeItem(text, extraUrls) {
   const lines = text.split('\n');
   const tags = [...new Set((text.match(/#[^\s#]+/g) || []).map(t => t.slice(1)))];
   // 맨 위의 해시태그만 있는 줄은 본문에서 뺌
-  while (lines.length && /^\s*(#[^\s#]+\s*)*$/.test(lines[0])) lines.shift();
+  while (lines.length && isEmptyLine(lines[0])) lines.shift();
   const body = lines.join('\n').trim();
   const first = (body.match(/<([^<>\n]{2,40})>/) || [])[1] ||
     (body.split('\n').map(l => l.replace(/^["“'*■●▶\s-]+/, '').replace(/^\(\d+\)\s*/, '').trim()).find(l => l && !/^https?:/.test(l)) || '');
@@ -50,7 +53,16 @@ function splitChunks(text, kind) {
     cur.push(line);
   }
   if (cur.length) chunks.push(cur);
-  return chunks.map(c => c.join('\n'));
+  // 앞쪽에 "#태그" 줄만 있고 실제 내용이 없는 조각(번호 줄 바로 앞에 태그만 있을 때)은
+  // 혼자 빈 자료가 되지 않게 다음 조각 앞에 붙여요.
+  const merged = [];
+  let pending = [];
+  chunks.forEach((c, i) => {
+    const combo = [...pending, ...c];
+    if (combo.some(l => !isEmptyLine(l)) || i === chunks.length - 1) { merged.push(combo); pending = []; }
+    else pending = combo;
+  });
+  return merged.map(c => c.join('\n'));
 }
 
 // skipTexts: 다른 해 시트에 똑같이 있는 칸(복사해 둔 탭)은 건너뛰려고 받음
@@ -71,7 +83,11 @@ export function parseWorkbook(X, wb, year, skipTexts = new Set()) {
         const [kind, day] = kindOf(head[ci]) || ['기타'];
         const addr = X.utils.encode_cell({ r: ri + 1, c: ci });
         const hl = ws[addr]?.l?.Target;
-        const chunks = splitChunks(text, kind).filter(c => clean(c).length >= 5);
+        const chunks = splitChunks(text, kind).filter(c => {
+          const b = c.split('\n');
+          while (b.length && isEmptyLine(b[0])) b.shift();
+          return b.join('\n').trim().length >= 3;
+        });
         chunks.forEach((chunk, pi) => {
           out.push({
             ...makeItem(chunk, pi === 0 && hl ? [hl] : []),
