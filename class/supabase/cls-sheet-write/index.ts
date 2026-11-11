@@ -14,6 +14,8 @@ const COLS: Record<string, [string, string?]> = {
 const clean = (s: unknown) => String(s ?? '').replace(/\r\n?/g, '\n').trim();
 const colName = (s: unknown) => clean(s).replace(/\s+/g, ' ');
 const colLetter = (ci: number) => String.fromCharCode(65 + ci);
+// 같은 종류 칸이 여러 개 필요하면 시트에 "특별활동2"처럼 끝에 숫자를 붙인 칸을 추가해도 같은 종류로 인식해요.
+const kindOf = (h: string) => COLS[h] || COLS[h.replace(/\s*\d+$/, '')];
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -85,15 +87,14 @@ async function findSlot(token: string, spreadsheetId: string, tab: string, week:
   const ri = rows.slice(1).findIndex(row => +((clean(row[0]).match(/(\d+)/) || [])[1]) === week);
   if (ri < 0) return null;
   const row = rows[1 + ri];
-  const cols = head.map((h, ci) => ({ ci, kind: COLS[h] })).filter(c => c.kind && c.ci > 0);
+  const cols = head.map((h, ci) => ({ ci, kind: kindOf(h) })).filter(c => c.kind && c.ci > 0);
   const empty = cols.filter(c => !clean(row[c.ci]));
   if (!empty.length) return null;
   const pick = (kindWanted && empty.find(c => c.kind[0] === kindWanted)) || empty[0];
   return { addr: `${colLetter(pick.ci)}${ri + 2}`, kind: pick.kind[0], day: pick.kind[1] || null };
 }
 
-Deno.serve(async req => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
+async function handle(req: Request) {
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
   const body = await req.json().catch(() => ({}));
   const { code, id, title, body: text, tags, links, place, year, week, month, kind } = body;
@@ -118,25 +119,21 @@ Deno.serve(async req => {
     const { data: cfg } = await db.from('cls_config').select('sheets').eq('id', 1).single();
     const s = (cfg?.sheets || []).find((x: any) => x.year === +year);
     if (!s) return json({ error: `${year}년 시트를 못 찾았어요` }, 404);
-    try {
-      const token = await sheetToken(sa);
-      const tabs = (await tabsOf(token, s.id)).filter(t => !/사본|copy/i.test(t));
-      const tab = tabs.find(t => +((t.match(/(\d+)\s*월/) || [])[1]) === +month) || tabs[0];
-      if (!tab) return json({ error: '달 탭을 못 찾았어요' }, 404);
-      const slot = await findSlot(token, s.id, tab, +week, kind);
-      if (!slot) return json({ ok: false, placed: false, reason: '그 주차에 빈 칸이 없어요' });
-      await writeCell(token, s.id, tab, slot.addr, cellText);
-      const src = `${year}|${tab}|${slot.addr}`;
-      const { data: r, error } = await db.from('cls_items').upsert({
-        year: +year, month: +month, week: +week, kind: slot.kind, day: slot.day,
-        title, body: safeText, links: links || [], tags: tags || [],
-        sort: slot.addr.charCodeAt(0) - 65, src, updated_at: new Date().toISOString()
-      }, { onConflict: 'src' }).select().single();
-      if (error) return json({ error: error.message }, 500);
-      return json({ ok: true, placed: true, kind: slot.kind, item: r });
-    } catch (e) {
-      return json({ error: (e as Error).message }, 500);
-    }
+    const token = await sheetToken(sa);
+    const tabs = (await tabsOf(token, s.id)).filter(t => !/사본|copy/i.test(t));
+    const tab = tabs.find(t => +((t.match(/(\d+)\s*월/) || [])[1]) === +month) || tabs[0];
+    if (!tab) return json({ error: '달 탭을 못 찾았어요' }, 404);
+    const slot = await findSlot(token, s.id, tab, +week, kind);
+    if (!slot) return json({ ok: false, placed: false, reason: '그 주차에 빈 칸이 없어요' });
+    await writeCell(token, s.id, tab, slot.addr, cellText);
+    const src = `${year}|${tab}|${slot.addr}`;
+    const { data: r, error } = await db.from('cls_items').upsert({
+      year: +year, month: +month, week: +week, kind: slot.kind, day: slot.day,
+      title, body: safeText, links: links || [], tags: tags || [],
+      sort: slot.addr.charCodeAt(0) - 65, src, updated_at: new Date().toISOString()
+    }, { onConflict: 'src' }).select().single();
+    if (error) return json({ error: 'DB: ' + error.message }, 500);
+    return json({ ok: true, placed: true, kind: slot.kind, item: r });
   }
 
   // ① 시트에서 이미 온 자료를 고침: 그 칸에 그대로 다시 씀
@@ -149,15 +146,21 @@ Deno.serve(async req => {
   const s = (cfg?.sheets || []).find((x: any) => x.year === item.year);
   if (!s) return json({ error: `${item.year}년 시트를 못 찾았어요` }, 404);
 
-  try {
-    await writeCell(await sheetToken(sa), s.id, tab, addr, cellText);
-  } catch (e) {
-    return json({ error: (e as Error).message }, 500);
-  }
+  await writeCell(await sheetToken(sa), s.id, tab, addr, cellText);
 
   const { data: r, error } = await db.from('cls_items')
     .update({ title, body: safeText, links: links || [], tags: tags || [], updated_at: new Date().toISOString() })
     .eq('id', id).select().single();
-  if (error) return json({ error: error.message }, 500);
+  if (error) return json({ error: 'DB: ' + error.message }, 500);
   return json({ ok: true, item: r });
+}
+
+Deno.serve(async req => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
+  try {
+    return await handle(req);
+  } catch (e) {
+    console.error('cls-sheet-write error:', e);
+    return json({ error: (e as Error).message || String(e) }, 500);
+  }
 });
