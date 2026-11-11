@@ -211,28 +211,44 @@ function isoDay(d) { return new Date(d.getTime() - d.getTimezoneOffset() * 60000
 function viewToday() {
   const now = new Date(), day = DAYS[now.getDay()], today = isoDay(now);
   const kinds = TODAY_KINDS[day];
-  let html = `<div class="today-h">${now.getMonth() + 1}월 ${now.getDate()}일 ${day}요일</div>`;
+  // "이번 주" = 올해 시트에서 가장 최근에 채운 주차
+  const thisYear = S.items.filter(i => i.year === S.items.reduce((m, i) => Math.max(m, i.year), 0) && i.week);
+  const latest = thisYear.reduce((m, i) => Math.max(m, weekKey(i)), 0);
+  const week = thisYear.filter(i => weekKey(i) === latest);
+  const w0 = week[0];
+  let html = `<div class="today-h">${now.getMonth() + 1}월 ${now.getDate()}일 ${day}요일${w0 ? ` · 이번 주 = ${w0.month}월 ${w0.week}주차` : ''}</div>`;
   if (!kinds) {
     html += `<div class="card empty">주말이에요 😊<br>푹 쉬고, 틈틈이 <b>모아보기</b>에서 지난 자료를 둘러보세요.</div>`;
   }
+  const shown = new Set();
   for (const k of kinds || []) {
-    // 오늘 날짜로 정해 둔 것 → 같은 요일 것(아침멘트) → 그 종류 전체 순으로 골라요
-    let pick = S.items.filter(i => i.kind === k && i.date === today);
-    if (!pick.length && k === '아침멘트') pick = S.items.filter(i => i.kind === k && i.day === day && i.year === now.getFullYear());
-    if (!pick.length && k === '아침멘트') pick = S.items.filter(i => i.kind === k && i.day === day);
-    if (!pick.length) pick = S.items.filter(i => i.kind === k);
-    html += `<h2 class="sec">${KIND_ICON[k]} 오늘의 ${k}</h2>`;
-    html += pick.length ? pick.slice(0, 3).map(card).join('') + (pick.length > 3 ? `<button class="ghost" style="width:100%" data-more="${k}">${k} 더 보기 (${pick.length})</button>` : '')
-                        : `<div class="card empty">아직 ${k} 자료가 없어요.</div>`;
+    // 오늘 날짜로 정해 둔 것 → 이번 주 오늘 요일 것 → 이번 주 그 종류 → 그 종류의 가장 최근 것
+    const ofKind = S.items.filter(i => i.kind === k);
+    let pick = ofKind.filter(i => i.date === today);
+    if (!pick.length) pick = week.filter(i => i.kind === k && (!i.day || i.day === day));
+    if (!pick.length) pick = week.filter(i => i.kind === k);
+    let old = false;
+    if (!pick.length && ofKind.length) {
+      const last = ofKind.filter(i => !i.day || i.day === day).sort((a, b) => weekKey(b) - weekKey(a))[0];
+      if (last) { pick = [last]; old = true; }
+    }
+    pick.forEach(i => shown.add(i.id));
+    html += `<h2 class="sec">${KIND_ICON[k]} 오늘의 ${label(k)}</h2>`;
+    if (old) html += `<div class="meta" style="margin:-4px 0 8px">이번 주 자료가 아직 없어서 가장 최근 것을 보여 줘요.</div>`;
+    html += pick.length ? pick.map(card).join('') : `<div class="card empty">아직 ${label(k)} 자료가 없어요.</div>`;
   }
-  const extra = S.items.filter(i => i.kind === '수업놀이' || i.kind === '단단멘트');
-  if (extra.length) {
-    const r = extra[Math.floor(Math.random() * extra.length)];
-    html += `<h2 class="sec">🎁 오늘의 추천</h2>${card(r)}`;
+  const rest = week.filter(i => !shown.has(i.id)).sort((a, b) => KINDS.indexOf(a.kind) - KINDS.indexOf(b.kind) || a.sort - b.sort);
+  if (rest.length) {
+    html += `<h2 class="sec">📅 이번 주 다른 자료</h2>` + rest.map(card).join('');
+  }
+  // 작년 이맘때: 같은 달 지난해 자료
+  const ago = S.items.filter(i => i.year < (w0?.year || now.getFullYear()) && i.month === now.getMonth() + 1 && i.kind !== '아침멘트');
+  if (ago.length) {
+    const r = ago[Math.floor(Math.random() * ago.length)];
+    html += `<h2 class="sec">🕰️ 작년 이맘때</h2>${card(r)}`;
   }
   $('view').innerHTML = html;
   bindCards();
-  document.querySelectorAll('[data-more]').forEach(b => b.onclick = () => { S.tab = 'all'; S.kind = b.dataset.more; render(); });
 }
 
 function viewAll() {
