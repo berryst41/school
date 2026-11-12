@@ -286,11 +286,13 @@ function viewToday() {
   bindCards();
 }
 
-function viewAll() {
-  const years = yearsOf();
+// 검색할 글(제목·내용·종류·요일·태그)은 한 번만 만들어 둬요
+const haystack = i => i._h ??= [i.title, i.body, i.kind, i.day, ...(i.tags || [])].join(' ').toLowerCase();
+
+// 목록과 개수만 다시 그려요 (검색창은 그대로 둬야 한글이 안 끊겨요)
+function updateAllList() {
   const q = S.q.trim().toLowerCase();
-  const list = S.items.filter(i => i.year === S.year && (!S.kind || i.kind === S.kind) &&
-    (!q || [i.title, i.body, i.kind, i.day, ...(i.tags || [])].join(' ').toLowerCase().includes(q)))
+  const list = S.items.filter(i => i.year === S.year && (!S.kind || i.kind === S.kind) && (!q || haystack(i).includes(q)))
     .sort((a, b) => weekKey(b) - weekKey(a) || (a.sort ?? 99) - (b.sort ?? 99));
   // 최근 주차부터, 주차마다 제목을 달아요
   let html = '', last = null;
@@ -299,15 +301,23 @@ function viewAll() {
     if (h !== last) { html += `<h2 class="sec">${esc(h)}</h2>`; last = h; }
     html += card(i);
   }
+  $('cnt').textContent = list.length + '개';
+  $('list').innerHTML = html || '<div class="empty">자료가 없어요.</div>';
+  bindCards();
+}
+
+function viewAll() {
+  const years = yearsOf();
   $('view').innerHTML = `
     <input id="q" placeholder="🔍 찾기 (제목·내용·#태그)" value="${esc(S.q)}">
     <div class="chips">${years.map(y => `<button data-y="${y}" class="${y === S.year ? 'on' : ''}">${y}년</button>`).join('')}</div>
     <div class="chips">${['전체', ...KINDS].map(k => `<button data-k="${k}" class="${(S.kind || '전체') === k ? 'on' : ''}">${KIND_ICON[k] || ''} ${label(k)}</button>`).join('')}</div>
-    <div class="meta">${list.length}개</div>
-    <div id="list">${html || '<div class="empty">자료가 없어요.</div>'}</div>`;
-  bindCards();
+    <div class="meta" id="cnt"></div>
+    <div id="list"></div>`;
+  updateAllList();
   const qi = $('q');
-  qi.oninput = () => { S.q = qi.value; const pos = qi.selectionStart; viewAll(); $('q').focus(); $('q').setSelectionRange(pos, pos); };
+  let timer;
+  qi.oninput = () => { S.q = qi.value; clearTimeout(timer); timer = setTimeout(updateAllList, 120); };
   document.querySelectorAll('[data-y]').forEach(b => b.onclick = () => { S.year = +b.dataset.y; viewAll(); });
   document.querySelectorAll('[data-k]').forEach(b => b.onclick = () => { S.kind = b.dataset.k === '전체' ? null : b.dataset.k; viewAll(); });
 }
