@@ -199,6 +199,22 @@ function render() {
   else ({ week: viewWeek, today: viewToday, all: viewAll, people: viewPeople })[S.tab]();
 }
 
+// 작년 같은 날짜의 아침멘트. 작년 시트는 "N주차+요일"뿐이고 주차 번호가 올해와 달라서,
+// 그 날짜가 그 달의 몇째 주(월요일 기준) 무슨 요일이었는지로 찾아요. 주말이면 그 주 금요일 것.
+function lastYearSameDay(now) {
+  const dt = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+  const mon = new Date(dt); mon.setDate(dt.getDate() - ((dt.getDay() + 6) % 7));
+  const nth = mon.getMonth() === dt.getMonth() ? Math.floor((mon.getDate() - 1) / 7) : 0; // 0부터
+  const month = dt.getMonth() + 1, wd = dt.getDay();
+  const day = wd === 0 || wd === 6 ? '금' : DAYS[wd];
+  const inMonth = S.items.filter(i => i.kind === '아침멘트' && i.year === dt.getFullYear() && i.month === month && i.week);
+  const weeks = [...new Set(inMonth.map(i => i.week))].sort((a, b) => a - b);
+  if (!weeks.length) return null;
+  const week = weeks[Math.min(nth, weeks.length - 1)];
+  const items = inMonth.filter(i => i.week === week && i.day === day).sort((a, b) => (a.sort ?? 99) - (b.sort ?? 99));
+  return items.length ? { items, label: `${month}월 ${dt.getDate()}일(${DAYS[wd]})` } : null;
+}
+
 // "이번 주" = 올해 시트에서 가장 최근에 채운 주차
 function thisWeekItems() {
   const thisYear = S.items.filter(i => i.year === S.items.reduce((m, i) => Math.max(m, i.year), 0) && i.week);
