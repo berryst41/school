@@ -243,7 +243,8 @@ function viewToday() {
     if (old) html += `<div class="meta" style="margin:-4px 0 8px">${mode === 'today' ? `이번 주 ${day}요일 자료가 아직 없어서 지난 ${day}요일 것을 보여 줘요.` : '이번 주 자료가 아직 없어서 가장 최근 것을 보여 줘요.'}</div>`;
     html += pick.length ? pick.map(card).join('') : `<div class="card empty">아직 ${label(k)} 자료가 없어요.</div>`;
   }
-  const rest = week.filter(i => !shown.has(i.id)).sort((a, b) => KINDS.indexOf(a.kind) - KINDS.indexOf(b.kind) || a.sort - b.sort);
+  // 다른 요일 아침멘트는 여기에도 안 띄움(오늘 것만 보이게) — 모아보기에서 찾으면 됨
+  const rest = week.filter(i => !shown.has(i.id) && i.kind !== '아침멘트').sort((a, b) => KINDS.indexOf(a.kind) - KINDS.indexOf(b.kind) || a.sort - b.sort);
   if (rest.length) {
     html += `<h2 class="sec">📅 이번 주 다른 자료</h2>` + rest.map(card).join('');
   }
