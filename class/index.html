@@ -215,7 +215,7 @@ function render() {
     <div id="view" class="${S.tab === 'people' ? '' : 'cards'}"></div>
     ${S.me.admin && S.tab !== 'people' ? '<button class="main fab" id="add">＋ 자료 추가</button>' : ''}`;
   $('out').onclick = () => { if (confirm('이 기기에서 나갈까요? 다시 들어오려면 코드가 필요해요.')) logout(); };
-  document.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { S.tab = b.dataset.tab; render(); });
+  document.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { S.tab = b.dataset.tab; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
   if ($('add')) $('add').onclick = () => editItem();
   if (S.tab.startsWith('k:')) viewKind(S.tab.slice(2));
   else ({ week: viewWeek, today: viewToday, all: viewAll, people: viewPeople })[S.tab]();
