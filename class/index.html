@@ -154,10 +154,10 @@ async function start(code, me) {
   sync(false).catch(() => {});
 }
 
-async function sync(all) {
+async function sync(all, force = false) {
   const call = year => fetch(`${SUPABASE_URL}/functions/v1/cls-sync`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ code: S.code, year })
+    body: JSON.stringify({ code: S.code, year, force })
   }).then(r => r.json());
   const years = all ? yearsOf() : [null];
   const out = [];
@@ -733,7 +733,7 @@ async function viewPeople() {
   $('sync').onclick = async () => {
     $('sync').disabled = true; $('sync').textContent = '가져오는 중… (1분쯤)';
     try {
-      const out = await sync(true);
+      const out = await sync(true, true);
       toast(out.map(r => r.result || r.error || '').join(' / '));
     } catch { toast('가져오기가 안 됐어요'); }
     viewPeople();
