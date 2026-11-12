@@ -33,6 +33,12 @@ label{display:block;font-weight:700;font-size:14px;margin:12px 0 5px}
 .chips button{padding:6px 12px;font-size:14px;border-radius:99px}
 .chips button.on{background:var(--accent);color:#fff}
 .item{cursor:pointer}
+/* 폰: 탭을 작게 (줄 수가 줄어 화면을 덜 가려요) */
+@media (max-width:819px){
+  .tabs{gap:5px;padding:6px 16px}
+  .tabs button{padding:7px 10px;font-size:14px;border-width:1px;border-radius:10px}
+  .sec{scroll-margin-top:110px}
+}
 /* 넓은 화면(컴퓨터·태블릿): 폭을 넓히고 카드를 여러 칸으로. 폰은 위처럼 한 줄 */
 @media (min-width:820px){
   .wrap{max-width:1040px}
