@@ -244,11 +244,11 @@ function viewToday() {
   const w0 = week[0];
   let html = `<div class="today-h">${now.getMonth() + 1}월 ${now.getDate()}일 ${day}요일${w0 ? ` · 이번 주 = ${w0.month}월 ${w0.week}주차` : ''}</div>`;
   if (!kinds) {
-    html += `<div class="card empty">주말이에요 😊<br>푹 쉬고, 다음 주 준비는 아래 이번 주 자료나 <b>모아보기</b>에서 해요.</div>`;
+    html += `<div class="card empty">주말이에요 😊<br>푹 쉬고, 다음 주 준비는 아래 이번 주 아침멘트나 위쪽 탭에서 해요.</div>`;
   }
   const shown = new Set();
-  // 오늘의 ○○: 그날 요일 것 / 이번 주 ○○: 요일 상관없이 이번 주 것 전부 (중간놀이·금요 인성교육은 미리 준비하게 매일 보임)
-  const sections = [...(kinds || []).map(k => [k, 'today']), ...WEEK_KINDS.map(k => [k, 'week'])];
+  // 오늘의 아침멘트: 그날 요일 것 (주말엔 이번 주 아침멘트 전부). 다른 종류는 위쪽 각자 탭에서 봐요.
+  const sections = (kinds || ['아침멘트']).map(k => [k, kinds ? 'today' : 'week']);
   for (const [k, mode] of sections) {
     // 오늘 날짜로 정해 둔 것 → 이번 주 (오늘 요일) 것 → 이번 주 그 종류 → 그 종류의 가장 최근 것
     const ofKind = S.items.filter(i => i.kind === k);
@@ -272,17 +272,6 @@ function viewToday() {
       others.forEach(i => shown.add(i.id));
       if (others.length) html += `<h2 class="sec">${KIND_ICON[k]} 이번 주 ${label(k)}</h2>` + others.map(card).join('');
     }
-  }
-  // 단단마인드·주간교육은 자기 탭이 있으니 여기엔 안 섞음
-  const rest = week.filter(i => !shown.has(i.id) && !KIND_TABS.includes(i.kind)).sort((a, b) => KINDS.indexOf(a.kind) - KINDS.indexOf(b.kind) || a.sort - b.sort);
-  if (rest.length) {
-    html += `<h2 class="sec">📅 이번 주 다른 자료</h2>` + rest.map(card).join('');
-  }
-  // 작년 이맘때: 같은 달 지난해 자료
-  const ago = S.items.filter(i => i.year < (w0?.year || now.getFullYear()) && i.month === now.getMonth() + 1 && i.kind !== '아침멘트');
-  if (ago.length) {
-    const r = ago[Math.floor(Math.random() * ago.length)];
-    html += `<h2 class="sec">🕰️ 작년 이맘때</h2>${card(r)}`;
   }
   $('view').innerHTML = html;
   bindCards();
