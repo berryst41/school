@@ -33,6 +33,16 @@ label{display:block;font-weight:700;font-size:14px;margin:12px 0 5px}
 .chips button{padding:6px 12px;font-size:14px;border-radius:99px}
 .chips button.on{background:var(--accent);color:#fff}
 .item{cursor:pointer}
+/* 넓은 화면(컴퓨터·태블릿): 폭을 넓히고 카드를 여러 칸으로. 폰은 위처럼 한 줄 */
+@media (min-width:820px){
+  .wrap{max-width:1040px}
+  .cards,.cards #list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:14px;align-items:start}
+  .cards>:not(.item),.cards #list>:not(.item){grid-column:1/-1}
+}
+@media (min-width:1240px){
+  .wrap{max-width:1240px}
+  .cards,.cards #list{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
 .item h3{margin:0 0 4px;font-size:17px}
 .meta{font-size:13px;color:var(--muted)}
 .preview{margin-top:6px;color:var(--muted);font-size:14px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-line}
@@ -190,7 +200,7 @@ function render() {
       <button class="ghost" id="out" style="padding:6px 10px;font-size:13px">나가기</button>
     </header>
     <div class="tabs">${tabs.map(([k, t]) => `<button data-tab="${k}" class="${S.tab === k ? 'on' : ''}">${t}</button>`).join('')}</div>
-    <div id="view"></div>
+    <div id="view" class="${S.tab === 'people' ? '' : 'cards'}"></div>
     ${S.me.admin && S.tab !== 'people' ? '<button class="main fab" id="add">＋ 자료 추가</button>' : ''}`;
   $('out').onclick = () => { if (confirm('이 기기에서 나갈까요? 다시 들어오려면 코드가 필요해요.')) logout(); };
   document.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { S.tab = b.dataset.tab; render(); });
