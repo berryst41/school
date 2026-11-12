@@ -115,7 +115,7 @@ async function copy(text, msg = '복사했어요') {
   catch { prompt('아래 글을 길게 눌러 복사하세요', text); }
 }
 
-const S = { code: null, me: null, items: [], tab: 'today', year: null, kind: null, q: '' };
+const S = { code: null, me: null, items: [], inbox: [], tab: 'week', year: null, kind: null, q: '' };
 
 // ── 들어가기 ─────────────────────────────
 function gate(msg = '') {
@@ -168,6 +168,7 @@ async function sync(all) {
 
 async function load() {
   S.items = await rpc('cls_list', { p_code: S.code }) || [];
+  if (S.me.admin) S.inbox = await rpc('cls_inbox_list', { p_code: S.code }) || [];
   const years = yearsOf();
   if (!S.year || !years.includes(S.year)) S.year = years[0];
   render();
@@ -180,7 +181,9 @@ function yearsOf() {
 
 // ── 화면 ─────────────────────────────
 function render() {
-  const tabs = [['today', '☀️ 오늘'], ['all', '📂 모아보기'], ...(S.me.admin ? [['people', '⚙️ 관리']] : [])];
+  const inboxNew = S.me.admin ? S.inbox.filter(b => b.status === 'new').length : 0;
+  const tabs = [['week', '🗓️ 이번 주'], ['today', '🌅 오늘의 아침멘트'], ...KIND_TABS.map(k => ['k:' + k, KIND_ICON[k] + ' ' + label(k)]), ['all', '📂 모아보기'],
+    ...(S.me.admin ? [['inbox', `📥 자동 등록${inboxNew ? ` (${inboxNew})` : ''}`], ['people', '⚙️ 관리']] : [])];
   $('app').innerHTML = `
     <header>
       <h1>📚 4원칙 자료실</h1>
@@ -188,12 +191,86 @@ function render() {
       <button class="ghost" id="out" style="padding:6px 10px;font-size:13px">나가기</button>
     </header>
     <div class="tabs">${tabs.map(([k, t]) => `<button data-tab="${k}" class="${S.tab === k ? 'on' : ''}">${t}</button>`).join('')}</div>
-    <div id="view"></div>
-    ${S.me.admin && S.tab !== 'people' ? '<button class="main fab" id="add">＋ 자료 추가</button>' : ''}`;
+    <div id="view" class="${S.tab === 'people' || S.tab === 'inbox' ? '' : 'cards'}"></div>
+    ${S.me.admin && S.tab !== 'people' && S.tab !== 'inbox' ? '<button class="main fab" id="add">＋ 자료 추가</button>' : ''}`;
   $('out').onclick = () => { if (confirm('이 기기에서 나갈까요? 다시 들어오려면 코드가 필요해요.')) logout(); };
   document.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { S.tab = b.dataset.tab; render(); });
   if ($('add')) $('add').onclick = () => editItem();
-  ({ today: viewToday, all: viewAll, people: viewPeople })[S.tab]();
+  if (S.tab.startsWith('k:')) viewKind(S.tab.slice(2));
+  else ({ week: viewWeek, today: viewToday, all: viewAll, people: viewPeople, inbox: viewInbox })[S.tab]();
+}
+
+// 작년 같은 날짜의 아침멘트. 작년 시트는 "N주차+요일"뿐이고 주차 번호가 올해와 달라서,
+// 그 날짜가 그 달의 몇째 주(월요일 기준) 무슨 요일이었는지로 찾아요. 주말이면 그 주 금요일 것.
+function lastYearSameDay(now) {
+  const dt = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+  const mon = new Date(dt); mon.setDate(dt.getDate() - ((dt.getDay() + 6) % 7));
+  const nth = mon.getMonth() === dt.getMonth() ? Math.floor((mon.getDate() - 1) / 7) : 0; // 0부터
+  const month = dt.getMonth() + 1, wd = dt.getDay();
+  const day = wd === 0 || wd === 6 ? '금' : DAYS[wd];
+  const inMonth = S.items.filter(i => i.kind === '아침멘트' && i.year === dt.getFullYear() && i.month === month && i.week);
+  const weeks = [...new Set(inMonth.map(i => i.week))].sort((a, b) => a - b);
+  if (!weeks.length) return null;
+  const week = weeks[Math.min(nth, weeks.length - 1)];
+  const items = inMonth.filter(i => i.week === week && i.day === day).sort((a, b) => (a.sort ?? 99) - (b.sort ?? 99));
+  return items.length ? { items, label: `${month}월 ${dt.getDate()}일(${DAYS[wd]})` } : null;
+}
+
+// "이번 주" = 올해 시트에서 가장 최근에 채운 주차
+function thisWeekItems() {
+  const thisYear = S.items.filter(i => i.year === S.items.reduce((m, i) => Math.max(m, i.year), 0) && i.week);
+  const latest = thisYear.reduce((m, i) => Math.max(m, weekKey(i)), 0);
+  return thisYear.filter(i => weekKey(i) === latest);
+}
+
+// 이번 주 탭: 이번 주 자료를 종류별로 한 화면에 (탭 순서와 같게), 위쪽 단추로 바로 이동
+function viewWeek() {
+  const week = thisWeekItems(), w0 = week[0];
+  if (!w0) { $('view').innerHTML = '<div class="card empty">이번 주 자료가 아직 없어요.</div>'; return; }
+  const now = new Date(), dayName = DAYS[now.getDay()];
+  const byDay = (a, b) => DAYS.indexOf(a.day) - DAYS.indexOf(b.day) || (a.sort ?? 99) - (b.sort ?? 99);
+  const ments = week.filter(i => i.kind === '아침멘트').sort(byDay);
+  // 맨 위: 오늘의 아침멘트(오늘 요일 것, 주말엔 칸 없음). 그 아래 "이번 주 아침멘트"는 나머지 요일
+  const todayMents = ments.filter(i => i.day === dayName);
+  const groups = [
+    ...(TODAY_KINDS[dayName] ? [['오늘', '🌅', '오늘의 아침멘트', todayMents]] : []),
+    ['아침멘트', KIND_ICON['아침멘트'], todayMents.length ? '이번 주 아침멘트(다른 요일)' : '이번 주 아침멘트', ments.filter(i => !todayMents.includes(i))],
+    ...KIND_TABS.map(k => [k, KIND_ICON[k], label(k), week.filter(i => TAB_KINDS(k).includes(i.kind)).sort(byDay)])
+  ];
+  $('view').innerHTML = `
+    <div class="today-h">${now.getMonth() + 1}월 ${now.getDate()}일 ${dayName}요일 · 이번 주 = ${w0.month}월 ${w0.week}주차 (자료 ${week.length}개)</div>
+    <details class="go">
+      <summary>📍 바로가기 <span class="meta">(눌러서 펴기·접기)</span></summary>
+      <div class="chips">${groups.map(([k, ic, t, l]) => `<button data-go="${esc(k)}"${l.length ? '' : ' disabled style="opacity:.45"'}>${ic} ${esc(t)} ${l.length}</button>`).join('')}</div>
+    </details>
+    ${groups.map(([k, ic, t, l]) => `<h2 class="sec" id="wk-${esc(k)}">${ic} ${esc(t)}${l.length ? ` <span class="meta">${l.length}개</span>` : ''}</h2>` +
+      (l.length ? l.map(card).join('') : `<div class="card empty" style="padding:12px">${k === '오늘' ? `오늘(${dayName}요일) 아침멘트가 아직 없어요.` : `이번 주 ${esc(t)} 자료가 없어요.`}</div>`)).join('')}`;
+  bindCards();
+  const det = document.querySelector('details.go'); // 늘 접힌 채로 시작, 단추를 눌러 이동하면 다시 접어 화면을 비워요
+  document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => {
+    det.open = false;
+    $('wk-' + b.dataset.go).scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+}
+
+// 종류별 탭: 그 종류 자료만 연도별로 (최근 주차부터)
+function viewKind(kind) {
+  const years = yearsOf();
+  const kinds = TAB_KINDS(kind);
+  const list = S.items.filter(i => i.year === S.year && kinds.includes(i.kind))
+    .sort((a, b) => weekKey(b) - weekKey(a) || (a.sort ?? 99) - (b.sort ?? 99));
+  let html = '', last = null;
+  for (const i of list) {
+    const h = i.month ? `${i.month}월${i.week ? ' ' + i.week + '주차' : ''}` : '그 밖의 자료';
+    if (h !== last) { html += `<h2 class="sec">${esc(h)}</h2>`; last = h; }
+    html += card(i);
+  }
+  $('view').innerHTML = `
+    <div class="chips">${years.map(y => `<button data-y="${y}" class="${y === S.year ? 'on' : ''}">${y}년</button>`).join('')}</div>
+    <div class="meta">${list.length}개</div>
+    <div id="list">${html || `<div class="empty">${S.year}년 ${esc(label(kind))} 자료가 없어요.</div>`}</div>`;
+  bindCards();
+  document.querySelectorAll('[data-y]').forEach(b => b.onclick = () => { S.year = +b.dataset.y; viewKind(kind); });
 }
 
 const metaOf = i => [i.year + '년', i.month ? i.month + '월' : '', i.week ? i.week + '주차' : '', i.day ? i.day + '요일' : '', i.date || ''].filter(Boolean).join(' · ');
@@ -498,6 +575,51 @@ function editItem(i = {}) {
     try { await rpc('cls_delete', { p_code: S.code, p_id: i.id }); closeModal(); toast('지웠어요'); await load(); }
     catch { toast('지우기가 안 됐어요'); }
   };
+}
+
+// ── 📥 오픈톡방 자동 등록 내역 (관리자만) ─────────────────────────────
+function inboxCard(b) {
+  const metaBits = [new Date(b.received_at).toLocaleString('ko-KR'), b.sender, b.room].filter(Boolean).join(' · ');
+  const placed = b.item_id ? `${KIND_ICON[b.kind] || '📎'} ${esc(label(b.kind))}${b.day ? ' · ' + b.day + '요일' : ''}${b.week ? ' · ' + b.week + '주차' : ''}` : '🗑️ 지워짐';
+  const statusTag = b.status === 'new' ? '<span style="color:var(--accent);font-weight:800">● 새 자료</span>' : b.status === 'removed' ? '지워짐' : '확인함';
+  return `<div class="card" style="${b.status === 'new' ? 'border-color:var(--accent)' : ''}">
+    <div class="meta">${statusTag} · ${esc(metaBits)}</div>
+    <div class="body" style="font-size:15px;margin:8px 0;white-space:pre-wrap">${esc(b.raw)}</div>
+    <div class="meta">${placed}${b.note ? ' · ' + esc(b.note) : ''}</div>
+    <div class="row" style="margin-top:10px">
+      ${b.status === 'new' ? `<button class="main" data-ok="${b.id}">✅ 맞아요</button>` : ''}
+      ${b.item_id ? `<button data-ed="${b.id}">✏️ 종류·내용 고치기</button>` : ''}
+      ${b.item_id ? `<button class="danger" data-rm="${b.id}">🗑️ 삭제</button>` : ''}
+    </div>
+  </div>`;
+}
+async function viewInbox() {
+  const newCount = S.inbox.filter(b => b.status === 'new').length;
+  $('view').innerHTML = `
+    <div class="card">
+      <b>📥 오픈톡방에서 자동으로 들어온 자료</b>
+      <div class="meta">카톡에 <code>#이종대왕</code> 태그가 있으면 자동으로 가져와요. 맞으면 맞아요, 잘못 들어왔으면 삭제해 주세요.</div>
+      ${newCount ? `<div class="row" style="margin-top:10px"><button class="main" id="okall">✅ 새 것 전부 맞아요 (${newCount})</button></div>` : ''}
+    </div>
+    ${S.inbox.length ? S.inbox.map(inboxCard).join('') : '<div class="card empty">아직 들어온 게 없어요.</div>'}`;
+  if ($('okall')) $('okall').onclick = async () => {
+    await rpc('cls_inbox_set', { p_code: S.code, p_id: null, p_action: 'ok_all' });
+    toast('전부 맞아요로 바꿨어요'); await load();
+  };
+  document.querySelectorAll('[data-ok]').forEach(b => b.onclick = async () => {
+    await rpc('cls_inbox_set', { p_code: S.code, p_id: b.dataset.ok, p_action: 'ok' });
+    await load();
+  });
+  document.querySelectorAll('[data-rm]').forEach(b => b.onclick = async () => {
+    if (!confirm('이 자료를 자료실에서 지우고 내역도 지워짐으로 바꿀까요?')) return;
+    await rpc('cls_inbox_set', { p_code: S.code, p_id: b.dataset.rm, p_action: 'remove' });
+    toast('지웠어요'); await load();
+  });
+  document.querySelectorAll('[data-ed]').forEach(b => b.onclick = () => {
+    const row = S.inbox.find(x => x.id === b.dataset.ed);
+    const item = S.items.find(x => x.id === row?.item_id);
+    if (item) editItem(item); else toast('자료를 못 찾았어요(이미 지워졌을 수 있어요)');
+  });
 }
 
 // ── 허용 코드 관리 (관리자만) ─────────────────────────────
