@@ -226,15 +226,21 @@ function thisWeekItems() {
 function viewWeek() {
   const week = thisWeekItems(), w0 = week[0];
   if (!w0) { $('view').innerHTML = '<div class="card empty">이번 주 자료가 아직 없어요.</div>'; return; }
-  const groups = [['아침멘트', ['아침멘트']], ...KIND_TABS.map(k => [k, TAB_KINDS(k)])]
-    .map(([k, kinds]) => [k, week.filter(i => kinds.includes(i.kind))
-      .sort((a, b) => DAYS.indexOf(a.day) - DAYS.indexOf(b.day) || (a.sort ?? 99) - (b.sort ?? 99))]);
-  const now = new Date();
+  const now = new Date(), dayName = DAYS[now.getDay()];
+  const byDay = (a, b) => DAYS.indexOf(a.day) - DAYS.indexOf(b.day) || (a.sort ?? 99) - (b.sort ?? 99);
+  const ments = week.filter(i => i.kind === '아침멘트').sort(byDay);
+  // 맨 위: 오늘의 아침멘트(오늘 요일 것, 주말엔 칸 없음). 그 아래 "이번 주 아침멘트"는 나머지 요일
+  const todayMents = ments.filter(i => i.day === dayName);
+  const groups = [
+    ...(TODAY_KINDS[dayName] ? [['오늘', '🌅', '오늘의 아침멘트', todayMents]] : []),
+    ['아침멘트', KIND_ICON['아침멘트'], todayMents.length ? '이번 주 아침멘트(다른 요일)' : '이번 주 아침멘트', ments.filter(i => !todayMents.includes(i))],
+    ...KIND_TABS.map(k => [k, KIND_ICON[k], label(k), week.filter(i => TAB_KINDS(k).includes(i.kind)).sort(byDay)])
+  ];
   $('view').innerHTML = `
-    <div class="today-h">${now.getMonth() + 1}월 ${now.getDate()}일 ${DAYS[now.getDay()]}요일 · 이번 주 = ${w0.month}월 ${w0.week}주차 (자료 ${week.length}개)</div>
-    <div class="chips">${groups.map(([k, l]) => `<button data-go="${esc(k)}"${l.length ? '' : ' disabled style="opacity:.45"'}>${KIND_ICON[k]} ${label(k)} ${l.length}</button>`).join('')}</div>
-    ${groups.map(([k, l]) => `<h2 class="sec" id="wk-${esc(k)}">${KIND_ICON[k]} ${label(k)}${l.length ? ` <span class="meta">${l.length}개</span>` : ''}</h2>` +
-      (l.length ? l.map(card).join('') : `<div class="card empty" style="padding:12px">이번 주 ${label(k)} 자료가 없어요.</div>`)).join('')}`;
+    <div class="today-h">${now.getMonth() + 1}월 ${now.getDate()}일 ${dayName}요일 · 이번 주 = ${w0.month}월 ${w0.week}주차 (자료 ${week.length}개)</div>
+    <div class="chips">${groups.map(([k, ic, t, l]) => `<button data-go="${esc(k)}"${l.length ? '' : ' disabled style="opacity:.45"'}>${ic} ${esc(t)} ${l.length}</button>`).join('')}</div>
+    ${groups.map(([k, ic, t, l]) => `<h2 class="sec" id="wk-${esc(k)}">${ic} ${esc(t)}${l.length ? ` <span class="meta">${l.length}개</span>` : ''}</h2>` +
+      (l.length ? l.map(card).join('') : `<div class="card empty" style="padding:12px">${k === '오늘' ? `오늘(${dayName}요일) 아침멘트가 아직 없어요.` : `이번 주 ${esc(t)} 자료가 없어요.`}</div>`)).join('')}`;
   bindCards();
   document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => $('wk-' + b.dataset.go).scrollIntoView({ behavior: 'smooth', block: 'start' }));
 }
