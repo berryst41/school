@@ -37,7 +37,7 @@ label{display:block;font-weight:700;font-size:14px;margin:12px 0 5px}
 .meta{font-size:13px;color:var(--muted)}
 .preview{margin-top:6px;color:var(--muted);font-size:14px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-line}
 .today-h{font-size:15px;color:var(--muted);margin:2px 0 10px}
-.sec{font-size:18px;margin:18px 0 8px}
+.sec{font-size:18px;margin:18px 0 8px;scroll-margin-top:150px}
 .empty{color:var(--muted);text-align:center;padding:28px 10px}
 .body{white-space:pre-wrap;word-break:break-word;font-size:17px;line-height:1.75}
 .links a{display:block;padding:11px 14px;margin-top:8px;border-radius:12px;background:var(--accent-soft);color:var(--ink);text-decoration:none;font-weight:700}
@@ -196,7 +196,31 @@ function render() {
   document.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { S.tab = b.dataset.tab; render(); });
   if ($('add')) $('add').onclick = () => editItem();
   if (S.tab.startsWith('k:')) viewKind(S.tab.slice(2));
-  else ({ today: viewToday, all: viewAll, people: viewPeople })[S.tab]();
+  else ({ week: viewWeek, today: viewToday, all: viewAll, people: viewPeople })[S.tab]();
+}
+
+// "이번 주" = 올해 시트에서 가장 최근에 채운 주차
+function thisWeekItems() {
+  const thisYear = S.items.filter(i => i.year === S.items.reduce((m, i) => Math.max(m, i.year), 0) && i.week);
+  const latest = thisYear.reduce((m, i) => Math.max(m, weekKey(i)), 0);
+  return thisYear.filter(i => weekKey(i) === latest);
+}
+
+// 이번 주 탭: 이번 주 자료를 종류별로 한 화면에 (탭 순서와 같게), 위쪽 단추로 바로 이동
+function viewWeek() {
+  const week = thisWeekItems(), w0 = week[0];
+  if (!w0) { $('view').innerHTML = '<div class="card empty">이번 주 자료가 아직 없어요.</div>'; return; }
+  const groups = [['아침멘트', ['아침멘트']], ...KIND_TABS.map(k => [k, TAB_KINDS(k)])]
+    .map(([k, kinds]) => [k, week.filter(i => kinds.includes(i.kind))
+      .sort((a, b) => DAYS.indexOf(a.day) - DAYS.indexOf(b.day) || (a.sort ?? 99) - (b.sort ?? 99))]);
+  const now = new Date();
+  $('view').innerHTML = `
+    <div class="today-h">${now.getMonth() + 1}월 ${now.getDate()}일 ${DAYS[now.getDay()]}요일 · 이번 주 = ${w0.month}월 ${w0.week}주차 (자료 ${week.length}개)</div>
+    <div class="chips">${groups.map(([k, l]) => `<button data-go="${esc(k)}"${l.length ? '' : ' disabled style="opacity:.45"'}>${KIND_ICON[k]} ${label(k)} ${l.length}</button>`).join('')}</div>
+    ${groups.map(([k, l]) => `<h2 class="sec" id="wk-${esc(k)}">${KIND_ICON[k]} ${label(k)}${l.length ? ` <span class="meta">${l.length}개</span>` : ''}</h2>` +
+      (l.length ? l.map(card).join('') : `<div class="card empty" style="padding:12px">이번 주 ${label(k)} 자료가 없어요.</div>`)).join('')}`;
+  bindCards();
+  document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => $('wk-' + b.dataset.go).scrollIntoView({ behavior: 'smooth', block: 'start' }));
 }
 
 // 종류별 탭: 그 종류 자료만 연도별로 (최근 주차부터)
