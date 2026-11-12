@@ -79,9 +79,10 @@ const label = k => KIND_LABEL[k] || k;
 const DAYS = ['일', '월', '화', '수', '목', '금', '토'];
 // 요일마다 「오늘」에 보여 줄 종류
 const TODAY_KINDS = { 월: ['아침멘트'], 화: ['아침멘트'], 수: ['아침멘트'], 목: ['아침멘트'], 금: ['아침멘트'] };
-// 요일과 상관없이 「오늘」 화면에 늘 "이번 주 ○○"로 보여 줄 종류 (미리 준비하게)
-const KIND_TABS = ['단단마인드', '주간교육']; // 위 메뉴에 따로 탭으로 나오는 종류
-const WEEK_KINDS =['수업놀이', '중간놀이', '목힘', '금요놀이'];
+// 위쪽 탭 순서 (「오늘의 아침멘트」 다음부터 종류별 탭). 화면 속 칸 이름도 label()로 같게 써요.
+// 기타 탭에는 따로 탭이 없는 종류(교사마인드)도 같이 모여요.
+const KIND_TABS = ['주간교육', '수업놀이', '목힘', '중간놀이', '금요놀이', '단단마인드', '기타'];
+const TAB_KINDS = k => k === '기타' ? ['기타', '교사마인드'] : [k];
 // 학년도 안에서 달 순서 (3월 → 2월)
 const monthRank = m => m == null ? 99 : (m + 9) % 12;
 const weekKey = i => i.year * 10000 + monthRank(i.month) * 100 + (i.week || 0);
@@ -181,7 +182,7 @@ function yearsOf() {
 
 // ── 화면 ─────────────────────────────
 function render() {
-  const tabs = [['today', '☀️ 오늘'], ['all', '📂 모아보기'], ...KIND_TABS.map(k => ['k:' + k, KIND_ICON[k] + ' ' + label(k)]), ...(S.me.admin ? [['people', '⚙️ 관리']] : [])];
+  const tabs = [['today', '🌅 오늘의 아침멘트'], ...KIND_TABS.map(k => ['k:' + k, KIND_ICON[k] + ' ' + label(k)]), ['all', '📂 모아보기'], ...(S.me.admin ? [['people', '⚙️ 관리']] : [])];
   $('app').innerHTML = `
     <header>
       <h1>📚 4원칙 자료실</h1>
@@ -201,7 +202,8 @@ function render() {
 // 종류별 탭: 그 종류 자료만 연도별로 (최근 주차부터)
 function viewKind(kind) {
   const years = yearsOf();
-  const list = S.items.filter(i => i.year === S.year && i.kind === kind)
+  const kinds = TAB_KINDS(kind);
+  const list = S.items.filter(i => i.year === S.year && kinds.includes(i.kind))
     .sort((a, b) => weekKey(b) - weekKey(a) || (a.sort ?? 99) - (b.sort ?? 99));
   let html = '', last = null;
   for (const i of list) {
