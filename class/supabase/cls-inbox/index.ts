@@ -1,6 +1,7 @@
 // 학급 운영 자료실: 오픈톡방 카톡 → 자료실 자동 등록
-// 부르는 곳: 폰의 알림 앱(MacroDroid 등)이 카톡 알림을 받을 때마다 POST { token, title, text } (또는 { sender, text })
-// - token이 cls_config.inbox_token과 같아야 해요.
+// 부르는 곳: ① 폰의 알림 앱(MacroDroid 등)이 카톡 알림을 받을 때마다 POST { token, title, text } (또는 { sender, text })
+//          ② 관리자가 자료실 「📥 자동 등록」 탭에서 대화 글을 붙여넣어 한꺼번에 가져올 때 POST { code, messages: [{sender, room, text}] }
+// - ①은 token이 cls_config.inbox_token과 같아야 해요. ②는 관리자 코드(cls_is_admin)로 확인해요.
 // - 메시지에 #이종대왕 이 없으면 아무것도 저장하지 않고 버려요(다른 사람 대화는 서버에 남기지 않음).
 // - 있으면 index.html의 classify()와 같은 규칙(TAG_RULES)으로 종류·요일·주차를 정해 cls_items에 넣고,
 //   확인용 내역을 cls_inbox에 남겨요(관리자 "📥 자동 등록" 탭에서 맞아요/삭제).
@@ -51,28 +52,19 @@ async function sha(s: string) {
   return [...new Uint8Array(d)].map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-Deno.serve(async req => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
-  const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
-  const { data: cfg } = await db.from('cls_config').select('inbox_token').eq('id', 1).single();
-  const body = await req.json().catch(() => ({}));
-  const url = new URL(req.url);
-  const token = req.headers.get('x-inbox-token') || body.token || url.searchParams.get('token');
-  if (!cfg?.inbox_token || token !== cfg.inbox_token) return json({ error: 'denied' }, 403);
-
-  // 알림은 보통 title=톡방 이름, text="보낸 사람 : 메시지". 앱이 따로 나눠 보내면 sender·text를 그대로 써요.
-  let sender = String(body.sender || '').trim(), text = String(body.text || '').trim();
-  const room = String(body.room || body.title || '').trim();
+// 메시지 하나를 받아 #이종대왕 태그를 확인하고, 있으면 분류해서 cls_items·cls_inbox에 넣어요.
+// fromPaste: 대화 글 붙여넣기로 들어온 거면(알림이 아니라 잘릴 걱정이 없음) note에 남김.
+async function processOne(db: any, sender: string, room: string, rawText: string, fromPaste = false) {
+  let text = rawText.trim();
   if (!sender) {
     const m = text.match(/^([^\n:]{1,30}?) : ([\s\S]*)$/);
     if (m) { sender = m[1].trim(); text = m[2].trim(); }
   }
-  if (!text.includes('#이종대왕')) return json({ ok: true, ignored: 'no tag' });
+  if (!text.includes('#이종대왕')) return { ok: true, ignored: 'no tag' };
 
-  // 같은 글이 알림으로 두 번 오는 일이 있어서, 같은 글은 한 번만
   const dedupe = await sha(text.replace(/\s+/g, ' '));
   const { data: dup } = await db.from('cls_inbox').select('id').eq('dedupe', dedupe).maybeSingle();
-  if (dup) return json({ ok: true, ignored: 'duplicate' });
+  if (dup) return { ok: true, ignored: 'duplicate' };
 
   const tags = tagsOf(text);
   const has = (t: string) => tags.includes(t);
@@ -105,12 +97,12 @@ Deno.serve(async req => {
   const latest = (wk || []).sort((a, b) => (monthRank(b.month) * 100 + b.week) - (monthRank(a.month) * 100 + a.week))[0];
   const weekTag = tags.map(t => +((t.match(/^(\d+)(?:~\d+)?주차$/) || [])[1])).find(Boolean);
   const week = weekTag || latest?.week || null;
-  const same = (wk || []).find(i => i.week === week && i.month);
+  const same = (wk || []).find((i: any) => i.week === week && i.month);
   const month = same?.month || kst.getUTCMonth() + 1;
 
   const bodyText = bodyOf(text);
-  if (!bodyText) return json({ ok: true, ignored: 'empty body' });
-  if (/(…|\.\.\.)$/.test(text)) notes.push('알림 글이 잘렸을 수 있어요(끝이 …) — 원문을 확인해 주세요');
+  if (!bodyText) return { ok: true, ignored: 'empty body' };
+  if (!fromPaste && /(…|\.\.\.)$/.test(text)) notes.push('알림 글이 잘렸을 수 있어요(끝이 …) — 원문을 확인해 주세요');
   const first = (bodyText.match(/<([^<>\n]{2,40})>/) || [])[1] ||
     (bodyText.split('\n').map(l => l.replace(/^["“'*■●▶\s-]+/, '').trim()).find(l => l && !/^https?:/.test(l)) || '');
   const plain = first.length > 42 ? first.slice(0, 40) + '…' : first;
@@ -120,11 +112,44 @@ Deno.serve(async req => {
     year, month, kind, day: day || null, week, title: titleFor(kind, week, day, plain) || '(제목 없음)',
     body: bodyText, links, tags
   }).select('id').single();
-  if (error) return json({ error: error.message }, 500);
+  if (error) return { error: error.message };
 
   await db.from('cls_inbox').insert({
     sender: sender || null, room: room || null, raw: text, item_id: item.id, kind,
-    note: [why ? `종류 근거: ${why}` : '', ...notes].filter(Boolean).join(' · ') || null, dedupe
+    note: [why ? `종류 근거: ${why}` : '', fromPaste ? '대화 글 붙여넣기로 들어옴' : '', ...notes].filter(Boolean).join(' · ') || null, dedupe
   });
-  return json({ ok: true, kind, week, day });
+  return { ok: true, kind, week, day };
+}
+
+Deno.serve(async req => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
+  const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+  const body = await req.json().catch(() => ({}));
+
+  // ② 관리자가 자료실에서 대화 글을 붙여넣어 한꺼번에 가져올 때
+  if (body.code && Array.isArray(body.messages)) {
+    if (!(await db.rpc('cls_is_admin', { p_code: body.code })).data) return json({ error: 'denied' }, 403);
+    const results = [];
+    for (const m of body.messages.slice(0, 300)) {
+      const r = await processOne(db, String(m.sender || '').trim(), String(m.room || '').trim(), String(m.text || ''), true);
+      results.push(r);
+    }
+    const ok = results.filter(r => r.ok && !r.ignored).length;
+    const dup = results.filter(r => r.ignored === 'duplicate').length;
+    const skip = results.length - ok - dup;
+    return json({ ok: true, total: results.length, added: ok, duplicate: dup, skipped: skip });
+  }
+
+  // ① 폰의 알림 앱이 보낼 때
+  const { data: cfg } = await db.from('cls_config').select('inbox_token').eq('id', 1).single();
+  const url = new URL(req.url);
+  const token = req.headers.get('x-inbox-token') || body.token || url.searchParams.get('token');
+  if (!cfg?.inbox_token || token !== cfg.inbox_token) return json({ error: 'denied' }, 403);
+
+  // 알림은 보통 title=톡방 이름, text="보낸 사람 : 메시지". 앱이 따로 나눠 보내면 sender·text를 그대로 써요.
+  const sender = String(body.sender || '').trim();
+  const room = String(body.room || body.title || '').trim();
+  const text = String(body.text || '').trim();
+  const r = await processOne(db, sender, room, text, false);
+  return json(r, r.error ? 500 : 200);
 });
