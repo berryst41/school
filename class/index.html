@@ -271,7 +271,8 @@ function viewToday() {
       if (others.length) html += `<h2 class="sec">${KIND_ICON[k]} 이번 주 ${label(k)}</h2>` + others.map(card).join('');
     }
   }
-  const rest = week.filter(i => !shown.has(i.id)).sort((a, b) => KINDS.indexOf(a.kind) - KINDS.indexOf(b.kind) || a.sort - b.sort);
+  // 단단마인드·주간교육은 자기 탭이 있으니 여기엔 안 섞음
+  const rest = week.filter(i => !shown.has(i.id) && !KIND_TABS.includes(i.kind)).sort((a, b) => KINDS.indexOf(a.kind) - KINDS.indexOf(b.kind) || a.sort - b.sort);
   if (rest.length) {
     html += `<h2 class="sec">📅 이번 주 다른 자료</h2>` + rest.map(card).join('');
   }
