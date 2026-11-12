@@ -593,19 +593,98 @@ function inboxCard(b) {
     </div>
   </div>`;
 }
+
+// 카톡에서 복사해 붙여넣은 대화 글을 메시지 여러 개로 나눠요. 카톡 버전마다 모양이 달라서 정확하지 않을 수 있어요 —
+// 그래서 바로 보내지 않고 미리보기로 몇 개가 뽑혔는지 먼저 보여줘요.
+function parseChat(text) {
+  const lines = text.replace(/\r\n?/g, '\n').split('\n');
+  // "이름, 2026년 11월 12일 오전 9:05" 같은 날짜·이름 머리줄 (내용은 다음 줄부터)
+  const headHead = /^(.{1,20}?),\s*\d{4}[.\s]?년?\s*\d{1,2}[.\s]?월?\s*\d{1,2}[.\s]?일?.*(오전|오후).*$/;
+  // "[이름] [오전 9:05]" 머리줄
+  const headBracket = /^\[(.{1,20}?)\]\s*\[(?:오전|오후)[^\]]*\]\s*$/;
+  const hasHeader = lines.some(l => headHead.test(l) || headBracket.test(l));
+  const msgs = [];
+  let cur = null;
+  const flush = () => { if (cur && cur.text.trim()) msgs.push({ sender: cur.sender, text: cur.text.trim() }); cur = null; };
+  if (hasHeader) {
+    // 날짜·이름 머리줄이 하나라도 있으면, 그 모양을 기준으로만 끊어요(본문 속 "라벨: 내용" 줄은 안 건드림)
+    for (const line of lines) {
+      let m;
+      if ((m = headBracket.exec(line))) { flush(); cur = { sender: m[1].trim(), text: '' }; continue; }
+      if ((m = headHead.exec(line))) { flush(); cur = { sender: m[1].trim(), text: '' }; continue; }
+      if (/^\d{4}년\s*\d{1,2}월\s*\d{1,2}일/.test(line.trim())) continue; // 날짜만 있는 구분줄
+      if (cur) cur.text += (cur.text ? '\n' : '') + line;
+    }
+    flush();
+  } else {
+    // 머리줄이 전혀 없으면, "이름 : 내용" 한 줄짜리 메시지 모음으로 보고 줄마다 하나씩
+    const inline = /^(.{1,20}?)\s*[:：]\s*(.+)$/;
+    for (const line of lines) {
+      const m = inline.exec(line);
+      if (m && !/https?:/.test(m[1])) msgs.push({ sender: m[1].trim(), text: m[2].trim() });
+    }
+  }
+  return msgs.filter(m => m.text.includes('#이종대왕'));
+}
+
+function pasteImport() {
+  openModal(`
+    <h2>✍️ 대화 글 붙여넣기</h2>
+    <div class="meta">카톡방에서 긴 구간을 길게 눌러 복사한 뒤 아래에 붙여넣으세요. <code>#이종대왕</code> 태그가 있는 메시지만 골라서 가져와요(알림 방식과 달리 안 잘려요).</div>
+    <textarea id="pt-text" style="min-height:220px;margin-top:10px" placeholder="여기에 카톡 대화를 붙여넣으세요"></textarea>
+    <div class="row" style="margin-top:12px">
+      <button class="main" id="pt-check">확인하기</button>
+      <button class="ghost" id="pt-cancel">닫기</button>
+    </div>
+    <div id="pt-preview"></div>`);
+  $('pt-cancel').onclick = closeModal;
+  $('pt-check').onclick = () => {
+    const found = parseChat($('pt-text').value);
+    if (!found.length) {
+      $('pt-preview').innerHTML = '<div class="card empty" style="margin-top:12px">#이종대왕 태그가 붙은 메시지를 못 찾았어요. 붙여넣은 글을 확인해 주세요.</div>';
+      return;
+    }
+    $('pt-preview').innerHTML = `
+      <div class="card" style="margin-top:12px">
+        <b>${found.length}개 찾았어요</b>
+        <div class="meta">아래 내용으로 들어가요(중복·태그 없는 건 자동으로 걸러져요). 맞으면 가져오기를 눌러주세요.</div>
+      </div>
+      ${found.map(m => `<div class="card" style="padding:12px 14px"><div class="meta">${esc(m.sender || '(보낸이 모름)')}</div><div class="body" style="font-size:14px;white-space:pre-wrap">${esc(m.text)}</div></div>`).join('')}
+      <div class="row" style="margin-top:12px"><button class="main" id="pt-go">📥 ${found.length}개 가져오기</button></div>`;
+    $('pt-go').onclick = async () => {
+      $('pt-go').disabled = true; $('pt-go').textContent = '가져오는 중…';
+      try {
+        const r = await fetch(`${SUPABASE_URL}/functions/v1/cls-inbox`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: S.code, messages: found })
+        }).then(r => r.json());
+        if (r.error) throw new Error(r.error);
+        closeModal();
+        toast(`${r.added}개 넣었어요${r.duplicate ? ` (중복 ${r.duplicate}개 건너뜀)` : ''}`);
+        await load();
+      } catch { toast('가져오기가 안 됐어요. 다시 해 주세요'); $('pt-go').disabled = false; $('pt-go').textContent = `📥 ${found.length}개 가져오기`; }
+    };
+  };
+}
+
 async function viewInbox() {
   const newCount = S.inbox.filter(b => b.status === 'new').length;
   $('view').innerHTML = `
     <div class="card">
       <b>📥 오픈톡방에서 자동으로 들어온 자료</b>
-      <div class="meta">카톡에 <code>#이종대왕</code> 태그가 있으면 자동으로 가져와요. 맞으면 맞아요, 잘못 들어왔으면 삭제해 주세요.</div>
-      ${newCount ? `<div class="row" style="margin-top:10px"><button class="main" id="okall">✅ 새 것 전부 맞아요 (${newCount})</button></div>` : ''}
+      <div class="meta">카톡에 <code>#이종대왕</code> 태그가 있으면 자동으로 가져와요. 맞으면 맞아요, 잘못 들어왔으면 삭제해 주세요.<br>
+        멘트가 길어서 알림으로 잘릴 걱정이 되면, <b>카톡 대화를 복사해서 통째로 붙여넣는 쪽</b>이 안전해요.</div>
+      <div class="row" style="margin-top:10px">
+        ${newCount ? `<button class="main" id="okall">✅ 새 것 전부 맞아요 (${newCount})</button>` : ''}
+        <button id="paste">✍️ 대화 글 붙여넣기</button>
+      </div>
     </div>
     ${S.inbox.length ? S.inbox.map(inboxCard).join('') : '<div class="card empty">아직 들어온 게 없어요.</div>'}`;
   if ($('okall')) $('okall').onclick = async () => {
     await rpc('cls_inbox_set', { p_code: S.code, p_id: null, p_action: 'ok_all' });
     toast('전부 맞아요로 바꿨어요'); await load();
   };
+  if ($('paste')) $('paste').onclick = pasteImport;
   document.querySelectorAll('[data-ok]').forEach(b => b.onclick = async () => {
     await rpc('cls_inbox_set', { p_code: S.code, p_id: b.dataset.ok, p_action: 'ok' });
     await load();
