@@ -80,7 +80,8 @@ const DAYS = ['일', '월', '화', '수', '목', '금', '토'];
 // 요일마다 「오늘」에 보여 줄 종류
 const TODAY_KINDS = { 월: ['아침멘트'], 화: ['아침멘트'], 수: ['아침멘트'], 목: ['아침멘트'], 금: ['아침멘트'] };
 // 요일과 상관없이 「오늘」 화면에 늘 "이번 주 ○○"로 보여 줄 종류 (미리 준비하게)
-const WEEK_KINDS = ['수업놀이', '중간놀이', '목힘', '금요놀이'];
+const KIND_TABS = ['단단마인드', '주간교육']; // 위 메뉴에 따로 탭으로 나오는 종류
+const WEEK_KINDS =['수업놀이', '중간놀이', '목힘', '금요놀이'];
 // 학년도 안에서 달 순서 (3월 → 2월)
 const monthRank = m => m == null ? 99 : (m + 9) % 12;
 const weekKey = i => i.year * 10000 + monthRank(i.month) * 100 + (i.week || 0);
@@ -180,7 +181,7 @@ function yearsOf() {
 
 // ── 화면 ─────────────────────────────
 function render() {
-  const tabs = [['today', '☀️ 오늘'], ['all', '📂 모아보기'], ...(S.me.admin ? [['people', '⚙️ 관리']] : [])];
+  const tabs = [['today', '☀️ 오늘'], ['all', '📂 모아보기'], ...KIND_TABS.map(k => ['k:' + k, KIND_ICON[k] + ' ' + label(k)]), ...(S.me.admin ? [['people', '⚙️ 관리']] : [])];
   $('app').innerHTML = `
     <header>
       <h1>📚 4원칙 자료실</h1>
@@ -193,7 +194,27 @@ function render() {
   $('out').onclick = () => { if (confirm('이 기기에서 나갈까요? 다시 들어오려면 코드가 필요해요.')) logout(); };
   document.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { S.tab = b.dataset.tab; render(); });
   if ($('add')) $('add').onclick = () => editItem();
-  ({ today: viewToday, all: viewAll, people: viewPeople })[S.tab]();
+  if (S.tab.startsWith('k:')) viewKind(S.tab.slice(2));
+  else ({ today: viewToday, all: viewAll, people: viewPeople })[S.tab]();
+}
+
+// 종류별 탭: 그 종류 자료만 연도별로 (최근 주차부터)
+function viewKind(kind) {
+  const years = yearsOf();
+  const list = S.items.filter(i => i.year === S.year && i.kind === kind)
+    .sort((a, b) => weekKey(b) - weekKey(a) || (a.sort ?? 99) - (b.sort ?? 99));
+  let html = '', last = null;
+  for (const i of list) {
+    const h = i.month ? `${i.month}월${i.week ? ' ' + i.week + '주차' : ''}` : '그 밖의 자료';
+    if (h !== last) { html += `<h2 class="sec">${esc(h)}</h2>`; last = h; }
+    html += card(i);
+  }
+  $('view').innerHTML = `
+    <div class="chips">${years.map(y => `<button data-y="${y}" class="${y === S.year ? 'on' : ''}">${y}년</button>`).join('')}</div>
+    <div class="meta">${list.length}개</div>
+    <div id="list">${html || `<div class="empty">${S.year}년 ${esc(label(kind))} 자료가 없어요.</div>`}</div>`;
+  bindCards();
+  document.querySelectorAll('[data-y]').forEach(b => b.onclick = () => { S.year = +b.dataset.y; viewKind(kind); });
 }
 
 const metaOf = i => [i.year + '년', i.month ? i.month + '월' : '', i.week ? i.week + '주차' : '', i.day ? i.day + '요일' : '', i.date || ''].filter(Boolean).join(' · ');
