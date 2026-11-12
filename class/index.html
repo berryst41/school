@@ -231,7 +231,8 @@ function viewToday() {
     const ofKind = S.items.filter(i => i.kind === k);
     let pick = mode === 'today' ? ofKind.filter(i => i.date === today) : [];
     if (!pick.length && mode === 'today') pick = week.filter(i => i.kind === k && (!i.day || i.day === day));
-    if (!pick.length) pick = week.filter(i => i.kind === k);
+    // 오늘의 ○○는 오늘 요일 것만 — 이번 주에 없으면 다른 요일로 채우지 않고 지난 같은 요일 것으로
+    if (!pick.length && mode === 'week') pick = week.filter(i => i.kind === k);
     let old = false;
     if (!pick.length && ofKind.length) {
       const last = ofKind.filter(i => mode === 'week' || !i.day || i.day === day).sort((a, b) => weekKey(b) - weekKey(a))[0];
@@ -239,7 +240,7 @@ function viewToday() {
     }
     pick.forEach(i => shown.add(i.id));
     html += `<h2 class="sec">${KIND_ICON[k]} ${mode === 'today' ? '오늘의' : '이번 주'} ${label(k)}</h2>`;
-    if (old) html += `<div class="meta" style="margin:-4px 0 8px">이번 주 자료가 아직 없어서 가장 최근 것을 보여 줘요.</div>`;
+    if (old) html += `<div class="meta" style="margin:-4px 0 8px">${mode === 'today' ? `이번 주 ${day}요일 자료가 아직 없어서 지난 ${day}요일 것을 보여 줘요.` : '이번 주 자료가 아직 없어서 가장 최근 것을 보여 줘요.'}</div>`;
     html += pick.length ? pick.map(card).join('') : `<div class="card empty">아직 ${label(k)} 자료가 없어요.</div>`;
   }
   const rest = week.filter(i => !shown.has(i.id)).sort((a, b) => KINDS.indexOf(a.kind) - KINDS.indexOf(b.kind) || a.sort - b.sort);
