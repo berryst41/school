@@ -80,18 +80,31 @@ async function tabsOf(token: string, spreadsheetId: string) {
   return ((await r.json()).sheets || []).map((s: any) => s.properties.title as string);
 }
 
-// 그 달 탭에서 이 주차 줄의 빈 분류 칸을 왼쪽부터 찾아요. kindWanted가 있으면 그 칸을 먼저 보고, 없거나 이미 찼으면 아무 빈 칸이나.
+// 그 달 탭에서 이 주차 줄의 빈 분류 칸을 왼쪽부터 찾아요. kindWanted가 있으면 그 칸을 먼저 보고,
+// 없거나 이미 찼으면(아침멘트처럼 요일별 칸이 다 찬 경우도 포함) 다른 분류 칸 중 빈 칸,
+// 그마저 없으면 이름(목차) 없는 칸 중 왼쪽부터 비어 있는 칸을 써요.
 async function findSlot(token: string, spreadsheetId: string, tab: string, week: number, kindWanted?: string) {
   const rows = await readValues(token, spreadsheetId, `'${tab.replace(/'/g, "''")}'!A1:Z80`);
   const head = (rows[0] || []).map(colName);
   const ri = rows.slice(1).findIndex(row => +((clean(row[0]).match(/(\d+)/) || [])[1]) === week);
   if (ri < 0) return null;
   const row = rows[1 + ri];
-  const cols = head.map((h, ci) => ({ ci, kind: kindOf(h) })).filter(c => c.kind && c.ci > 0);
-  const empty = cols.filter(c => !clean(row[c.ci]));
-  if (!empty.length) return null;
-  const pick = (kindWanted && empty.find(c => c.kind[0] === kindWanted)) || empty[0];
-  return { addr: `${colLetter(pick.ci)}${ri + 2}`, kind: pick.kind[0], day: pick.kind[1] || null };
+
+  const named = head.map((h, ci) => ({ ci, kind: kindOf(h) })).filter(c => c.kind && c.ci > 0);
+  const emptyNamed = named.filter(c => !clean(row[c.ci]));
+  if (emptyNamed.length) {
+    const pick = (kindWanted && emptyNamed.find(c => c.kind![0] === kindWanted)) || emptyNamed[0];
+    return { addr: `${colLetter(pick.ci)}${ri + 2}`, kind: pick.kind![0], day: pick.kind![1] || null };
+  }
+
+  // 분류 칸이 다 찼으면: B~Z 중 이름(목차) 있는 칸이 아니면서(=분류 칸이 아니면서) 이 줄에서 진짜 비어 있는 칸을 왼쪽부터.
+  // 시트 API는 한 번도 값이 안 들어간 칸(예: N,O,P)은 head/row에 아예 안 돌려주므로, 글자 수와 상관없이 B~Z를 직접 다 훑어요.
+  const namedCols = new Set(named.map(c => c.ci));
+  for (let ci = 1; ci < 26; ci++) {
+    if (namedCols.has(ci)) continue;
+    if (!clean(row[ci])) return { addr: `${colLetter(ci)}${ri + 2}`, kind: kindWanted || '기타', day: null };
+  }
+  return null;
 }
 
 async function handle(req: Request) {
