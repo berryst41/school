@@ -39,6 +39,11 @@
 <td>듀얼 모니터에서 한글·엑셀·브라우저가 골라 둔 모니터(메인/서브)에 열려요 (윈도우 프로그램)</td>
 <td align="center"><a href="https://github.com/berryst41/school/raw/main/main-monitor/main-monitor.zip"><b>⬇️&nbsp;받&#8288;기<br>v1.4.1</b></a></td>
 </tr>
+<tr>
+<td>📌 <a href="https://github.com/berryst41/school/tree/main/insta"><b>저장 정리 비서</b></a></td>
+<td>인스타 저장 릴스·피드를 AI가 맛집·레시피·여행·쇼핑으로 정리해요 (폰에 설치하는 웹앱)</td>
+<td align="center"><a href="https://berryst41.github.io/school/insta/"><b>📌&nbsp;열&#8288;기</b></a></td>
+</tr>
 <tr><td colspan="3"><b>🧑‍🏫 수업에 쓰는 도구</b></td></tr>
 <tr>
 <td>📚 <a href="https://github.com/berryst41/school/tree/main/class"><b>4원칙 학급 운영 자료실</b></a></td>
@@ -83,6 +88,10 @@ school/
 ├── share/
 │   ├── index.html    📮 자료 공유 사이트
 │   ├── qrcode.js        QR코드 만들기
+│   └── README.md        설명
+├── insta/
+│   ├── index.html    📌 저장 정리 비서 (웹앱)
+│   ├── sw.js, manifest.webmanifest, icon-*.png  폰 설치용
 │   └── README.md        설명
 ├── class/
 │   ├── index.html    📚 4원칙 학급 운영 자료실
