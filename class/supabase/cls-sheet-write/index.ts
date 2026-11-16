@@ -93,8 +93,10 @@ async function findSlot(token: string, spreadsheetId: string, tab: string, week:
   const named = head.map((h, ci) => ({ ci, kind: kindOf(h) })).filter(c => c.kind && c.ci > 0);
   const emptyNamed = named.filter(c => !clean(row[c.ci]));
   if (emptyNamed.length) {
-    const pick = (kindWanted && emptyNamed.find(c => c.kind![0] === kindWanted)) || emptyNamed[0];
-    return { addr: `${colLetter(pick.ci)}${ri + 2}`, kind: pick.kind![0], day: pick.kind![1] || null };
+    // 원하는 종류를 뚜렷이 골랐으면 그 종류의 빈 칸만 써요(다른 종류 칸을 가로채지 않음).
+    // 못 찾으면 바로 아래 "이름 없는 칸" 단계로 넘어가요. 종류를 안 골랐을 때만(애매한 분류) 아무 빈 분류 칸이든 써요.
+    const exact = kindWanted ? emptyNamed.find(c => c.kind![0] === kindWanted) : emptyNamed[0];
+    if (exact) return { addr: `${colLetter(exact.ci)}${ri + 2}`, kind: exact.kind![0], day: exact.kind![1] || null };
   }
 
   // 분류 칸이 다 찼으면: B~Z 중 이름(목차) 있는 칸이 아니면서(=분류 칸이 아니면서) 이 줄에서 진짜 비어 있는 칸을 왼쪽부터.
@@ -164,7 +166,51 @@ async function handle(req: Request) {
   const s = (cfg?.sheets || []).find((x: any) => x.year === item.year);
   if (!s) return json({ error: `${item.year}년 시트를 못 찾았어요` }, 404);
 
-  await writeCell(await sheetToken(sa), s.id, tab, addr, cellText);
+  const token2 = await sheetToken(sa);
+
+  // 종류·요일·주차를 바꾸려는 경우: 그 줄(또는 바꾼 주차의 줄)에서 맞는 빈 칸을 찾아 옮겨요(원래 칸은 비움)
+  const moveKind: string | undefined = body.moveKind;
+  const moveDay: string | null = body.moveDay ?? null;
+  const moveWeek: number | undefined = body.moveWeek != null ? +body.moveWeek : undefined;
+  const kindChanged = !!moveKind && (moveKind !== item.kind || moveDay !== (item.day || null));
+  const weekChanged = moveWeek != null && moveWeek !== item.week;
+  if (kindChanged || weekChanged) {
+    const targetKind = moveKind || item.kind;
+    const targetDay = moveKind ? moveDay : (item.day || null);
+    const oldRow = +((addr.match(/(\d+)$/) || [])[1]);
+    const oldCi = addr.match(/^([A-Z]+)/)![1].charCodeAt(0) - 65;
+
+    const headRows = await readValues(token2, s.id, `'${tab.replace(/'/g, "''")}'!1:1`);
+    const head = (headRows[0] || []).map(colName);
+
+    let targetRowNum = oldRow;
+    if (weekChanged) {
+      const allRows = await readValues(token2, s.id, `'${tab.replace(/'/g, "''")}'!A1:A80`);
+      const ri = allRows.findIndex((r, i) => i > 0 && +((clean(r[0]).match(/(\d+)/) || [])[1]) === moveWeek);
+      if (ri < 0) return json({ error: `이 달 안에서 ${moveWeek}주차를 못 찾았어요.` }, 404);
+      targetRowNum = ri + 1;
+    }
+
+    const rowVals = (await readValues(token2, s.id, `'${tab.replace(/'/g, "''")}'!A${targetRowNum}:Z${targetRowNum}`))[0] || [];
+    const sameRow = targetRowNum === oldRow;
+    const candidates = head
+      .map((h, ci) => ({ ci, kind: kindOf(h) }))
+      .filter(c => !(sameRow && c.ci === oldCi) && c.kind && c.kind[0] === targetKind && !clean(rowVals[c.ci]));
+    const pick = (targetDay && candidates.find(c => c.kind![1] === targetDay)) || candidates[0];
+    if (!pick) return json({ error: `그 주차에 "${targetKind}"로 옮길 빈 칸이 없어요. 구글 시트에서 직접 옮겨 주세요.` }, 409);
+    const newAddr = `${colLetter(pick.ci)}${targetRowNum}`;
+    await writeCell(token2, s.id, tab, newAddr, cellText);
+    await writeCell(token2, s.id, tab, addr, '');
+    const newSrc = `${item.year}|${tab}|${newAddr}`;
+    const newWeek = weekChanged ? moveWeek : item.week;
+    const { data: r, error } = await db.from('cls_items')
+      .update({ title, body: safeText, links: links || [], tags: tags || [], kind: pick.kind![0], day: pick.kind![1] || null, week: newWeek, src: newSrc, sort: pick.ci, updated_at: new Date().toISOString() })
+      .eq('id', id).select().single();
+    if (error) return json({ error: 'DB: ' + error.message }, 500);
+    return json({ ok: true, moved: true, item: r });
+  }
+
+  await writeCell(token2, s.id, tab, addr, cellText);
 
   const { data: r, error } = await db.from('cls_items')
     .update({ title, body: safeText, links: links || [], tags: tags || [], updated_at: new Date().toISOString() })
