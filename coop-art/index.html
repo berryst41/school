@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>협동화 메이커</title>
+<style>
+  :root {
+    --bg: #fff8ef; --card: #ffffff; --ink: #2d2a32; --muted: #7a7380;
+    --accent: #ff7a59; --accent2: #5b8def; --ok: #2fa66a; --line: #eadfd2; --warn: #c0392b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 20px 14px 60px; }
+  h1 { text-align: center; font-size: 2rem; margin: 6px 0 4px; }
+  .sub { text-align: center; color: var(--muted); margin: 0 0 18px; }
+  h2 { font-size: 1.2rem; margin: 22px 0 8px; }
+  h2:first-child { margin-top: 0; }
+  .card { background: var(--card); border-radius: 20px; padding: 24px;
+    box-shadow: 0 6px 24px rgba(0,0,0,.07); }
+  .hidden { display: none !important; }
+  button, .btn { font-family: inherit; cursor: pointer; border: 0; border-radius: 12px;
+    padding: 10px 18px; font-size: 1rem; font-weight: 700; display: inline-block; }
+  .btn-main { background: var(--accent); color: #fff; }
+  .btn-blue { background: var(--accent2); color: #fff; }
+  .btn-ghost { background: #f1ebe4; color: var(--ink); }
+  button:disabled { opacity: .45; cursor: default; }
+  .tabs { display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; }
+  .tabs button { background: #f1ebe4; color: var(--ink); padding: 12px 22px; font-size: 1.05rem; }
+  .tabs button.on { background: var(--accent); color: #fff; }
+  .drop { border: 3px dashed var(--line); border-radius: 16px; padding: 22px; text-align: center;
+    color: var(--muted); background: #fffdf9; }
+  .drop.over { border-color: var(--accent2); background: #eef3ff; }
+  input[type=number], select { font-family: inherit; font-size: 1.05rem; padding: 7px 8px;
+    border: 2px solid var(--line); border-radius: 10px; width: 5em; text-align: center; }
+  select { width: auto; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 10px 0; }
+  .muted { color: var(--muted); }
+  .warn { color: var(--warn); font-weight: 700; }
+  .ok { color: var(--ok); font-weight: 700; }
+  .chip { background: #eef3ff; color: #2f4fa8; padding: 6px 12px; border-radius: 999px; font-size: .95rem; }
+  .chip.best { background: #fff0e8; color: #c24a1f; outline: 2px solid var(--accent); }
+  .twocol { display: flex; gap: 18px; flex-wrap: wrap; align-items: flex-start; }
+  .twocol > div { flex: 1 1 300px; min-width: 0; }
+  canvas.pv { width: 100%; height: auto; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+  details { margin: 10px 0; }
+  summary { cursor: pointer; font-weight: 700; }
+  progress { width: 100%; height: 16px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin: 12px 0; }
+  .thumb { border: 2px solid var(--line); border-radius: 12px; padding: 6px; background: #fffdf9; text-align: center; }
+  .thumb.bad { border-color: var(--warn); }
+  .thumb.dragover { border-color: var(--accent2); background: #eef3ff; }
+  .thumb img { width: 100%; height: 100px; object-fit: contain; background: #eee; border-radius: 6px; display: block; }
+  .thumb .no { font-weight: 800; font-size: 1.05rem; margin: 4px 0 2px; }
+  .thumb .nm { font-size: .72rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .thumb .bt { display: flex; gap: 3px; justify-content: center; margin-top: 4px; }
+  .thumb .bt button { padding: 4px 8px; font-size: .9rem; border-radius: 8px; background: #f1ebe4; color: var(--ink); }
+  #resultBox canvas { width: 100%; height: auto; border: 1px solid var(--line); border-radius: 8px; }
+  .tip { background: #f4f9ff; border-radius: 12px; padding: 10px 14px; font-size: .95rem; color: #345; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🎨 협동화 메이커</h1>
+  <p class="sub">그림 한 장을 N장으로 쪼개 나눠 칠하고, 다시 한 장으로 합쳐요. 인터넷에 올리지 않고 내 컴퓨터 안에서만 해요.</p>
+
+  <div class="tabs">
+    <button id="tabBtn1" class="on">① 쪼개기 (인쇄용 PDF)</button>
+    <button id="tabBtn2">② 합치기 (스캔 → 한 장)</button>
+  </div>
+
+  <!-- ===================== ① 쪼개기 ===================== -->
+  <section id="tab1" class="card">
+    <h2>1. 그림 고르기</h2>
+    <div id="drop1" class="drop">
+      A4 그림 파일(<b>PDF · JPG · PNG</b>)을 여기에 끌어다 놓거나
+      <label class="btn btn-blue">파일 고르기<input id="srcFile" type="file" accept=".pdf,application/pdf,image/*" hidden></label>
+      <div id="srcInfo" class="muted" style="margin-top:8px"></div>
+    </div>
+
+    <h2>2. 몇 장으로 나눌까요?</h2>
+    <div class="row">
+      전체 <input id="nWant" type="number" min="2" max="100" value="21"> 장
+      <span class="muted">→ 이렇게 나눌 수 있어요:</span>
+      <span id="chips" class="row" style="margin:0"></span>
+    </div>
+    <div class="row">
+      가로 <input id="cols" type="number" min="1" max="20" value="3"> 칸 ×
+      세로 <input id="rows" type="number" min="1" max="20" value="7"> 칸 =
+      <b id="nTot">21</b>장
+      <span id="shapeInfo" class="muted"></span>
+    </div>
+    <details>
+      <summary>자세한 설정 (안 바꿔도 돼요)</summary>
+      <div class="row">
+        종이 바깥 여백 <input id="margin" type="number" min="3" max="30" step="1" value="12"> mm
+        재단선(검은 실선) 굵기 <input id="lineMm" type="number" min="0.3" max="3" step="0.1" value="1"> mm
+        화질 <select id="dpi"><option value="150">보통 (150dpi)</option><option value="200" selected>좋음 (200dpi)</option><option value="300">아주 좋음 (300dpi, 느려요)</option></select>
+      </div>
+      <div class="row"><label><input id="showLabel" type="checkbox" checked> 종이 위쪽에 번호(예: 3 / 21)를 적어요 (합칠 때 순서 확인용)</label></div>
+    </details>
+
+    <h2>3. 미리보기</h2>
+    <div class="twocol">
+      <div>
+        <div class="muted">원래 그림과 나눌 모양</div>
+        <canvas id="pvSrc" class="pv" width="10" height="10"></canvas>
+      </div>
+      <div>
+        <div class="row" style="margin-top:0">
+          <button id="prevPg" class="btn-ghost">◀</button>
+          <span id="pgNo">1 / 21</span>
+          <button id="nextPg" class="btn-ghost">▶</button>
+          <span class="muted">번 종이 모습</span>
+        </div>
+        <canvas id="pvPage" class="pv" width="10" height="10"></canvas>
+      </div>
+    </div>
+
+    <h2>4. PDF 만들기</h2>
+    <div class="row">
+      <button id="makePdf" class="btn-main" disabled>📄 N장짜리 PDF 만들기</button>
+      <span id="makeMsg" class="muted"></span>
+    </div>
+    <progress id="makeBar" class="hidden" value="0" max="1"></progress>
+    <p class="tip">출력할 때는 프린터 설정에서 <b>"실제 크기(100%)"</b>로 인쇄해 주세요. 각 종이의 검은 실선이 잘라낼 선이에요. 칠한 뒤 <b>선을 지우지 말고 그대로 스캔</b>하면 ② 합치기에서 선을 기준으로 자동으로 잘라 줘요.</p>
+  </section>
+
+  <!-- ===================== ② 합치기 ===================== -->
+  <section id="tab2" class="card hidden">
+    <h2>1. 어떻게 나눴었나요?</h2>
+    <div class="row">
+      가로 <input id="cols2" type="number" min="1" max="20" value="3"> 칸 ×
+      세로 <input id="rows2" type="number" min="1" max="20" value="7"> 칸 = <b id="nTot2">21</b>장
+      <span class="muted">원래 그림은</span>
+      <select id="orient"><option value="p">A4 세로</option><option value="l">A4 가로</option></select>
+    </div>
+
+    <h2>2. 칠한 종이를 스캔한 파일 올리기</h2>
+    <div id="drop2" class="drop">
+      스캔한 <b>JPG · PNG · PDF</b>를 모두 끌어다 놓거나
+      <label class="btn btn-blue">파일 고르기<input id="scanFiles" type="file" accept=".pdf,application/pdf,image/*" multiple hidden></label>
+      <div class="muted" style="margin-top:6px">파일 이름 순서(1번, 2번…)대로 놓이고, PDF는 쪽 순서대로 읽어요. 순서가 틀리면 아래에서 바꿀 수 있어요.</div>
+    </div>
+    <div class="row"><span id="scanMsg" class="muted"></span><button id="clearAll" class="btn-ghost hidden">모두 지우기</button></div>
+    <progress id="scanBar" class="hidden" value="0" max="1"></progress>
+    <div id="items" class="grid"></div>
+
+    <h2>3. 한 장으로 합치기</h2>
+    <div class="row">
+      선 안쪽으로 더 자르기 <input id="inset" type="number" min="0" max="3" step="0.1" value="0.3"> %
+      <span class="muted">(검은 선이 조금 남으면 키워요)</span>
+    </div>
+    <div class="row">
+      <button id="compose" class="btn-main" disabled>🧩 한 장으로 합치기</button>
+      <span id="composeMsg" class="muted"></span>
+    </div>
+    <div id="resultBox" class="hidden">
+      <canvas id="resultCv"></canvas>
+      <div class="row">
+        <button id="dlJpg" class="btn-blue">🖼️ 그림(JPG)으로 받기</button>
+        <button id="dlPng" class="btn-ghost">PNG로 받기</button>
+        <button id="dlPdf" class="btn-ghost">📄 A4 PDF로 받기</button>
+      </div>
+    </div>
+    <p class="tip">스캐너로 <b>종이를 반듯하게</b> 스캔하면 가장 잘 돼요. 조금 기울어진 건 저절로 바로잡아요. 사진으로 찍을 땐 위에서 똑바로, 그림자 없이 찍어 주세요.</p>
+  </section>
+
+  <p class="sub" style="margin-top:20px">🍓 <a href="../">딸기농장으로 돌아가기</a></p>
+</div>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const MM = 25.4;
+
+/* ---------- 공통 도구 ---------- */
+function store(k, v) { try { localStorage.setItem('coopart_' + k, v); } catch (e) {} }
+function recall(k) { try { return localStorage.getItem('coopart_' + k); } catch (e) { return null; } }
+function download(blob, name) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+const toBlob = (cv, type, q) => new Promise(r => cv.toBlob(r, type, q));
+const newCanvas = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
+const tick = () => new Promise(r => setTimeout(r, 0));
+
+let pdfjsP = null;
+function loadPdfJs() {
+  if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  if (pdfjsP) return pdfjsP;
+  const base = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+  pdfjsP = new Promise((res, rej) => {
+    const s = document.createElement('script'); s.src = base + 'pdf.min.js';
+    s.onload = () => { pdfjsLib.GlobalWorkerOptions.workerSrc = base + 'pdf.worker.min.js'; res(pdfjsLib); };
+    s.onerror = () => { pdfjsP = null; rej(new Error('PDF 읽는 도구를 못 불러왔어요. 인터넷을 확인하거나 JPG·PNG 파일로 바꿔서 써 보세요.')); };
+    document.head.appendChild(s);
+  });
+  return pdfjsP;
+}
+const isPdf = f => f.type === 'application/pdf' || /\.pdf$/i.test(f.name);
+
+/* ---------- 아주 작은 PDF 만들기 (JPEG 쪽들을 한 파일로) ---------- */
+function makePdf(pages) { // pages: [{jpeg:Uint8Array, w, h, wpt, hpt}]
+  const enc = new TextEncoder(); const parts = []; let len = 0; const offs = [];
+  const push = d => { if (typeof d === 'string') d = enc.encode(d); parts.push(d); len += d.length; };
+  const n = pages.length;
+  push(Uint8Array.from([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34, 0x0a, 0x25, 0xe2, 0xe3, 0xcf, 0xd3, 0x0a]));
+  const begin = k => { offs[k] = len; push(k + ' 0 obj\n'); };
+  begin(1); push('<< /Type /Catalog /Pages 2 0 R >>\nendobj\n');
+  begin(2); push('<< /Type /Pages /Count ' + n + ' /Kids [' + pages.map((_, i) => (3 + 3 * i) + ' 0 R').join(' ') + '] >>\nendobj\n');
+  pages.forEach((p, i) => {
+    const po = 3 + 3 * i, co = po + 1, io = po + 2;
+    const f = x => x.toFixed(2);
+    begin(po); push('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + f(p.wpt) + ' ' + f(p.hpt) + '] /Resources << /XObject << /Im0 ' + io + ' 0 R >> >> /Contents ' + co + ' 0 R >>\nendobj\n');
+    const cs = 'q ' + f(p.wpt) + ' 0 0 ' + f(p.hpt) + ' 0 0 cm /Im0 Do Q';
+    begin(co); push('<< /Length ' + cs.length + ' >>\nstream\n' + cs + '\nendstream\nendobj\n');
+    begin(io); push('<< /Type /XObject /Subtype /Image /Width ' + p.w + ' /Height ' + p.h + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + p.jpeg.length + ' >>\nstream\n');
+    push(p.jpeg); push('\nendstream\nendobj\n');
+  });
+  const xr = len, total = 3 + 3 * n;
+  let x = 'xref\n0 ' + total + '\n0000000000 65535 f \n';
+  for (let k = 1; k < total; k++) x += String(offs[k]).padStart(10, '0') + ' 00000 n \n';
+  push(x + 'trailer\n<< /Size ' + total + ' /Root 1 0 R >>\nstartxref\n' + xr + '\n%%EOF\n');
+  return new Blob(parts, { type: 'application/pdf' });
+}
+
+/* ============================================================
+   ① 쪼개기
+   ============================================================ */
+const S = { src: null, pg: 0, token: 0 }; // src: {kind:'img'|'pdf', w, h, bmp|page, prev}
+
+async function openSource(file) {
+  $('srcInfo').textContent = '읽는 중…';
+  try {
+    let src;
+    if (isPdf(file)) {
+      const lib = await loadPdfJs();
+      const doc = await lib.getDocument({ data: await file.arrayBuffer() }).promise;
+      const page = await doc.getPage(1);
+      const v = page.getViewport({ scale: 1 });
+      src = { kind: 'pdf', page, w: v.width, h: v.height, pages: doc.numPages };
+    } else {
+      const bmp = await createImageBitmap(file);
+      src = { kind: 'img', bmp, w: bmp.width, h: bmp.height, pages: 1 };
+    }
+    // 미리보기용 작은 그림
+    const pw = 760, ph = Math.round(pw * src.h / src.w);
+    const prev = newCanvas(pw, ph); const px = prev.getContext('2d');
+    px.fillStyle = '#fff'; px.fillRect(0, 0, pw, ph);
+    await drawRegion(src, px, 0, 0, src.w, src.h, 0, 0, pw, ph);
+    src.prev = prev; S.src = src; S.pg = 0;
+    const mmw = src.kind === 'pdf' ? Math.round(src.w * MM / 72) : null;
+    $('srcInfo').innerHTML = '✅ <b>' + file.name + '</b> 불러왔어요' +
+      (src.kind === 'pdf' ? ' (PDF ' + mmw + '×' + Math.round(src.h * MM / 72) + 'mm' + (src.pages > 1 ? ', 첫 쪽만 써요' : '') + ')' :
+        ' (' + src.w + '×' + src.h + ' 픽셀' + (Math.min(src.w, src.h) < 1000 ? ' — 그림이 작아서 크게 인쇄하면 흐려요' : '') + ')');
+    $('makePdf').disabled = false;
+    store('orient', src.w > src.h ? 'l' : 'p'); $('orient').value = src.w > src.h ? 'l' : 'p';
+    refresh1();
+  } catch (e) {
+    S.src = null; $('makePdf').disabled = true;
+    $('srcInfo').innerHTML = '<span class="warn">' + (e.message || '파일을 열 수 없어요.') + '</span>';
+  }
+}
+
+// 원본의 한 부분(sx,sy,sw,sh)을 캔버스(dx,dy,dw,dh) 자리에 그려요. PDF는 그 부분만 선명하게 다시 그려요.
+async function drawRegion(src, ctx, sx, sy, sw, sh, dx, dy, dw, dh) {
+  if (src.kind === 'img') {
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(src.bmp, sx, sy, sw, sh, dx, dy, dw, dh);
+  } else {
+    const s = dw / sw;
+    const tw = Math.max(1, Math.round(dw)), th = Math.max(1, Math.round(sh * s));
+    const tmp = newCanvas(tw, th); const t = tmp.getContext('2d');
+    t.fillStyle = '#fff'; t.fillRect(0, 0, tw, th);
+    const vp = src.page.getViewport({ scale: s, offsetX: -sx * s, offsetY: -sy * s });
+    await src.page.render({ canvasContext: t, viewport: vp }).promise;
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(tmp, 0, 0, tw, th, dx, dy, dw, dh);
+  }
+}
+
+function opts() {
+  return {
+    cols: Math.max(1, Math.min(20, +$('cols').value || 1)),
+    rows: Math.max(1, Math.min(20, +$('rows').value || 1)),
+    margin: Math.max(3, +$('margin').value || 12),
+    line: Math.max(0.3, +$('lineMm').value || 1),
+    dpi: +$('dpi').value || 200,
+    label: $('showLabel').checked
+  };
+}
+
+// 종이(세로/가로) 중 그림이 더 크게 들어가는 쪽을 골라요.
+function layout(srcW, srcH, o) {
+  const asp = (srcW / o.cols) / (srcH / o.rows);
+  let best = null;
+  for (const land of [false, true]) {
+    const PW = land ? 297 : 210, PH = land ? 210 : 297;
+    const bw = PW - 2 * (o.margin + o.line), bh = PH - 2 * (o.margin + o.line);
+    let fw, fh;
+    if (asp > bw / bh) { fw = bw; fh = bw / asp; } else { fh = bh; fw = bh * asp; }
+    if (!best || fw * fh > best.fw * best.fh + 1e-6) best = { land, PW, PH, fw, fh };
+  }
+  best.asp = asp;
+  return best;
+}
+
+async function renderPage(i, dpi, o, withLine = true) {
+  const src = S.src, L = layout(src.w, src.h, o), k = dpi / MM;
+  const W = Math.round(L.PW * k), H = Math.round(L.PH * k);
+  const cv = newCanvas(W, H), ctx = cv.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
+  const fw = Math.round(L.fw * k), fh = Math.round(L.fh * k);
+  const fx = Math.round((W - fw) / 2), fy = Math.round((H - fh) / 2);
+  const tp = Math.max(2, Math.round(o.line * k));
+  const r = Math.floor(i / o.cols), c = i % o.cols;
+  const tw = src.w / o.cols, th = src.h / o.rows;
+  await drawRegion(src, ctx, c * tw, r * th, tw, th, fx, fy, fw, fh);
+  // 재단선: 그림 바깥쪽을 둘러싸는 검은 실선 (그림은 가리지 않아요)
+  ctx.fillStyle = '#000';
+  ctx.fillRect(fx - tp, fy - tp, fw + 2 * tp, tp);
+  ctx.fillRect(fx - tp, fy + fh, fw + 2 * tp, tp);
+  ctx.fillRect(fx - tp, fy, tp, fh);
+  ctx.fillRect(fx + fw, fy, tp, fh);
+  if (o.label) {
+    const fs = Math.round(3.4 * k), N = o.cols * o.rows;
+    ctx.fillStyle = '#444'; ctx.textBaseline = 'alphabetic';
+    ctx.font = '700 ' + fs + 'px "Malgun Gothic","Apple SD Gothic Neo",sans-serif';
+    const top = Math.max(fs + 2, fy - tp - Math.round(1.6 * k));
+    ctx.fillText((i + 1) + ' / ' + N, fx - tp, top);
+    ctx.font = fs + 'px "Malgun Gothic","Apple SD Gothic Neo",sans-serif';
+    ctx.fillText('  (가로 ' + (c + 1) + '번째 · 세로 ' + (r + 1) + '번째)', fx - tp + ctx.measureText((i + 1) + ' / ' + N + ' ').width * 1.25, top);
+    ctx.fillStyle = '#888';
+    ctx.font = Math.round(3 * k) + 'px "Malgun Gothic","Apple SD Gothic Neo",sans-serif';
+    ctx.fillText('검은 선 안쪽에 색칠해요. 선은 지우지 마세요.', fx - tp, Math.min(H - Math.round(1.5 * k), fy + fh + tp + Math.round(5 * k)));
+  }
+  return { cv, L };
+}
+
+function factorChips() {
+  const N = Math.max(2, Math.min(100, +$('nWant').value || 2));
+  const o = opts(), sw = S.src ? S.src.w : 210, sh = S.src ? S.src.h : 297;
+  const list = [];
+  for (let c = 1; c <= N; c++) if (N % c === 0) {
+    const r = N / c; if (c > 20 || r > 20) continue;
+    const L = layout(sw, sh, { ...o, cols: c, rows: r });
+    list.push({ c, r, area: L.fw * L.fh });
+  }
+  const bestArea = Math.max(0, ...list.map(x => x.area));
+  const box = $('chips'); box.innerHTML = '';
+  if (!list.length) { box.innerHTML = '<span class="warn">이 숫자는 나눌 수 있는 모양이 없어요</span>'; return; }
+  list.sort((a, b) => b.area - a.area).forEach(x => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (x.area === bestArea ? ' best' : ''); b.type = 'button';
+    b.textContent = '가로 ' + x.c + ' × 세로 ' + x.r + (x.area === bestArea ? ' 👍' : '');
+    b.onclick = () => { $('cols').value = x.c; $('rows').value = x.r; refresh1(); };
+    box.appendChild(b);
+  });
+}
+
+let r1timer = 0;
+function refresh1() { clearTimeout(r1timer); r1timer = setTimeout(doRefresh1, 60); }
+async function doRefresh1() {
+  const o = opts(), N = o.cols * o.rows;
+  $('nTot').textContent = N;
+  store('cols', o.cols); store('rows', o.rows);
+  $('cols2').value = o.cols; $('rows2').value = o.rows; $('nTot2').textContent = N;
+  factorChips();
+  if (S.pg >= N) S.pg = N - 1;
+  $('pgNo').textContent = (S.pg + 1) + ' / ' + N;
+  if (!S.src) { $('shapeInfo').textContent = ''; return; }
+  const L = layout(S.src.w, S.src.h, o);
+  $('shapeInfo').textContent = '(한 장은 ' + (L.land ? 'A4 가로' : 'A4 세로') + ' 종이에 담겨요)';
+  // 원본 + 격자
+  const p = S.src.prev, cv = $('pvSrc'); cv.width = p.width; cv.height = p.height;
+  const x = cv.getContext('2d'); x.drawImage(p, 0, 0);
+  x.strokeStyle = 'rgba(255,60,60,.9)'; x.lineWidth = 2; x.setLineDash([8, 6]);
+  for (let c = 1; c < o.cols; c++) { x.beginPath(); x.moveTo(c * p.width / o.cols, 0); x.lineTo(c * p.width / o.cols, p.height); x.stroke(); }
+  for (let r = 1; r < o.rows; r++) { x.beginPath(); x.moveTo(0, r * p.height / o.rows); x.lineTo(p.width, r * p.height / o.rows); x.stroke(); }
+  x.setLineDash([]); x.strokeStyle = 'rgba(255,60,60,.9)'; x.strokeRect(1, 1, p.width - 2, p.height - 2);
+  x.font = '700 ' + Math.max(12, Math.min(28, p.width / o.cols / 3)) + 'px sans-serif'; x.textBaseline = 'top';
+  for (let r = 0; r < o.rows; r++) for (let c = 0; c < o.cols; c++) {
+    const t = String(r * o.cols + c + 1), tx = c * p.width / o.cols + 6, ty = r * p.height / o.rows + 4;
+    x.lineWidth = 4; x.strokeStyle = '#fff'; x.strokeText(t, tx, ty); x.fillStyle = '#d33'; x.fillText(t, tx, ty);
+  }
+  // 한 장 모습
+  const tok = ++S.token;
+  const { cv: pg } = await renderPage(S.pg, 50, o);
+  if (tok !== S.token) return;
+  const pc = $('pvPage'); pc.width = pg.width; pc.height = pg.height; pc.getContext('2d').drawImage(pg, 0, 0);
+}
+
+async function buildPdf() {
+  if (!S.src) return;
+  const o = opts(), N = o.cols * o.rows, L = layout(S.src.w, S.src.h, o);
+  $('makePdf').disabled = true; $('makeBar').classList.remove('hidden'); $('makeBar').max = N; $('makeBar').value = 0;
+  try {
+    const pages = [];
+    for (let i = 0; i < N; i++) {
+      $('makeMsg').textContent = (i + 1) + ' / ' + N + '번째 종이 만드는 중…';
+      const { cv } = await renderPage(i, o.dpi, o);
+      const b = await toBlob(cv, 'image/jpeg', 0.92);
+      pages.push({ jpeg: new Uint8Array(await b.arrayBuffer()), w: cv.width, h: cv.height, wpt: L.PW * 72 / MM, hpt: L.PH * 72 / MM });
+      $('makeBar').value = i + 1; await tick();
+    }
+    download(makePdf(pages), '협동화_' + o.cols + 'x' + o.rows + '.pdf');
+    $('makeMsg').innerHTML = '<span class="ok">✅ 다 만들었어요! 내려받은 PDF를 출력해 주세요.</span>';
+  } catch (e) {
+    $('makeMsg').innerHTML = '<span class="warn">만들다가 멈췄어요: ' + (e.message || e) + '</span>';
+  }
+  $('makeBar').classList.add('hidden'); $('makePdf').disabled = false;
+}
+
+/* ============================================================
+   ② 합치기
+   ============================================================ */
+const items = []; // {name, blob, w, h, rot, ok, thumb}
+let uid = 0;
+
+function median(a) { const b = [...a].sort((x, y) => x - y); return b[Math.floor(b.length / 2)]; }
+
+// 스캔 한 장에서 검은 재단선(사각형)을 찾아요. 기울어짐도 바로잡아요.
+function detectFrame(cv) {
+  const sc = Math.min(1, 1600 / Math.max(cv.width, cv.height));
+  const aw = Math.round(cv.width * sc), ah = Math.round(cv.height * sc);
+  const t = newCanvas(aw, ah), tx = t.getContext('2d', { willReadFrequently: true });
+  tx.fillStyle = '#fff'; tx.fillRect(0, 0, aw, ah); tx.drawImage(cv, 0, 0, aw, ah);
+  const d = tx.getImageData(0, 0, aw, ah).data;
+  const bx = Math.round(aw * 0.015), by = Math.round(ah * 0.015);
+  let xs = [], ys = [];
+  for (let y = by; y < ah - by; y++) for (let x = bx; x < aw - bx; x++) {
+    const i = (y * aw + x) * 4;
+    if (Math.max(d[i], d[i + 1], d[i + 2]) < 110) { xs.push(x); ys.push(y); }
+  }
+  if (xs.length < 500) return null;
+  const stride = Math.ceil(xs.length / 250000);
+  if (stride > 1) { xs = xs.filter((_, i) => i % stride === 0); ys = ys.filter((_, i) => i % stride === 0); }
+  const cx = aw / 2, cy = ah / 2, PAD = 120;
+  const project = th => {
+    const cs = Math.cos(th), sn = Math.sin(th);
+    const rows = new Int32Array(ah + 2 * PAD), cols = new Int32Array(aw + 2 * PAD);
+    for (let i = 0; i < xs.length; i++) {
+      const dx = xs[i] - cx, dy = ys[i] - cy;
+      rows[Math.round(-dx * sn + dy * cs + cy) + PAD]++;
+      cols[Math.round(dx * cs + dy * sn + cx) + PAD]++;
+    }
+    return { rows, cols };
+  };
+  const score = th => { const p = project(th); let s = 0; for (const v of p.rows) s += v * v; for (const v of p.cols) s += v * v; return s; };
+  const D = Math.PI / 180;
+  let best = 0, bs = score(0);
+  for (let a = -4; a <= 4; a += 0.5) { const s = score(a * D); if (s > bs) { bs = s; best = a; } }
+  let c0 = best;
+  for (let a = c0 - 0.5; a <= c0 + 0.5; a += 0.1) { const s = score(a * D); if (s > bs) { bs = s; best = a; } }
+  c0 = best;
+  for (let a = c0 - 0.1; a <= c0 + 0.1; a += 0.02) { const s = score(a * D); if (s > bs) { bs = s; best = a; } }
+  const th = best * D, p = project(th);
+  const runs = (arr, T, from, to) => {
+    const out = []; let s = -1, last = -9;
+    for (let i = from; i < to; i++) {
+      if (arr[i] >= T) { if (s < 0) s = i; last = i; }
+      else if (s >= 0 && i - last > 2) { out.push([s, last]); s = -1; }
+    }
+    if (s >= 0) out.push([s, last]);
+    return out;
+  };
+  const rr = runs(p.rows, 0.35 * aw, PAD + by, PAD + ah - by).map(r => [r[0] - PAD, r[1] - PAD]);
+  const cc = runs(p.cols, 0.35 * ah, PAD + bx, PAD + aw - bx).map(r => [r[0] - PAD, r[1] - PAD]);
+  if (rr.length < 2 || cc.length < 2) return null;
+  const top = rr[0], bot = rr[rr.length - 1], lef = cc[0], rig = cc[cc.length - 1];
+  const x0 = lef[1] + 1, x1 = rig[0], y0 = top[1] + 1, y1 = bot[0];
+  if (x1 - x0 < aw * 0.25 || y1 - y0 < ah * 0.25) return null;
+  return { angle: th, x0: x0 / sc, y0: y0 / sc, x1: x1 / sc, y1: y1 / sc };
+}
+
+// 스캔 한 장 → 재단선 안쪽 그림만 잘라낸 조각
+async function cutPiece(cv, name) {
+  const f = detectFrame(cv);
+  let work = cv, ok = !!f;
+  if (f && Math.abs(f.angle) > 0.0005) {
+    work = newCanvas(cv.width, cv.height); const x = work.getContext('2d');
+    x.fillStyle = '#fff'; x.fillRect(0, 0, work.width, work.height);
+    x.imageSmoothingQuality = 'high';
+    x.translate(cv.width / 2, cv.height / 2); x.rotate(-f.angle); x.translate(-cv.width / 2, -cv.height / 2);
+    x.drawImage(cv, 0, 0);
+  }
+  let sx = 0, sy = 0, sw = work.width, sh = work.height;
+  if (f) { sx = Math.max(0, Math.round(f.x0)); sy = Math.max(0, Math.round(f.y0)); sw = Math.round(f.x1 - f.x0); sh = Math.round(f.y1 - f.y0); }
+  const out = newCanvas(sw, sh); out.getContext('2d').drawImage(work, sx, sy, sw, sh, 0, 0, sw, sh);
+  const blob = await toBlob(out, 'image/jpeg', 0.95);
+  const it = { id: ++uid, name, blob, w: sw, h: sh, rot: 0, ok };
+  autoRotate(it);
+  return it;
+}
+
+function expectedAspect() { // 조각 하나의 가로/세로 비율
+  const a = $('orient').value === 'l' ? 297 / 210 : 210 / 297;
+  return a * (+$('rows2').value || 1) / (+$('cols2').value || 1);
+}
+function autoRotate(it) {
+  const e = expectedAspect(), a = it.w / it.h;
+  if (Math.abs(Math.log(a / e)) > 0.1 && Math.abs(Math.log((1 / a) / e)) + 0.1 < Math.abs(Math.log(a / e))) it.rot = 1;
+}
+
+async function makeThumb(it) {
+  const bmp = await createImageBitmap(it.blob);
+  const odd = it.rot % 2 === 1, iw = odd ? it.h : it.w, ih = odd ? it.w : it.h;
+  const s = 200 / Math.max(iw, ih), cv = newCanvas(Math.round(iw * s), Math.round(ih * s)), x = cv.getContext('2d');
+  x.translate(cv.width / 2, cv.height / 2); x.rotate(it.rot * Math.PI / 2);
+  const dw = odd ? cv.height : cv.width, dh = odd ? cv.width : cv.height;
+  x.drawImage(bmp, -dw / 2, -dh / 2, dw, dh);
+  it.thumb = cv.toDataURL('image/jpeg', 0.7);
+}
+
+let dragFrom = -1;
+function renderItems() {
+  const box = $('items'); box.innerHTML = '';
+  const N = (+$('cols2').value || 1) * (+$('rows2').value || 1);
+  items.forEach((it, i) => {
+    const d = document.createElement('div'); d.className = 'thumb' + (it.ok ? '' : ' bad'); d.draggable = true;
+    d.innerHTML = '<img alt=""><div class="no"></div><div class="nm"></div><div class="bt"><button title="앞으로">◀</button><button title="돌리기">⟳</button><button title="뒤로">▶</button><button title="빼기">✕</button></div>';
+    d.querySelector('img').src = it.thumb || '';
+    const no = d.querySelector('.no');
+    no.textContent = i < N ? (i + 1) + '번 자리' : '남는 파일';
+    if (i >= N) no.style.color = '#c0392b';
+    if (!it.ok) no.textContent += ' ⚠';
+    d.querySelector('.nm').textContent = it.name + (it.ok ? '' : ' (선을 못 찾았어요)');
+    const [bL, bR, bN, bX] = d.querySelectorAll('button');
+    bL.onclick = () => { if (i > 0) { [items[i - 1], items[i]] = [items[i], items[i - 1]]; renderItems(); } };
+    bN.onclick = () => { if (i < items.length - 1) { [items[i + 1], items[i]] = [items[i], items[i + 1]]; renderItems(); } };
+    bR.onclick = async () => { it.rot = (it.rot + 1) % 4; await makeThumb(it); renderItems(); };
+    bX.onclick = () => { items.splice(i, 1); renderItems(); };
+    d.ondragstart = e => { dragFrom = i; e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', String(i)); } catch (x) {} };
+    d.ondragover = e => { if (dragFrom >= 0) { e.preventDefault(); d.classList.add('dragover'); } };
+    d.ondragleave = () => d.classList.remove('dragover');
+    d.ondrop = e => {
+      e.preventDefault(); e.stopPropagation(); d.classList.remove('dragover');
+      if (dragFrom >= 0 && dragFrom !== i) { const [m] = items.splice(dragFrom, 1); items.splice(i, 0, m); }
+      dragFrom = -1; renderItems();
+    };
+    d.ondragend = () => { dragFrom = -1; };
+    box.appendChild(d);
+  });
+  $('compose').disabled = items.length === 0;
+  $('clearAll').classList.toggle('hidden', items.length === 0);
+  const bad = items.filter(x => !x.ok).length;
+  $('scanMsg').innerHTML = items.length
+    ? items.length + '장 올라왔어요 (필요한 장수: ' + N + '장)' + (items.length < N ? ' <span class="warn">— 부족해요</span>' : items.length > N ? ' <span class="warn">— 남는 파일은 빼고 합쳐요</span>' : ' <span class="ok">— 딱 맞아요!</span>') +
+      (bad ? ' <span class="warn">· 선을 못 찾은 ' + bad + '장은 종이 전체를 썼어요. 다시 스캔해 보세요.</span>' : '')
+    : '';
+}
+
+async function addScans(fileList) {
+  const files = [...fileList].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+  if (!files.length) return;
+  const bar = $('scanBar'); bar.classList.remove('hidden'); bar.value = 0; bar.max = files.length;
+  let n = 0;
+  for (const f of files) {
+    try {
+      $('scanMsg').textContent = (n + 1) + ' / ' + files.length + ' 파일 읽는 중… (' + f.name + ')';
+      await tick();
+      if (isPdf(f)) {
+        const lib = await loadPdfJs();
+        const doc = await lib.getDocument({ data: await f.arrayBuffer() }).promise;
+        for (let p = 1; p <= doc.numPages; p++) {
+          const page = await doc.getPage(p), v = page.getViewport({ scale: 1 });
+          const s = Math.min(4, 3000 / Math.max(v.width, v.height)), vp = page.getViewport({ scale: s });
+          const cv = newCanvas(Math.round(vp.width), Math.round(vp.height)), x = cv.getContext('2d');
+          x.fillStyle = '#fff'; x.fillRect(0, 0, cv.width, cv.height);
+          await page.render({ canvasContext: x, viewport: vp }).promise;
+          const it = await cutPiece(cv, f.name + ' (' + p + '쪽)'); await makeThumb(it); items.push(it); await tick();
+        }
+      } else {
+        const bmp = await createImageBitmap(f);
+        const cv = newCanvas(bmp.width, bmp.height), x = cv.getContext('2d');
+        x.fillStyle = '#fff'; x.fillRect(0, 0, cv.width, cv.height); x.drawImage(bmp, 0, 0);
+        const it = await cutPiece(cv, f.name); await makeThumb(it); items.push(it);
+      }
+    } catch (e) {
+      alert(f.name + ' 파일은 읽지 못했어요.\n' + (e.message || ''));
+    }
+    bar.value = ++n; renderItems(); await tick();
+  }
+  bar.classList.add('hidden'); renderItems();
+}
+
+let resultCv = null;
+async function compose() {
+  const cols = +$('cols2').value || 1, rows = +$('rows2').value || 1, N = cols * rows;
+  const use = items.slice(0, N);
+  if (!use.length) return;
+  $('compose').disabled = true; $('composeMsg').textContent = '합치는 중…'; await tick();
+  try {
+    const dims = use.map(it => it.rot % 2 ? [it.h, it.w] : [it.w, it.h]);
+    let cw = median(dims.map(d => d[0])), ch = median(dims.map(d => d[1]));
+    const s = Math.min(1, Math.sqrt(60e6 / (cw * cols * ch * rows)));
+    cw = Math.max(1, Math.round(cw * s)); ch = Math.max(1, Math.round(ch * s));
+    const cv = newCanvas(cw * cols, ch * rows), x = cv.getContext('2d');
+    x.fillStyle = '#fff'; x.fillRect(0, 0, cv.width, cv.height);
+    x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
+    const inset = Math.max(0, +$('inset').value || 0) / 100;
+    for (let i = 0; i < use.length; i++) {
+      const it = use[i], bmp = await createImageBitmap(it.blob);
+      const c = i % cols, r = Math.floor(i / cols), odd = it.rot % 2 === 1;
+      const sx = bmp.width * inset, sy = bmp.height * inset, sw = bmp.width * (1 - 2 * inset), sh = bmp.height * (1 - 2 * inset);
+      x.save(); x.translate(c * cw + cw / 2, r * ch + ch / 2); x.rotate(it.rot * Math.PI / 2);
+      const dw = odd ? ch : cw, dh = odd ? cw : ch;
+      x.beginPath(); x.rect(-dw / 2, -dh / 2, dw, dh); x.clip();
+      x.drawImage(bmp, sx, sy, sw, sh, -dw / 2, -dh / 2, dw, dh);
+      x.restore();
+      if (i % 4 === 3) await tick();
+    }
+    resultCv = cv;
+    const show = $('resultCv'); show.width = cv.width; show.height = cv.height; show.getContext('2d').drawImage(cv, 0, 0);
+    $('resultBox').classList.remove('hidden');
+    $('composeMsg').innerHTML = '<span class="ok">✅ 합쳤어요! (' + cv.width + '×' + cv.height + ' 픽셀)</span>' + (use.length < N ? ' <span class="warn">빈 자리가 있어요</span>' : '');
+    show.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  } catch (e) {
+    $('composeMsg').innerHTML = '<span class="warn">합치다가 멈췄어요: ' + (e.message || e) + '</span>';
+  }
+  $('compose').disabled = false;
+}
+
+async function saveResultPdf() {
+  if (!resultCv) return;
+  const cv = resultCv, land = cv.width > cv.height, PW = land ? 297 : 210, PH = land ? 210 : 297;
+  // A4 한 장에 꽉 차게 (비율이 다르면 가운데에 맞춰 흰 여백)
+  const k = 200 / MM, W = Math.round(PW * k), H = Math.round(PH * k);
+  const pg = newCanvas(W, H), x = pg.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, W, H);
+  x.imageSmoothingQuality = 'high';
+  const s = Math.min(W / cv.width, H / cv.height), w = cv.width * s, h = cv.height * s;
+  x.drawImage(cv, (W - w) / 2, (H - h) / 2, w, h);
+  const b = await toBlob(pg, 'image/jpeg', 0.93);
+  download(makePdf([{ jpeg: new Uint8Array(await b.arrayBuffer()), w: W, h: H, wpt: PW * 72 / MM, hpt: PH * 72 / MM }]), '협동화_완성.pdf');
+}
+
+/* ---------- 화면 연결 ---------- */
+function setTab(n) {
+  $('tab1').classList.toggle('hidden', n !== 1); $('tab2').classList.toggle('hidden', n !== 2);
+  $('tabBtn1').classList.toggle('on', n === 1); $('tabBtn2').classList.toggle('on', n === 2);
+}
+$('tabBtn1').onclick = () => setTab(1); $('tabBtn2').onclick = () => setTab(2);
+
+function dropZone(el, handler) {
+  ['dragenter', 'dragover'].forEach(ev => el.addEventListener(ev, e => { if (dragFrom < 0) { e.preventDefault(); el.classList.add('over'); } }));
+  ['dragleave', 'drop'].forEach(ev => el.addEventListener(ev, () => el.classList.remove('over')));
+  el.addEventListener('drop', e => { if (dragFrom < 0) { e.preventDefault(); handler(e.dataTransfer.files); } });
+}
+dropZone($('drop1'), fl => fl[0] && openSource(fl[0]));
+dropZone($('drop2'), addScans);
+$('srcFile').onchange = e => { if (e.target.files[0]) openSource(e.target.files[0]); e.target.value = ''; };
+$('scanFiles').onchange = e => { addScans(e.target.files); e.target.value = ''; };
+
+$('nWant').oninput = () => factorChips();
+['cols', 'rows', 'margin', 'lineMm', 'dpi', 'showLabel'].forEach(id => $(id).addEventListener('input', refresh1));
+$('prevPg').onclick = () => { const N = opts().cols * opts().rows; S.pg = (S.pg + N - 1) % N; refresh1(); };
+$('nextPg').onclick = () => { const N = opts().cols * opts().rows; S.pg = (S.pg + 1) % N; refresh1(); };
+$('makePdf').onclick = buildPdf;
+
+['cols2', 'rows2'].forEach(id => $(id).addEventListener('input', () => {
+  $('nTot2').textContent = (+$('cols2').value || 1) * (+$('rows2').value || 1);
+  store('cols', $('cols2').value); store('rows', $('rows2').value); renderItems();
+}));
+$('orient').onchange = () => store('orient', $('orient').value);
+$('compose').onclick = compose;
+$('clearAll').onclick = () => { items.length = 0; renderItems(); };
+$('dlJpg').onclick = async () => resultCv && download(await toBlob(resultCv, 'image/jpeg', 0.93), '협동화_완성.jpg');
+$('dlPng').onclick = async () => resultCv && download(await toBlob(resultCv, 'image/png'), '협동화_완성.png');
+$('dlPdf').onclick = saveResultPdf;
+
+(function init() {
+  const c = recall('cols'), r = recall('rows'), o = recall('orient');
+  if (c && r) { $('cols').value = c; $('rows').value = r; $('cols2').value = c; $('rows2').value = r; $('nWant').value = (+c) * (+r); }
+  if (o) $('orient').value = o;
+  doRefresh1(); renderItems();
+  window.__coop = { items, S, detectFrame, renderPage, opts, layout }; // 시험용
+})();
+</script>
+</body>
+</html>
