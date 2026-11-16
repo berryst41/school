@@ -60,6 +60,11 @@
 <td>아이들이 한 명씩 나와 버튼을 눌러 마니또를 뽑아요 (자기 자신·중복·서로 마니또 없음)</td>
 <td align="center"><a href="https://berryst41.github.io/school/manitto/"><b>🎁&nbsp;열&#8288;기</b></a></td>
 </tr>
+<tr>
+<td>🎨 <a href="https://github.com/berryst41/school/tree/main/coop-art"><b>협동화 메이커</b></a></td>
+<td>A4 그림을 N장으로 쪼개 재단선이 있는 PDF로 만들고, 칠한 스캔본을 한 장으로 합쳐요</td>
+<td align="center"><a href="https://berryst41.github.io/school/coop-art/"><b>🎨&nbsp;열&#8288;기</b></a></td>
+</tr>
 </table>
 
 > [!TIP]
@@ -79,6 +84,9 @@ school/
 │   └── README.md        폭탄원숭이 설명
 ├── manitto/
 │   ├── index.html    🎁 마니또 뽑기
+│   └── README.md        설명
+├── coop-art/
+│   ├── index.html    🎨 협동화 메이커
 │   └── README.md        설명
 ├── share/
 │   ├── index.html    📮 자료 공유 사이트
