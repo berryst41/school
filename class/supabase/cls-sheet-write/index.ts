@@ -193,10 +193,18 @@ async function handle(req: Request) {
 
     const rowVals = (await readValues(token2, s.id, `'${tab.replace(/'/g, "''")}'!A${targetRowNum}:Z${targetRowNum}`))[0] || [];
     const sameRow = targetRowNum === oldRow;
-    const candidates = head
-      .map((h, ci) => ({ ci, kind: kindOf(h) }))
-      .filter(c => !(sameRow && c.ci === oldCi) && c.kind && c.kind[0] === targetKind && !clean(rowVals[c.ci]));
-    const pick = (targetDay && candidates.find(c => c.kind![1] === targetDay)) || candidates[0];
+    const namedCols = head.map((h, ci) => ({ ci, kind: kindOf(h) })).filter(c => c.kind);
+    const candidates = namedCols.filter(c => !(sameRow && c.ci === oldCi) && c.kind![0] === targetKind && !clean(rowVals[c.ci]));
+    let pick: { ci: number; kind: [string, string?] } | undefined =
+      (targetDay && candidates.find(c => c.kind![1] === targetDay)) || candidates[0];
+    // 그 종류의 빈 칸이 없으면(또는 애초에 "기타"처럼 시트에 진짜 이름이 없는 종류라면) 이름 없는 빈 칸(B~Z)에서 찾아요.
+    if (!pick) {
+      const taken = new Set(namedCols.map(c => c.ci));
+      for (let ci = 1; ci < 26; ci++) {
+        if (taken.has(ci) || (sameRow && ci === oldCi)) continue;
+        if (!clean(rowVals[ci])) { pick = { ci, kind: [targetKind, undefined] }; break; }
+      }
+    }
     if (!pick) return json({ error: `그 주차에 "${targetKind}"로 옮길 빈 칸이 없어요. 구글 시트에서 직접 옮겨 주세요.` }, 409);
     const newAddr = `${colLetter(pick.ci)}${targetRowNum}`;
     await writeCell(token2, s.id, tab, newAddr, cellText);
