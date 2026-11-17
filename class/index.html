@@ -15,6 +15,17 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif}
 .wrap{max-width:760px;margin:0 auto;padding:16px 16px 100px}
+/* 컴퓨터 화면: 폭을 넓히고 자료 카드를 2칸(아주 넓으면 3칸)으로. 폰은 그대로 한 줄 */
+#view.cards #list{display:contents}
+#view.cards>:not(.item):not(#list),#view.cards #list>:not(.item){grid-column:1/-1}
+@media (min-width:820px){
+  .wrap:has(#view.cards){max-width:1120px}
+  #view.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 14px;align-items:start}
+}
+@media (min-width:1240px){
+  .wrap:has(#view.cards){max-width:1480px}
+  #view.cards{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
 header{display:flex;align-items:center;gap:10px;margin:6px 0 14px}
 header h1{font-size:21px;margin:0;flex:1}
 header .who{font-size:13px;color:var(--muted)}
