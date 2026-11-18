@@ -234,7 +234,9 @@ function Invoke-Check {
         $isSkip = $false
         foreach ($s in $skip) { if ($sender -like "*$s*") { $isSkip = $true } }
         if ($body.Length -gt 3000) { $body = $body.Substring(0, 3000) + ' …(뒤는 생략)' }
-        [void]$msgs.Add([pscustomobject]@{ key = [int64]$r[0]; date = $r[1]; sender = $sender; title = $r[3]; body = $body; files = $files; skip = ($isSkip -or ($body -eq '' -and $r[3] -eq '')) })
+        $fav = ($r[6] -eq '1')
+        if ($fav) { $isSkip = $false }   # 즐겨찾기는 제외할 보낸 사람이어도 읽기
+        [void]$msgs.Add([pscustomobject]@{ key = [int64]$r[0]; date = $r[1]; sender = $sender; title = $r[3]; body = $body; files = $files; fav = $fav; skip = ($isSkip -or ($body -eq '' -and $r[3] -eq '')) })
     }
 
     $items = New-Object Collections.ArrayList
@@ -246,9 +248,9 @@ function Invoke-Check {
     $i = 0; $done = 0; $added = 0
     while ($i -lt $msgs.Count) {
         if ($stopEvent.WaitOne(0)) { return 'stop' }
-        $batch = New-Object Collections.ArrayList; $chars = 0; $lastKey = $msgs[$i].key
+        $batch = New-Object Collections.ArrayList; $chars = 0; $taken = New-Object Collections.ArrayList
         while ($i -lt $msgs.Count -and $batch.Count -lt 8 -and $chars -lt 15000) {
-            $m = $msgs[$i]; $lastKey = $m.key; $i++
+            $m = $msgs[$i]; [void]$taken.Add($m); $i++
             if (-not $m.skip) { [void]$batch.Add($m); $chars += $m.body.Length }
         }
         if ($batch.Count -gt 0) {
@@ -284,7 +286,7 @@ function Invoke-Check {
                 $due = if ($x.due -match '^\d{4}-\d{2}-\d{2}$') { $x.due } else { '' }
                 $time = if ($x.time -match '^\d{1,2}:\d{2}$') { $x.time } else { '' }
                 [void]$items.Add([pscustomobject]@{
-                    id = "$($m.key)-$n"; msg = $m.key; kind = $x.kind; text = $x.text; due = $due; time = $time
+                    id = "$($m.key)-$n"; msg = $m.key; kind = $x.kind; text = $x.text; due = $due; time = $time; fav = $m.fav
                     sender = $m.sender; recv = $m.date.Substring(0, [Math]::Min(16, $m.date.Length)); added = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
                 })
                 $origin | Add-Member -NotePropertyName ([string]$m.key) -NotePropertyValue ([pscustomobject]@{ date = $m.date; sender = $m.sender; title = $m.title; body = $m.body; files = $m.files }) -Force
