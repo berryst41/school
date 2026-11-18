@@ -188,8 +188,14 @@ function Invoke-Check {
     if (-not $db) { Set-Status 'error' '쿨메신저 쪽지 파일을 찾지 못했어요'; return 'wait' }
 
     $state = Read-JsonFile $StateJson $null
-    if (-not $state) { $state = [pscustomobject]@{ db = ''; lastKey = -1; sig = '' } }
-    if ($state.db -ne $db.Name) { $state = [pscustomobject]@{ db = $db.Name; lastKey = -1; sig = '' } }
+    if (-not $state -or $state.db -ne $db.Name -or -not $state.since) {
+        # 처음: 며칠 전부터 볼지 정하기 (날짜 글자는 꼭 2026/11/18 모양으로 — 한국어 윈도우는 '/'를 '-'로 바꿔 버림)
+        $days = 7; [void][int]::TryParse($settings['처음_살펴볼_날짜'], [ref]$days)
+        $since = (Get-Date).AddDays(-$days).ToString('yyyy\/MM\/dd', [Globalization.CultureInfo]::InvariantCulture)
+        $state = [pscustomobject]@{ db = $db.Name; since = $since; lastKey = -1; favDone = @(); sig = '' }
+        Write-Log "처음 시작: $since 부터 + 즐겨찾기 쪽지"
+    }
+    $favDone = @{}; foreach ($k in @($state.favDone)) { if ($null -ne $k) { $favDone[[string]$k] = $true } }
 
     $sig = Get-DbSignature $db
     $force = Test-Path $ForceFile
@@ -197,17 +203,22 @@ function Invoke-Check {
     if ($sig -eq $state.sig -and -not $force) { return 'idle' }
 
     Copy-CoolDb $db
-    if ([int64]$state.lastKey -lt 0) {
-        $days = 45; [void][int]::TryParse($settings['처음_살펴볼_날짜'], [ref]$days)
-        $since = (Get-Date).AddDays(-$days).ToString('yyyy/MM/dd')
-        $r = [CoolSqlite]::Query($TmpDb, "SELECT IFNULL(MIN(MessageKey),-1), IFNULL(MAX(MessageKey),0) FROM tbl_recv WHERE substr(ReceiveDate,1,10) >= '$since'")
-        $state.lastKey = if ([int64]$r[0][0] -ge 0) { [int64]$r[0][0] - 1 } else { [int64]$r[0][1] }
-        Write-Log "처음 시작: $since 부터 (쪽지 번호 $($state.lastKey) 다음부터)"
+    $last = [int64]$state.lastKey
+    $cols = "MessageKey, ReceiveDate, Sender, Title, MessageText, IFNULL(FilePath,''), IFNULL(IsChecked,0)"
+    # ① 새 쪽지: 기준 날짜 이후이거나 즐겨찾기(IsChecked=1)인 것
+    $newWhere = "MessageKey > $last AND (substr(ReceiveDate,1,10) >= '$($state.since)' OR IsChecked = 1)"
+    $rows = @([CoolSqlite]::Query($TmpDb, "SELECT $cols FROM tbl_recv WHERE $newWhere ORDER BY MessageKey LIMIT 300"))
+    $total = [int][CoolSqlite]::Query($TmpDb, "SELECT COUNT(*) FROM tbl_recv WHERE $newWhere")[0][0]
+    # ② 예전 쪽지인데 나중에 즐겨찾기한 것 (기간 상관없이)
+    if ($rows.Count -lt 300) {
+        foreach ($r in [CoolSqlite]::Query($TmpDb, "SELECT $cols FROM tbl_recv WHERE IsChecked = 1 AND MessageKey <= $last ORDER BY MessageKey DESC")) {
+            if (-not $favDone.ContainsKey([string]$r[0]) -and $rows.Count -lt 300) { $rows += , $r; $total++ }
+        }
     }
-
-    $rows = [CoolSqlite]::Query($TmpDb, "SELECT MessageKey, ReceiveDate, Sender, Title, MessageText, IFNULL(FilePath,'') FROM tbl_recv WHERE MessageKey > $([int64]$state.lastKey) ORDER BY MessageKey LIMIT 300")
-    $total = [CoolSqlite]::Query($TmpDb, "SELECT COUNT(*) FROM tbl_recv WHERE MessageKey > $([int64]$state.lastKey)")[0][0]
+    # 새 쪽지가 없어도 다음번 확인 범위를 줄이기 위해 마지막 번호는 앞으로 옮겨 두기
+    $maxKey = [int64][CoolSqlite]::Query($TmpDb, "SELECT IFNULL(MAX(MessageKey),0) FROM tbl_recv")[0][0]
     if ($rows.Count -eq 0) {
+        if ($maxKey -gt $last) { $state.lastKey = $maxKey }
         $state.sig = $sig; Write-JsonFile $StateJson $state
         Set-Status 'ok' '새 쪽지 없음'
         return 'idle'

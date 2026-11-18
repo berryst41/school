@@ -311,7 +311,7 @@ function Update-Status {
     $t = Get-Date-Or-Null $st.time 'yyyy-MM-dd HH:mm:ss'
     if ($t) {
         $m = [int]((Get-Date) - $t).TotalMinutes
-        $ago = if ($m -lt 1) { '방금' } elseif ($m -lt 60) { "$m분 전" } else { $t.ToString('M/d HH:mm') }
+        $ago = if ($m -lt 1) { '방금' } elseif ($m -lt 60) { "$m분 전" } else { $t.ToString('M/d HH:mm', [Globalization.CultureInfo]::InvariantCulture) }
     }
     switch ($st.state) {
         'ok'      { $ui.StatusText.Foreground = '#FF666666'; $ui.StatusText.Text = "● $ago 확인 · $($st.msg)" }
