@@ -73,7 +73,7 @@ function Write-JsonFile($path, $obj) {
     [IO.File]::WriteAllText($tmp, $json, (New-Object Text.UTF8Encoding($false)))
     for ($try = 0; $try -lt 5; $try++) {
         try {
-            if (Test-Path $path) { [IO.File]::Replace($tmp, $path, $null) } else { [IO.File]::Move($tmp, $path) }
+            if (Test-Path $path) { [IO.File]::Replace($tmp, $path, [NullString]::Value) } else { [IO.File]::Move($tmp, $path) }
             return
         } catch { Start-Sleep -Milliseconds 200 }
     }

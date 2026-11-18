@@ -70,7 +70,7 @@ function Set-Status($state, $msg) {
 function Find-CoolDb {
     $memo = Join-Path $env:LOCALAPPDATA 'CoolMessenger\Memo'
     if (-not (Test-Path $memo)) { return $null }
-    Get-ChildItem $memo -Filter '*.udb' -File | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    Get-ChildItem $memo -Filter '*.udb' -File | Where-Object { $_.Extension -eq '.udb' } | Sort-Object LastWriteTime -Descending | Select-Object -First 1
 }
 
 function Copy-Shared($src, $dst) {

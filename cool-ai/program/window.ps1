@@ -1,5 +1,6 @@
-# 쿨메신저 비서 - 항상 위에 뜨는 작은 창
+﻿# 쿨메신저 비서 - 항상 위에 뜨는 작은 창
 . (Join-Path $PSScriptRoot 'common.ps1')
+$ErrorActionPreference = 'Continue'   # 창에서는 작은 오류로 멈추지 않게
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase
 
 # 한 번만 켜지게: 이미 켜져 있으면 그 창을 앞으로 부르고 끝
@@ -146,7 +147,7 @@ function Set-Pinned([bool]$on) {
 
 function Bring-Up {
     if ($win.WindowState -eq 'Minimized') { $win.WindowState = 'Normal' }
-    $win.Show()
+
     Set-Pinned $true
     [void]$win.Activate()
 }
@@ -203,7 +204,7 @@ function New-ItemRow($it, $today) {
 
     $tb = New-Object Windows.Controls.TextBlock
     $tb.TextWrapping = 'Wrap'
-    $r1 = New-Object Windows.Documents.Run ([string]$it.text)
+    $r1 = [Windows.Documents.Run]::new([string]$it.text)
     if ($isDone) { $r1.Foreground = '#FF999999'; $r1.TextDecorations = [Windows.TextDecorations]::Strikethrough }
     [void]$tb.Inlines.Add($r1)
     [void]$tb.Inlines.Add((New-Object Windows.Documents.LineBreak))
@@ -222,7 +223,7 @@ function New-ItemRow($it, $today) {
     } elseif ($it.time) { [void]$meta.Add([string]$it.time) }
     $who = ([string]$it.sender -split '\(')[0].Trim()
     if ($who) { [void]$meta.Add($who) }
-    $r2 = New-Object Windows.Documents.Run ($meta -join ' · ')
+    $r2 = [Windows.Documents.Run]::new($meta -join ' · ')
     $r2.FontSize = 11; $r2.Foreground = $color
     [void]$tb.Inlines.Add($r2)
     [void]$g.Children.Add($tb)
@@ -294,7 +295,7 @@ function Render-List {
     $ui.DoneToggle.Text = if ($doneList.Count -eq 0) { '' } elseif ($Script:ShowDone) { '다 한 것 숨기기' } else { "다 한 것 $($doneList.Count)개 보기" }
 
     $todo = @($live | Where-Object { $_.kind -eq 'todo' }).Count
-    $ui.TitleText.Text = if ($todo -gt 0) { "쿨메신저 비서 · 할 일 $todo" } else { '쿨메신저 비서' }
+    $ui.TitleText.Text = if ($todo -gt 0) { "할 일 $todo" } else { '쿨메신저 비서' }
 
     if ($fresh -gt 0 -and $Script:Settings['새_항목_알림'] -ne '아니오' -and -not $win.IsActive) {
         # 새 할 일·일정이 생기면 포커스는 뺏지 않고 잠깐 맨 앞으로 보여 주기
