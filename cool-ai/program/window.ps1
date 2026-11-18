@@ -422,7 +422,7 @@ function New-TrayIcon {
 $Script:Tray = New-Object Windows.Forms.NotifyIcon
 $Script:Tray.Icon = New-TrayIcon
 $Script:Tray.Text = '쿨메신저 비서 (클릭: 맨 위로)'
-$Script:Tray.Add_MouseClick({ param($s, $e) if ($e.Button -eq [Windows.Forms.MouseButtons]::Left) { Bring-Up } })
+$Script:Tray.Add_MouseClick({ param($s, $e) try { if ($e.Button -eq [Windows.Forms.MouseButtons]::Left) { Bring-Up } } catch { Write-Log "트레이 오류: $($_.Exception.Message)" } })
 $menu = New-Object Windows.Forms.ContextMenuStrip
 [void]$menu.Items.Add('맨 위로 올리기', $null, { Bring-Up })
 [void]$menu.Items.Add('숨기기', $null, { Save-Ui; $win.Hide() })
