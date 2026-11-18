@@ -39,6 +39,11 @@
 <td>듀얼 모니터에서 한글·엑셀·브라우저가 골라 둔 모니터(메인/서브)에 열려요 (윈도우 프로그램)</td>
 <td align="center"><a href="https://github.com/berryst41/school/raw/main/main-monitor/main-monitor.zip"><b>⬇️&nbsp;받&#8288;기<br>v1.4.1</b></a></td>
 </tr>
+<tr>
+<td>🤖 <a href="https://github.com/berryst41/school/tree/main/cool-ai"><b>쿨메신저 비서</b></a></td>
+<td>쿨메신저 쪽지를 AI가 할 일·적을 것·기억할 것으로 정리해 항상 위 작은 창에 보여 줘요 (윈도우 프로그램)</td>
+<td align="center"><a href="https://github.com/berryst41/school/raw/main/cool-ai/cool-ai.zip"><b>⬇️&nbsp;받&#8288;기<br>v0.1.0</b></a></td>
+</tr>
 <tr><td colspan="3"><b>🧑‍🏫 수업에 쓰는 도구</b></td></tr>
 <tr>
 <td>📚 <a href="https://github.com/berryst41/school/tree/main/class"><b>4원칙 학급 운영 자료실</b></a></td>
@@ -100,6 +105,10 @@ school/
 ├── pumui/
 │   ├── extension/       🧾 품의 기안 도우미 (크롬 확장 프로그램)
 │   ├── pumui-extension.zip  내려받기용 압축 파일
+│   └── README.md        설명
+├── cool-ai/
+│   ├── program/         🤖 쿨메신저 비서 (윈도우 프로그램)
+│   ├── cool-ai.zip      내려받기용 압축 파일
 │   └── README.md        설명
 ├── main-monitor/
 │   ├── program/         🖥️ 메인 모니터로 열기 (윈도우 프로그램)
