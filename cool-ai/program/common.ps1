@@ -20,8 +20,9 @@ $Script:DefaultSettings = @'
 # 제미나이 API 키: https://aistudio.google.com/apikey 에서 무료로 받아서 = 뒤에 붙여 넣어요.
 API키 =
 
-# 쓸 제미나이 모델 (gemini-flash-latest = 항상 최신 Flash)
-모델 = gemini-flash-latest
+# 쓸 제미나이 모델. gemini-flash-lite-latest(가볍고 빠름)를 추천해요.
+# gemini-flash-latest 는 더 똑똑하지만 무료는 하루 20번뿐이고 느려요.
+모델 = gemini-flash-lite-latest
 
 # 나에 대한 정보. 적어 두면 다른 학년·다른 업무 쪽지는 빼고 정리해요. (예: 5학년 담임, 과학 전담, 정보 업무)
 내_정보 =
@@ -30,7 +31,8 @@ API키 =
 단축키 = F9
 
 # 처음 켤 때 며칠 전 쪽지부터 살펴볼지 (기한이 지난 건 빼고 정리해요)
-처음_살펴볼_날짜 = 45
+# 쿨메신저에서 즐겨찾기(★)한 쪽지는 날짜와 상관없이 모두 읽어요.
+처음_살펴볼_날짜 = 7
 
 # 정리하지 않을 보낸 사람 (쉼표로 여러 명)
 제외할_보낸사람 = 쿨서비스
@@ -43,8 +45,8 @@ function Read-Settings {
     if (-not (Test-Path $SettingsTxt)) {
         [IO.File]::WriteAllText($SettingsTxt, $DefaultSettings, (New-Object Text.UTF8Encoding($true)))
     }
-    $s = @{ 'API키' = ''; '모델' = 'gemini-flash-latest'; '내_정보' = ''; '단축키' = 'F9'
-             '처음_살펴볼_날짜' = '45'; '제외할_보낸사람' = '쿨서비스'; '새_항목_알림' = '예' }
+    $s = @{ 'API키' = ''; '모델' = 'gemini-flash-lite-latest'; '내_정보' = ''; '단축키' = 'F9'
+             '처음_살펴볼_날짜' = '7'; '제외할_보낸사람' = '쿨서비스'; '새_항목_알림' = '예' }
     foreach ($line in [IO.File]::ReadAllLines($SettingsTxt, [Text.Encoding]::UTF8)) {
         $t = $line.Trim()
         if ($t -eq '' -or $t.StartsWith('#')) { continue }

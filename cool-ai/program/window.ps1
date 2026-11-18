@@ -223,6 +223,7 @@ function New-ItemRow($it, $today) {
     } elseif ($it.time) { [void]$meta.Add([string]$it.time) }
     $who = ([string]$it.sender -split '\(')[0].Trim()
     if ($who) { [void]$meta.Add($who) }
+    if ($it.fav) { [void]$meta.Add('★') }
     $r2 = [Windows.Documents.Run]::new($meta -join ' · ')
     $r2.FontSize = 11; $r2.Foreground = $color
     [void]$tb.Inlines.Add($r2)
@@ -251,7 +252,7 @@ function Render-List {
     foreach ($it in $items) {
         $due = Get-Date-Or-Null $it.due 'yyyy-MM-dd'
         if ($due -and $due.Date -lt $today) { continue }                 # 기한 지난 건 숨기기
-        if (-not $due -and $it.kind -eq 'remember') {                     # 기한 없는 '기억할 것'은 30일 동안만
+        if (-not $due -and $it.kind -eq 'remember' -and -not $it.fav) {                     # 기한 없는 '기억할 것'은 30일 동안만
             $rd = Get-Date-Or-Null $it.recv 'yyyy/MM/dd HH:mm'
             if ($rd -and ($today - $rd.Date).Days -gt 30) { continue }
         }

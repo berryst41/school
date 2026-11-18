@@ -115,28 +115,36 @@ function Invoke-Gemini($key, $model, $prompt) {
                 time = @{ type = 'STRING' }
             } } } }
     }
+    # 생각하기를 끄면 훨씬 빨라요 (켜 두면 무료 서버에서 몇 분씩 걸리기도 해요)
+    $gen = @{ temperature = 0.2; responseMimeType = 'application/json'; responseSchema = $schema }
+    if (-not $Script:NoThinkUnsupported) { $gen.thinkingConfig = @{ thinkingBudget = 0 } }
     $body = ConvertTo-Json -Depth 20 -Compress -InputObject @{
         contents = @(@{ role = 'user'; parts = @(@{ text = $prompt }) })
-        generationConfig = @{ temperature = 0.2; responseMimeType = 'application/json'; responseSchema = $schema }
+        generationConfig = $gen
     }
     $url = "https://generativelanguage.googleapis.com/v1beta/models/$($model):generateContent"
     $req = [Net.HttpWebRequest]::Create($url)
     $req.Method = 'POST'
     $req.ContentType = 'application/json; charset=utf-8'
     $req.Headers.Add('x-goog-api-key', $key)
-    $req.Timeout = 180000
+    $req.Timeout = 300000; $req.ReadWriteTimeout = 300000
     $bytes = [Text.Encoding]::UTF8.GetBytes($body)
     $rs = $req.GetRequestStream(); $rs.Write($bytes, 0, $bytes.Length); $rs.Close()
     try { $resp = $req.GetResponse() }
     catch {
         $we = $_.Exception
         while ($we -and -not ($we -is [Net.WebException])) { $we = $we.InnerException }
-        if (-not $we -or -not $we.Response) { throw '인터넷 연결이 안 돼요' }
+        if (-not $we -or -not $we.Response) { throw "제미나이 연결이 안 돼요 ($($_.Exception.InnerException.Message))" }
         $resp = $we.Response
     }
     $code = [int]$resp.StatusCode
     $sr = New-Object IO.StreamReader($resp.GetResponseStream(), [Text.Encoding]::UTF8)
     $txt = $sr.ReadToEnd(); $resp.Close()
+    if ($code -eq 400 -and -not $Script:NoThinkUnsupported) {
+        # 생각 끄기를 못 하는 모델이면 켠 채로 다시
+        $Script:NoThinkUnsupported = $true
+        return (Invoke-Gemini $key $model $prompt)
+    }
     if ($code -ne 200) { return @{ code = $code; error = $txt } }
     $j = ConvertFrom-Json $txt
     $out = ''
@@ -164,13 +172,15 @@ function Build-Prompt($batch, $settings) {
 - 한 쪽지에서 여러 개가 나올 수 있어. 같은 내용을 todo와 note에 겹쳐 넣지 마 (마감이 있는 할 일은 todo 하나로).
 - text는 35자 안팎의 짧은 한국어로, 무엇을 하면 되는지 바로 알 수 있게 써. 예: "개인정보 점검표 작성해 교무부 제출", "6교시 후 협의회(2층 회의실)"
 - due는 기한·일정 날짜 YYYY-MM-DD, 없으면 "". 연도가 없으면 받은 날짜 다음으로 가장 가까운 날짜로. time은 HH:MM, 없으면 "".
-- 학생 이름·전화번호·주민번호 같은 개인정보는 text에 쓰지 마.
+- 학생 이름·전화번호·주민번호 같은 개인정보는 text에 절대 쓰지 마. 학생을 가리킬 땐 "해당 학생"처럼 써.
+- ★즐겨찾기 쪽지는 선생님이 중요하다고 표시해 둔 거야. 오래된 쪽지여도 지금도 쓸모 있는 내용(규칙, 절차, 안내, 자료 위치, 연락처 종류 등)은 remember로 꼭 넣어. 다만 이미 끝난 일정·마감은 빼. 받은 지 한 달이 넘은 즐겨찾기 쪽지의 기한 없는 할 일은 이미 했을 수 있으니 todo 말고 remember로 넣어.
 - msg에는 쪽지 번호를 그대로 적어. 뽑을 게 하나도 없으면 items를 빈 배열로.
 
 쪽지들:
 '@)
     foreach ($m in $batch) {
-        [void]$sb.AppendLine("=== 쪽지 번호 $($m.key) | 받은 때 $($m.date) | 보낸 사람 $($m.sender) ===")
+        $star = if ($m.fav) { " | ★즐겨찾기" } else { "" }
+        [void]$sb.AppendLine("=== 쪽지 번호 $($m.key) | 받은 때 $($m.date) | 보낸 사람 $($m.sender)$star ===")
         [void]$sb.AppendLine("제목: $($m.title)")
         if ($m.files) { [void]$sb.AppendLine("첨부: $($m.files)") }
         [void]$sb.AppendLine($m.body)
@@ -242,14 +252,14 @@ function Invoke-Check {
     $items = New-Object Collections.ArrayList
     foreach ($it in @(Read-JsonFile $ItemsJson @())) { [void]$items.Add($it) }
     $origin = Read-JsonFile $MsgsJson ([pscustomobject]@{})
-    $model = if ($settings['모델']) { $settings['모델'] } else { 'gemini-flash-latest' }
+    $model = if ($settings['모델']) { $settings['모델'] } else { 'gemini-flash-lite-latest' }
 
-    # 쪽지 8통(또는 글자 1만5천 자)씩 묶어서 보내기
+    # 쪽지 12통(또는 글자 2만 자)씩 묶어서 보내기 (무료는 하루 요청 횟수가 적어요)
     $i = 0; $done = 0; $added = 0
     while ($i -lt $msgs.Count) {
         if ($stopEvent.WaitOne(0)) { return 'stop' }
         $batch = New-Object Collections.ArrayList; $chars = 0; $taken = New-Object Collections.ArrayList
-        while ($i -lt $msgs.Count -and $batch.Count -lt 8 -and $chars -lt 15000) {
+        while ($i -lt $msgs.Count -and $batch.Count -lt 12 -and $chars -lt 20000) {
             $m = $msgs[$i]; [void]$taken.Add($m); $i++
             if (-not $m.skip) { [void]$batch.Add($m); $chars += $m.body.Length }
         }
