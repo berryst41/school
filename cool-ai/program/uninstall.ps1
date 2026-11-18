@@ -1,4 +1,4 @@
-# 제거하기: 비서를 끄고, 자동 시작·바로가기·저장한 파일을 지웁니다. (쿨메신저 쪽지는 건드리지 않아요)
+﻿# 제거하기: 비서를 끄고, 자동 시작·바로가기·저장한 파일을 지웁니다. (쿨메신저 쪽지는 건드리지 않아요)
 try {
     $stop = New-Object System.Threading.EventWaitHandle($false, 'ManualReset', 'Local\CoolAIStop')
     $stop.Set() | Out-Null

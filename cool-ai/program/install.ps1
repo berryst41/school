@@ -1,4 +1,4 @@
-# 설치하기: 프로그램을 내 컴퓨터에 복사하고, 컴퓨터를 켤 때 자동으로 시작되게 합니다.
+﻿# 설치하기: 프로그램을 내 컴퓨터에 복사하고, 컴퓨터를 켤 때 자동으로 시작되게 합니다.
 try {
     foreach ($f in 'common.ps1', 'engine.ps1', 'window.ps1') {
         if (-not (Test-Path (Join-Path $PSScriptRoot $f))) { throw '같은 폴더에 필요한 파일이 없어요. 압축을 먼저 풀어 주세요.' }
