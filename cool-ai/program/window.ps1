@@ -40,7 +40,7 @@ public class CoolHotkey {
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="쿨메신저 비서" Width="340" Height="520" MinWidth="240" MinHeight="150"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
-        ResizeMode="CanResizeWithGrip" Topmost="True" ShowInTaskbar="True"
+        ResizeMode="CanResizeWithGrip" Topmost="True" ShowInTaskbar="False"
         FontFamily="Malgun Gothic" FontSize="13">
   <Window.Resources>
     <Style TargetType="Button">
@@ -76,7 +76,7 @@ public class CoolHotkey {
             <Button x:Name="BtnPin" Content="📌"/>
             <Button x:Name="BtnRefresh" Content="⟳" ToolTip="지금 쿨메신저 쪽지 확인하기"/>
             <Button x:Name="BtnSet" Content="⚙" ToolTip="설정 (API 키·단축키 등)"/>
-            <Button x:Name="BtnMin" Content="—" ToolTip="작업 표시줄로 내리기"/>
+            <Button x:Name="BtnMin" Content="—" ToolTip="창 숨기기 (F9 나 바탕화면 아이콘으로 다시 불러와요)"/>
             <Button x:Name="BtnClose" Content="✕" ToolTip="비서 끄기"/>
           </StackPanel>
           <TextBlock x:Name="TitleText" Text="쿨메신저 비서" Foreground="White" FontWeight="Bold" VerticalAlignment="Center"/>
@@ -147,6 +147,8 @@ function Set-Pinned([bool]$on) {
 
 function Bring-Up {
     if ($win.WindowState -eq 'Minimized') { $win.WindowState = 'Normal' }
+    $win.ShowActivated = $true
+    if (-not $win.IsVisible) { $win.Show() }
 
     Set-Pinned $true
     [void]$win.Activate()
@@ -301,6 +303,7 @@ function Render-List {
     if ($fresh -gt 0 -and $Script:Settings['새_항목_알림'] -ne '아니오' -and -not $win.IsActive) {
         # 새 할 일·일정이 생기면 포커스는 뺏지 않고 잠깐 맨 앞으로 보여 주기
         if ($win.WindowState -eq 'Minimized') { $win.WindowState = 'Normal' }
+        if (-not $win.IsVisible) { $win.ShowActivated = $false; $win.Show() }   # 숨겨 둔 창도 포커스는 뺏지 않고 보여 주기
         if (-not $Script:Pinned) { $win.Topmost = $true; $win.Topmost = $false }
     }
 }
@@ -343,7 +346,7 @@ $ui.BtnPin.Add_Click({ Set-Pinned (-not $Script:Pinned) })
 $ui.BtnRefresh.Add_Click({ [IO.File]::WriteAllText($ForceFile, 'go'); $ui.StatusText.Text = '⏳ 확인하는 중…' })
 $ui.BtnSet.Add_Click({ [void](Read-Settings); Start-Process notepad.exe -ArgumentList "`"$SettingsTxt`"" })
 $ui.StatusText.Add_MouseLeftButtonUp({ if ($ui.StatusText.Text -match 'API 키|모델') { Start-Process notepad.exe -ArgumentList "`"$SettingsTxt`"" } })
-$ui.BtnMin.Add_Click({ $win.WindowState = 'Minimized' })
+$ui.BtnMin.Add_Click({ Save-Ui; $win.Hide() })   # 작업 표시줄에 안 뜨니 내리지 않고 숨겨요
 $ui.BtnClose.Add_Click({ $win.Close() })
 $ui.DoneToggle.Add_MouseLeftButtonUp({ $Script:ShowDone = -not $Script:ShowDone; Render-List })
 $win.Add_Activated({ if ($Script:NewIds.Count -gt 0) { $Script:NewIds = @{}; Render-List } })
@@ -352,7 +355,7 @@ $win.Add_SizeChanged({ $Script:UiDirty = $true })
 
 # ── 단축키 ──
 $hotkey = New-Object CoolHotkey
-$hotkey.Pressed = [Action]{ if ($Script:Pinned -and $win.WindowState -ne 'Minimized') { Send-Back } else { Bring-Up } }
+$hotkey.Pressed = [Action]{ if ($Script:Pinned -and $win.IsVisible -and $win.WindowState -ne 'Minimized') { Send-Back } else { Bring-Up } }
 $win.Add_SourceInitialized({
     $spec = [string]$Script:Settings['단축키']; if (-not $spec) { $spec = 'F9' }
     $mod = 0; $vk = 0
@@ -411,4 +414,7 @@ Render-List
 Update-Status
 Start-Engine
 $timer.Start()
-[void]$win.ShowDialog()
+# ShowDialog 대신 Application.Run: 숨겼다(Hide) 다시 보여도(Show) 프로그램이 끝나지 않게
+$app = New-Object Windows.Application
+$app.ShutdownMode = 'OnMainWindowClose'
+[void]$app.Run($win)
