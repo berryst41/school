@@ -297,7 +297,11 @@ function Invoke-Check {
             $done += $batch.Count
             Start-Sleep -Seconds 7   # 무료 사용량(1분에 몇 번) 지키기
         }
-        $state.lastKey = $lastKey
+        foreach ($m in $taken) {
+            if ($m.key -gt [int64]$state.lastKey) { $state.lastKey = $m.key }
+            if ($m.fav) { $favDone[[string]$m.key] = $true }
+        }
+        $state.favDone = @($favDone.Keys)
         Write-JsonFile $StateJson $state
     }
     if ($rows.Count -lt 300) { $state.sig = $sig }   # 다 읽었으면 다음엔 파일이 바뀔 때만 확인
