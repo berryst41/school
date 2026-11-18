@@ -1,4 +1,4 @@
-# 쿨메신저 비서 - 정리 엔진 (화면 없이 뒤에서 돌아요)
+﻿# 쿨메신저 비서 - 정리 엔진 (화면 없이 뒤에서 돌아요)
 # 쿨메신저가 PC에 저장해 둔 받은 쪽지를 복사본으로 읽고, 새 쪽지를 제미나이에게 보내 정리합니다.
 param([int]$ParentPid = 0, [switch]$Once)
 . (Join-Path $PSScriptRoot 'common.ps1')
@@ -217,7 +217,8 @@ function Invoke-Check {
     $msgs = New-Object Collections.ArrayList
     foreach ($r in $rows) {
         $body = Clean-Text $r[4]
-        $files = (@($r[5] -split '[|;\r\n]' | Where-Object { $_.Trim() } | ForEach-Object { [IO.Path]::GetFileName($_.Trim()) }) -join ', ')
+        # 첨부 칸 모양: |개수|크기들|폴더|파일이름|…  → 파일 이름만 골라내기
+        $files = (@($r[5] -split '\|' | ForEach-Object { $_.Trim() } | Where-Object { $_ -match '\.[A-Za-z0-9]{2,5}$' -and $_ -notmatch '\\' }) -join ', ')
         $sender = $r[2]
         $isSkip = $false
         foreach ($s in $skip) { if ($sender -like "*$s*") { $isSkip = $true } }

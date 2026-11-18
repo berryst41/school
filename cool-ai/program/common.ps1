@@ -1,4 +1,4 @@
-# 쿨메신저 비서 - 창과 정리 엔진이 함께 쓰는 기능
+﻿# 쿨메신저 비서 - 창과 정리 엔진이 함께 쓰는 기능
 $ErrorActionPreference = 'Stop'
 $Script:AppDir      = Join-Path $env:LOCALAPPDATA 'CoolAI'
 $Script:SettingsTxt = Join-Path $AppDir '설정.txt'
