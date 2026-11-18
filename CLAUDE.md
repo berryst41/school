@@ -99,3 +99,39 @@
   - 화면: 데스크톱은 `100vh` 안에 좌 설정 / 우 미리보기(세로 스크롤 없음), 900px 이하(폰)는 위아래로 쌓고 스크롤 허용. 낮은 화면(≤800px, ≤740px)은 안내문을 숨기고 카드를 줄여요.
 - **시험:** 사용자 화면의 "🌈 예시 그림 → 🧪 예시 스캔"이 내장 데모예요(섞고·기울이고·일부 180° 돌린 스캔으로 코드 자동 정렬 확인). 코드로 시험하려면 Playwright로 파일을 열어 `window.__coop`(시험용 훅)을 써요. 학교망에서는 Node에 `NODE_EXTRA_CA_CERTS`가 필요해요.
 - **아직 안 한 것:** (1) 실제 학교 프린터로 인쇄한 종이를 실제 스캐너로 스캔했을 때 번호 코드가 읽히는지(지금 시험은 화면에서 만든 가짜 스캔뿐; 안 읽히면 파일 순서로 떨어지고 "확인 필요"가 떠요). (2) 폰 사진(원근 왜곡) 대응 없음 — 스캐너 전제. (3) 이름·모둠 칸, QR 코드, 풀칠 자리(겹침)는 제안만 했고 안 넣음. (4) 90° 눕혀 스캔한 코드 없는 종이는 방향을 시계로 가정(틀리면 ⟳).
+
+## 🤖 cool-ai/ — 쿨메신저 비서 (2026-11-18 시작, 지금 v0.2.0)
+나중에 이어서 고칠 때 이 칸부터 읽어요. 고치면 이 칸과 `cool-ai/README.md` 버전 기록을 함께 고쳐요.
+
+### 무엇
+쿨메신저로 받은 쪽지를 제미나이가 ✅ 해야 할 일 · 📝 적어야 할 것 · 💡 기억할 것으로 정리해, 항상 위에 뜨는 작은 창에 보여 주는 윈도우 프로그램. 설치할 것 없이 PowerShell만 씀(main-monitor와 같은 방식).
+
+### 사용자가 정한 것
+- AI는 **제미나이 무료**. 개인정보가 학습에 쓰일 수 있다는 위험은 설명했고, 사용자가 무료를 골랐음.
+- 창: 항상 위 + 투명도(◐ 막대, Ctrl+휠) + 📌 고정 끄기 + **F9**(맨 위로 ↔ 다른 창 뒤로 보내기, 설정에서 바꿀 수 있음).
+- 새 쪽지는 자동 정리. 처음엔 **최근 7일 쪽지 + 즐겨찾기(★) 쪽지는 기간 상관없이**. 기한 지난 건 빼고 숨김.
+
+### 파일 (`cool-ai/program/`, 설치하면 `%LOCALAPPDATA%\CoolAI\program\`로 복사)
+- `common.ps1` 경로·`설정.txt` 읽기·JSON 저장 / `engine.ps1` 숨김 엔진(쪽지 읽기 + 제미나이) / `window.ps1` WPF 창(엔진을 자식으로 켜고, 죽으면 30초 안에 다시 켬)
+- `install.ps1`·`uninstall.ps1` + `1_설치하기.bat`·`2_제거하기.bat`, `사용방법.txt`. 고친 뒤 `cool-ai.zip`을 다시 만들어요(`Compress-Archive -Path 'program\*'`).
+- 데이터(`%LOCALAPPDATA%\CoolAI\`): 설정.txt(API 키), items.json, msgs.json, state.json(lastKey·since·favDone), done.json, ui.json, status.json, log.txt. **절대 커밋하지 않기.**
+
+### 쿨메신저 쪽지 파일
+- `%LOCALAPPDATA%\CoolMessenger\Memo\<계정>.udb` = 암호 없는 SQLite(WAL 사용). 복사본(udb+wal)을 `C:\Windows\System32\winsqlite3.dll`로 읽음.
+- `tbl_recv`: MessageKey, ReceiveDate(`2026/11/18 09:00:00 (수)`), Sender, Title, MessageText(평문), FilePath(`|개수|크기|폴더|파일명|…`), **IsChecked=1 → 즐겨찾기로 보고 있음(추정, 사용자 확인 아직)**.
+
+### 함정 (겪은 것)
+- 무료 `gemini-flash-latest`(=3.8 Flash)는 **하루 20번**뿐이고 느림(생각하기 켜면 1+1에도 3분) → 기본은 `gemini-flash-lite-latest`(6초). Flash엔 `thinkingBudget=0`, Lite에 넣으면 400 → 400이면 빼고 다시 보냄.
+- 한국어 윈도우에서 `ToString('yyyy/MM/dd')`의 `/`가 `-`로 바뀜 → `'yyyy\/MM\/dd'` + InvariantCulture.
+- `-Filter '*.udb'`가 `.udb-wal`도 잡음 → `Extension -eq '.udb'`. PS 5.1 `[IO.File]::Replace(a,b,$null)` 실패 → `[NullString]::Value`.
+- ps1은 **UTF-8 BOM** 필수(Write 도구로 만들면 BOM을 붙여야 함). .bat 안엔 한글 쓰지 않기.
+- 엔진만 고칠 땐: 고친 파일을 설치 폴더에 먼저 복사한 뒤 엔진 프로세스를 끄면 창이 새 코드로 다시 켬.
+- 처음부터 다시 정리하려면 state.json·items.json·msgs.json을 지우면 돼요(무료 사용량을 쓰니 조심).
+
+### 남은 일 (2026-11-18 기준)
+- [ ] IsChecked가 정말 즐겨찾기인지 사용자 확인
+- [ ] `내_정보` 넣기(사용자 계정이 5학년으로 보임, 확인 필요)
+- [ ] Flash-Lite 무료 하루 한도 확인. 모자라면 새 쪽지를 몇 분씩 모아서 보내기
+- [ ] 학생 이름이 항목에 들어가는 일(프롬프트로 막았지만 확실하지 않음) → 필요하면 코드에서 가리기
+- [ ] 즐겨찾기를 풀면 그 항목도 숨기기(아직 안 함)
+- [ ] 옛 즐겨찾기의 기한 없는 할 일이 할 일 칸에 쌓이던 것 → 프롬프트로 고침, 이미 만든 항목은 그대로 둠
