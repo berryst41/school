@@ -1,7 +1,7 @@
 ﻿# 쿨메신저 비서 - 항상 위에 뜨는 작은 창
 . (Join-Path $PSScriptRoot 'common.ps1')
 $ErrorActionPreference = 'Continue'   # 창에서는 작은 오류로 멈추지 않게
-Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase
+Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Windows.Forms, System.Drawing
 
 # 한 번만 켜지게: 이미 켜져 있으면 그 창을 앞으로 부르고 끝
 $created = $false
@@ -299,6 +299,7 @@ function Render-List {
 
     $todo = @($live | Where-Object { $_.kind -eq 'todo' }).Count
     $ui.TitleText.Text = if ($todo -gt 0) { "할 일 $todo" } else { '쿨메신저 비서' }
+    if ($Script:Tray) { $Script:Tray.Text = if ($todo -gt 0) { "쿨메신저 비서 · 할 일 $todo (클릭: 맨 위로)" } else { '쿨메신저 비서 (클릭: 맨 위로)' } }
 
     if ($fresh -gt 0 -and $Script:Settings['새_항목_알림'] -ne '아니오' -and -not $win.IsActive) {
         # 새 할 일·일정이 생기면 포커스는 뺏지 않고 잠깐 맨 앞으로 보여 주기
@@ -402,10 +403,41 @@ $timer.Add_Tick({
     } catch { Write-Log "창 오류: $($_.Exception.Message)" }
 })
 
+
+# ── 알림 영역(작업 표시줄 오른쪽 ^ ) 아이콘: 클릭하면 맨 위로 ──
+function New-TrayIcon {
+    $bmp = New-Object Drawing.Bitmap 32, 32
+    $g = [Drawing.Graphics]::FromImage($bmp)
+    $g.SmoothingMode = 'AntiAlias'
+    $path = New-Object Drawing.Drawing2D.GraphicsPath
+    $path.AddArc(1, 1, 12, 12, 180, 90); $path.AddArc(19, 1, 12, 12, 270, 90)
+    $path.AddArc(19, 19, 12, 12, 0, 90); $path.AddArc(1, 19, 12, 12, 90, 90); $path.CloseFigure()
+    $g.FillPath((New-Object Drawing.SolidBrush ([Drawing.Color]::FromArgb(59, 91, 219))), $path)
+    $pen = New-Object Drawing.Pen ([Drawing.Color]::White), 4.5
+    $pen.StartCap = 'Round'; $pen.EndCap = 'Round'; $pen.LineJoin = 'Round'
+    $g.DrawLines($pen, [Drawing.Point[]]@((New-Object Drawing.Point 8, 17), (New-Object Drawing.Point 14, 23), (New-Object Drawing.Point 25, 10)))
+    $g.Dispose()
+    return [Drawing.Icon]::FromHandle($bmp.GetHicon())
+}
+$Script:Tray = New-Object Windows.Forms.NotifyIcon
+$Script:Tray.Icon = New-TrayIcon
+$Script:Tray.Text = '쿨메신저 비서 (클릭: 맨 위로)'
+$Script:Tray.Add_MouseClick({ param($s, $e) if ($e.Button -eq [Windows.Forms.MouseButtons]::Left) { Bring-Up } })
+$menu = New-Object Windows.Forms.ContextMenuStrip
+[void]$menu.Items.Add('맨 위로 올리기', $null, { Bring-Up })
+[void]$menu.Items.Add('숨기기', $null, { Save-Ui; $win.Hide() })
+[void]$menu.Items.Add('지금 쪽지 확인', $null, { [IO.File]::WriteAllText($ForceFile, 'go') })
+[void]$menu.Items.Add('설정', $null, { Start-Process notepad.exe -ArgumentList "`"$SettingsTxt`"" })
+[void]$menu.Items.Add('-')
+[void]$menu.Items.Add('비서 끄기', $null, { $win.Close() })
+$Script:Tray.ContextMenuStrip = $menu
+$Script:Tray.Visible = $true
+
 $win.Add_Closing({
     $timer.Stop()
     Save-Ui
     $hotkey.Unregister()
+    try { $Script:Tray.Visible = $false; $Script:Tray.Dispose() } catch {}
     try { if ($Script:Engine -and -not $Script:Engine.HasExited) { $Script:Engine.Kill() } } catch {}
 })
 
