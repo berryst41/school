@@ -26,8 +26,12 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,
   .wrap:has(#view.cards){max-width:1480px}
   #view.cards{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
-header{display:flex;align-items:center;gap:10px;margin:6px 0 14px}
-header h1{font-size:21px;margin:0;flex:1}
+header{display:flex;align-items:center;gap:10px;margin:-16px -16px 10px;padding:12px 16px 8px;position:sticky;top:0;z-index:15;background:var(--bg)}
+header h1{font-size:21px;margin:0}
+/* 주차별·날짜별: 제목 바로 옆, 스크롤해도 맨 위에 붙어 있는 단추 */
+header .quick{display:flex;gap:6px;flex:1;min-width:0}
+header .quick button{padding:5px 10px;font-size:14px;border-radius:10px;white-space:nowrap}
+header .quick button.on{background:var(--accent);color:#fff;font-weight:700}
 header.adm{padding-right:78px}
 .gear{position:fixed;top:calc(10px + env(safe-area-inset-top));right:10px;z-index:20;padding:6px 10px;font-size:13px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.15)}
 .gear.on{background:var(--accent);color:#fff;font-weight:700}
@@ -205,12 +209,14 @@ function yearsOf() {
 // ── 화면 ─────────────────────────────
 function render() {
   const inboxNew = S.me.admin ? S.inbox.filter(b => b.status === 'new').length : 0;
-  const tabs = [['week', '🗓️ 이번 주'], ['weeks', '📆 주차별'], ['today', '🌅 오늘의 아침멘트'], ['date', '📅 날짜별'], ...KIND_TABS.map(k => ['k:' + k, KIND_ICON[k] + ' ' + label(k)]), ['all', '📂 모아보기'],
+  const tabs = [['week', '🗓️ 이번 주'], ['today', '🌅 오늘의 아침멘트'], ...KIND_TABS.map(k => ['k:' + k, KIND_ICON[k] + ' ' + label(k)]), ['all', '📂 모아보기'],
     ...(S.me.admin ? [['inbox', `📥 자동 등록${inboxNew ? ` (${inboxNew})` : ''}`]] : [])];
   $('app').innerHTML = `
     ${S.me.admin ? `<button class="gear ${S.tab === 'people' ? 'on' : ''}" data-tab="people">⚙️ 관리</button>` : ''}
     <header class="${S.me.admin ? 'adm' : ''}">
       <h1>📚 4원칙 자료실</h1>
+      <span class="quick">${[['weeks', '📆', '주차별'], ['date', '📅', '날짜별']].map(([k, ic, t]) =>
+        `<button data-tab="${k}" class="${S.tab === k ? 'on' : ''}" title="${t}">${ic}<span> ${t}</span></button>`).join('')}</span>
       <span class="who">${esc(S.me.name)}</span>
       <button class="ghost" id="out" style="padding:6px 10px;font-size:13px">나가기</button>
     </header>
