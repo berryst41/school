@@ -50,8 +50,10 @@ label{display:block;font-weight:700;font-size:14px;margin:12px 0 5px}
 @media (max-width:819px){header{gap:6px}header h1{font-size:17px;white-space:nowrap}header .who{font-size:12px;white-space:nowrap}header button{white-space:nowrap}.tabs{gap:4px;margin-bottom:8px}.tabs button{padding:4px 7px;font-size:12px;border-radius:9px;line-height:1.35}}
 @media (max-width:819px){header .quick{gap:4px}header .quick button{padding:4px 7px;font-size:12px;border-radius:9px}}
 @media (max-width:479px){header .who{display:none}}
-@media (max-width:379px){header .quick button span{display:none}}
-@media (max-width:479px){header.adm .quick button span{display:none}}
+header .quick i{font-style:normal}
+/* 좁은 폰은 아이콘·"별"을 빼고 "주차"·"날짜"만 (두 달력 아이콘이 비슷해 헷갈려서 글자를 남김) */
+@media (max-width:379px){header .quick button :is(i,span){display:none}}
+@media (max-width:479px){header.adm .quick button :is(i,span){display:none}}
 @media (max-width:359px){header.adm h1 span{display:none}}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 12px}
 .chips button{padding:6px 12px;font-size:14px;border-radius:99px}
@@ -219,8 +221,8 @@ function render() {
     ${S.me.admin ? `<button class="gear ${S.tab === 'people' ? 'on' : ''}" data-tab="people">⚙️ 관리</button>` : ''}
     <header class="${S.me.admin ? 'adm' : ''}">
       <h1>📚 4원칙<span> 자료실</span></h1>
-      <span class="quick">${[['weeks', '📆', '주차별'], ['date', '📅', '날짜별']].map(([k, ic, t]) =>
-        `<button data-tab="${k}" class="${S.tab === k ? 'on' : ''}" title="${t}">${ic}<span> ${t}</span></button>`).join('')}</span>
+      <span class="quick">${[['weeks', '📆', '주차'], ['date', '📅', '날짜']].map(([k, ic, t]) =>
+        `<button data-tab="${k}" class="${S.tab === k ? 'on' : ''}" title="${t}별"><i>${ic} </i>${t}<span>별</span></button>`).join('')}</span>
       <span class="who">${esc(S.me.name)}</span>
       <button class="ghost" id="out" style="padding:6px 10px;font-size:13px">나가기</button>
     </header>
