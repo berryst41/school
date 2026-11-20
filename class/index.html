@@ -303,7 +303,7 @@ function viewDate() {
     <div class="weeknav">
       <button class="ghost" id="d-prev">◀ 전날</button>
       <input type="date" id="d-pick" value="${S.date}">
-      <button class="ghost" id="d-next">다음날 ▶</button>
+      <button class="ghost" id="d-next">다음 ▶</button>
     </div>
     <div class="today-h">${y}년 ${m}월 ${d}일 ${DAYS[wd]}요일${S.date === isoDay(now) ? ' (오늘)' : ` · <a href="#" id="d-today">오늘로</a>`}</div>
     <h2 class="sec">${KIND_ICON['아침멘트']} ${label('아침멘트')}${r?.items?.length ? ` <span class="meta">${r.items.length}개</span>` : ''}</h2>
