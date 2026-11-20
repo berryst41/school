@@ -204,8 +204,10 @@ function New-ItemRow($it, $today) {
     $cb.Add_Click({
         param($s, $e)
         $id = [string]$s.Tag
+        Load-Done   # 다른 곳(폰 앱)에서 바뀐 것을 먼저 받아서 지우지 않게
         if ($s.IsChecked) { $Script:Done[$id] = $true } else { $Script:Done.Remove($id) }
         Write-JsonFile $DoneJson @($Script:Done.Keys)
+        $Script:DoneStamp = (Get-Item $DoneJson).LastWriteTimeUtc.Ticks
         Render-List
     })
     [Windows.Controls.DockPanel]::SetDock($cb, 'Left')
@@ -397,6 +399,8 @@ $timer.Add_Tick({
         $Script:Tick++
         $is = if (Test-Path $ItemsJson) { (Get-Item $ItemsJson).LastWriteTimeUtc.Ticks } else { 0 }
         $ss = if (Test-Path $StatusJson) { (Get-Item $StatusJson).LastWriteTimeUtc.Ticks } else { 0 }
+        $ds = if (Test-Path $DoneJson) { (Get-Item $DoneJson).LastWriteTimeUtc.Ticks } else { 0 }
+        if ($ds -ne $Script:DoneStamp) { Load-Done; $Script:ItemsStamp = '' }   # 폰 앱에서 체크한 게 들어오면 다시 그리기
         if ($is -ne $Script:ItemsStamp -or (Get-Date).Date -ne $Script:Day) {
             $Script:ItemsStamp = $is; $Script:Day = (Get-Date).Date; Render-List
         }
