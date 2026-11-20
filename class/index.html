@@ -254,10 +254,10 @@ function sheetMonths(sy) {
 }
 const calYear = (sy, m) => m >= 3 ? sy : sy + 1;
 function ruleOf(sy, ms) {
-  let best = 3, bs = -1;
-  for (const off of [3, 0, 4]) { // 목·월·금
-    const s = Object.keys(ms).filter(m => calWeeks(calYear(sy, +m), +m, off).length === ms[m].length).length;
-    if (s > bs) { bs = s; best = off; }
+  let best = 3, bs = Infinity;
+  for (const off of [3, 0, 4]) { // 목·월·금 — 달마다 (달력 주 수 − 시트 주차 수) 차이의 합이 가장 작은 규칙
+    const s = Object.keys(ms).reduce((t, m) => t + Math.abs(calWeeks(calYear(sy, +m), +m, off).length - ms[m].length), 0);
+    if (s < bs) { bs = s; best = off; }
   }
   return best;
 }
