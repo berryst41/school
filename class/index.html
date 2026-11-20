@@ -51,6 +51,7 @@ label{display:block;font-weight:700;font-size:14px;margin:12px 0 5px}
 @media (max-width:819px){header .quick{gap:4px}header .quick button{padding:4px 7px;font-size:12px;border-radius:9px}}
 @media (max-width:479px){header .who{display:none}}
 @media (max-width:379px){header .quick button span{display:none}}
+@media (max-width:359px){header.adm h1 span{display:none}}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 12px}
 .chips button{padding:6px 12px;font-size:14px;border-radius:99px}
 .chips button.on{background:var(--accent);color:#fff}
@@ -216,7 +217,7 @@ function render() {
   $('app').innerHTML = `
     ${S.me.admin ? `<button class="gear ${S.tab === 'people' ? 'on' : ''}" data-tab="people">⚙️ 관리</button>` : ''}
     <header class="${S.me.admin ? 'adm' : ''}">
-      <h1>📚 4원칙 자료실</h1>
+      <h1>📚 4원칙<span> 자료실</span></h1>
       <span class="quick">${[['weeks', '📆', '주차별'], ['date', '📅', '날짜별']].map(([k, ic, t]) =>
         `<button data-tab="${k}" class="${S.tab === k ? 'on' : ''}" title="${t}">${ic}<span> ${t}</span></button>`).join('')}</span>
       <span class="who">${esc(S.me.name)}</span>
