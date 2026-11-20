@@ -248,17 +248,44 @@ function viewWeek() {
   const week = thisWeekItems(), w0 = week[0];
   if (!w0) { $('view').innerHTML = '<div class="card empty">이번 주 자료가 아직 없어요.</div>'; return; }
   const now = new Date(), dayName = DAYS[now.getDay()];
+  weekView(week, `<div class="today-h">${now.getMonth() + 1}월 ${now.getDate()}일 ${dayName}요일 · 이번 주 = ${w0.month}월 ${w0.week}주차 (자료 ${week.length}개)</div>`, dayName);
+}
+
+// 주차별 탭: 연도·주차를 골라 "이번 주" 탭과 같은 모양으로 그 주 자료를 모아 봐요
+function viewWeeks() {
+  const weeks = [...new Map(S.items.filter(i => i.week && i.month).map(i => [weekKey(i), { k: weekKey(i), year: i.year, month: i.month, week: i.week }])).values()]
+    .sort((a, b) => b.k - a.k); // 최근 주차부터
+  if (!weeks.length) { $('view').innerHTML = '<div class="card empty">주차가 있는 자료가 아직 없어요.</div>'; return; }
+  if (!weeks.some(w => w.k === S.wk)) S.wk = (weeks.find(w => w.k === weekKey(thisWeekItems()[0] || {})) || weeks[0]).k;
+  const idx = weeks.findIndex(w => w.k === S.wk), w = weeks[idx];
+  const week = S.items.filter(i => i.week && weekKey(i) === S.wk);
+  const years = [...new Set(weeks.map(x => x.year))];
+  const isThis = thisWeekItems().some(i => weekKey(i) === S.wk);
+  weekView(week, `
+    <div class="weeknav">
+      <button class="ghost" data-wnav="1"${idx < weeks.length - 1 ? '' : ' disabled'}>◀ 이전</button>
+      <select id="wk-pick">${years.map(y => `<optgroup label="${y}년">${weeks.filter(x => x.year === y).map(x =>
+        `<option value="${x.k}" ${x.k === S.wk ? 'selected' : ''}>${y}년 ${x.month}월 ${x.week}주차</option>`).join('')}</optgroup>`).join('')}</select>
+      <button class="ghost" data-wnav="-1"${idx > 0 ? '' : ' disabled'}>다음 ▶</button>
+    </div>
+    <div class="today-h">${w.year}년 ${w.month}월 ${w.week}주차${isThis ? ' (이번 주)' : ''} · 자료 ${week.length}개</div>`, null);
+  $('wk-pick').onchange = e => { S.wk = +e.target.value; viewWeeks(); };
+  document.querySelectorAll('[data-wnav]').forEach(b => b.onclick = () => { S.wk = weeks[idx + +b.dataset.wnav].k; viewWeeks(); });
+}
+
+// 한 주 자료를 종류별로 한 화면에 (탭 순서와 같게). dayName이 있으면 맨 위에 "오늘의 아침멘트" 칸
+function weekView(week, head, dayName) {
   const byDay = (a, b) => DAYS.indexOf(a.day) - DAYS.indexOf(b.day) || (a.sort ?? 99) - (b.sort ?? 99);
   const ments = week.filter(i => i.kind === '아침멘트').sort(byDay);
   // 맨 위: 오늘의 아침멘트(오늘 요일 것, 주말엔 칸 없음). 그 아래 "이번 주 아침멘트"는 나머지 요일
-  const todayMents = ments.filter(i => i.day === dayName);
+  const todayMents = dayName ? ments.filter(i => i.day === dayName) : [];
   const groups = [
-    ...(TODAY_KINDS[dayName] ? [['오늘', '🌅', '오늘의 아침멘트', todayMents]] : []),
-    ['아침멘트', KIND_ICON['아침멘트'], todayMents.length ? '이번 주 아침멘트(다른 요일)' : '이번 주 아침멘트', ments.filter(i => !todayMents.includes(i))],
+    ...(dayName && TODAY_KINDS[dayName] ? [['오늘', '🌅', '오늘의 아침멘트', todayMents]] : []),
+    ['아침멘트', KIND_ICON['아침멘트'], !dayName ? label('아침멘트') : todayMents.length ? '이번 주 아침멘트(다른 요일)' : '이번 주 아침멘트', ments.filter(i => !todayMents.includes(i))],
     ...KIND_TABS.map(k => [k, KIND_ICON[k], label(k), week.filter(i => TAB_KINDS(k).includes(i.kind)).sort(byDay)])
   ];
   $('view').innerHTML = `
-    <div class="today-h">${now.getMonth() + 1}월 ${now.getDate()}일 ${dayName}요일 · 이번 주 = ${w0.month}월 ${w0.week}주차 (자료 ${week.length}개)</div>
+    ${head}
     <details class="go">
       <summary>📍 바로가기 <span class="meta">(눌러서 펴기·접기)</span></summary>
       <div class="chips">${groups.map(([k, ic, t, l]) => `<button data-go="${esc(k)}"${l.length ? '' : ' disabled style="opacity:.45"'}>${ic} ${esc(t)} ${l.length}</button>`).join('')}</div>
