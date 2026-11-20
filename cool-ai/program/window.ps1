@@ -101,7 +101,14 @@ foreach ($n in 'Header', 'Opa', 'BtnPin', 'BtnRefresh', 'BtnSet', 'BtnMin', 'Btn
 
 $Script:Settings  = Read-Settings
 $Script:Done      = @{}
-foreach ($d in @(Read-JsonFile $DoneJson @())) { if ($d) { $Script:Done[[string]$d] = $true } }
+$Script:DoneStamp = ''
+# done.json은 이 창과 AI 비서 PC 일꾼(폰 앱에서 체크한 것)이 함께 써요 → 바뀌면 다시 읽어요
+function Load-Done {
+    $Script:Done = @{}
+    foreach ($d in @(Read-JsonFile $DoneJson @())) { if ($d) { $Script:Done[[string]$d] = $true } }
+    $Script:DoneStamp = if (Test-Path $DoneJson) { (Get-Item $DoneJson).LastWriteTimeUtc.Ticks } else { 0 }
+}
+Load-Done
 $Script:Seen      = $null      # 처음 그릴 때 본 항목들 (그 뒤에 생긴 건 '새 항목')
 $Script:NewIds    = @{}
 $Script:ShowDone  = $false
