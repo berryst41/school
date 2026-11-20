@@ -1,4 +1,4 @@
-# 🤖 cool-ai/ — 쿨메신저 비서 (2026-11-18 시작, 지금 v0.2.3)
+# 🤖 cool-ai/ — 쿨메신저 비서 (2026-11-18 시작, 지금 v0.2.4)
 나중에 이어서 고칠 때 이 파일부터 읽어요. 고치면 이 파일과 `cool-ai/README.md` 버전 기록을 함께 고쳐요. 공통 규칙은 school 맨 위 `CLAUDE.md`에 있어요.
 
 ### 무엇
@@ -16,6 +16,10 @@
 - `common.ps1` 경로·`설정.txt` 읽기·JSON 저장 / `engine.ps1` 숨김 엔진(쪽지 읽기 + 제미나이) / `window.ps1` WPF 창(엔진을 자식으로 켜고, 죽으면 30초 안에 다시 켬)
 - `install.ps1`·`uninstall.ps1` + `1_설치하기.bat`·`2_제거하기.bat`, `사용방법.txt`. 고친 뒤 `cool-ai.zip`을 다시 만들어요(`Compress-Archive -Path 'program\*'`).
 - 데이터(`%LOCALAPPDATA%\CoolAI\`): 설정.txt(API 키), items.json, msgs.json, state.json(lastKey·since·favDone), done.json, ui.json, status.json, log.txt. **절대 커밋하지 않기.**
+
+### AI 비서와 맞추기 (v0.2.4~)
+- toy-store `AI-비서/pc-일꾼/worker.js`(PC 일꾼)가 items.json·done.json을 20초마다 읽어 정리된 항목만 Supabase `ai_cool`에 올리고, 앱에서 체크한 것은 done.json에 써요(msgs.json·설정.txt는 안 읽음).
+- 그래서 window.ps1은 done.json을 **바뀔 때마다 다시 읽고**(2초 타이머, `Load-Done`), 체크할 때도 먼저 다시 읽은 뒤 써요. done.json 모양(항목 id 문자열 배열)을 바꾸면 PC 일꾼도 같이 고쳐야 해요.
 
 ### 쿨메신저 쪽지 파일
 - `%LOCALAPPDATA%\CoolMessenger\Memo\<계정>.udb` = 암호 없는 SQLite(WAL 사용). 복사본(udb+wal)을 `C:\Windows\System32\winsqlite3.dll`로 읽음.
