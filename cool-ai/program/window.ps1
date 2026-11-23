@@ -241,6 +241,17 @@ function New-ItemRow($it, $today) {
     $row = New-Object Windows.Controls.Border
     $row.Padding = '4,4,4,4'; $row.Margin = '0,1,0,1'; $row.CornerRadius = '5'
     $row.ToolTip = '두 번 누르면 원래 쪽지를 볼 수 있어요'
+    if (Test-Mine $it) {
+        $row.ToolTip = '직접 넣은 항목이에요 · 오른쪽 클릭: 지우기'
+        $cm = New-Object Windows.Controls.ContextMenu
+        $mi = New-Object Windows.Controls.MenuItem
+        $mi.Header = '🗑 지우기'; $mi.Tag = [string]$it.id
+        $mi.Add_Click({ param($s, $e)
+            $r = [Windows.MessageBox]::Show($win, '이 항목을 지울까요? (AI 비서 앱에서도 사라져요)', '쿨메신저 비서', 'YesNo', 'Question')
+            if ($r -eq 'Yes') { Remove-MyItem ([string]$s.Tag); Render-List } })
+        [void]$cm.Items.Add($mi)
+        $row.ContextMenu = $cm
+    }
     if ($Script:NewIds.ContainsKey([string]$it.id)) { $row.Background = '#FFFFF3BF' } else { $row.Background = 'Transparent' }
     $g = New-Object Windows.Controls.DockPanel
     $cb = New-Object Windows.Controls.CheckBox
@@ -292,7 +303,7 @@ function New-ItemRow($it, $today) {
 
 function Render-List {
     $today = (Get-Date).Date
-    $items = @(Read-JsonFile $ItemsJson @())
+    $items = @(Get-AllItems)
     if ($null -eq $Script:Seen) {
         $Script:Seen = @{}; foreach ($it in $items) { $Script:Seen[[string]$it.id] = $true }
     }
