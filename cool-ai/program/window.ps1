@@ -83,6 +83,24 @@ public class CoolHotkey {
           <TextBlock x:Name="TitleText" Text="쿨메신저 비서" Foreground="White" FontWeight="Bold" VerticalAlignment="Center"/>
         </DockPanel>
       </Border>
+      <Border x:Name="AddBox" DockPanel.Dock="Top" Visibility="Collapsed" Background="#FFEDF2FF" Padding="8,6,8,6">
+        <StackPanel>
+          <DockPanel Margin="0,0,0,4">
+            <ComboBox x:Name="AddKind" DockPanel.Dock="Left" Width="108" Margin="0,0,4,0" SelectedIndex="0">
+              <ComboBoxItem Content="✅ 마감 할 일"/>
+              <ComboBoxItem Content="📅 일정"/>
+              <ComboBoxItem Content="💡 알아 둘 것"/>
+            </ComboBox>
+            <TextBox x:Name="AddText" VerticalContentAlignment="Center" ToolTip="무엇을 넣을까요? (Enter: 넣기, Esc: 닫기)"/>
+          </DockPanel>
+          <DockPanel LastChildFill="False">
+            <DatePicker x:Name="AddDate" DockPanel.Dock="Left" Width="118" Margin="0,0,4,0" ToolTip="마감일·날짜 (알아 둘 것은 없어도 돼요)"/>
+            <TextBox x:Name="AddTime" DockPanel.Dock="Left" Width="48" VerticalContentAlignment="Center" ToolTip="시각 (예: 14:30, 없어도 돼요)"/>
+            <Button x:Name="AddCancel" DockPanel.Dock="Right" Content="닫기" Width="38" Foreground="#FF495057"/>
+            <Button x:Name="AddOk" DockPanel.Dock="Right" Content="넣기" Width="40" Foreground="#FF3B5BDB" FontWeight="Bold"/>
+          </DockPanel>
+        </StackPanel>
+      </Border>
       <Border DockPanel.Dock="Bottom" Padding="10,4,18,4" Background="#FFF1F3F5" CornerRadius="0,0,9,9">
         <DockPanel>
           <TextBlock x:Name="DoneToggle" DockPanel.Dock="Right" FontSize="11" Foreground="#FF3B5BDB" Cursor="Hand" Margin="8,0,0,0"/>
@@ -98,7 +116,7 @@ public class CoolHotkey {
 '@
 $win = [Windows.Markup.XamlReader]::Load((New-Object Xml.XmlNodeReader $xaml))
 $ui = @{}
-foreach ($n in 'Header', 'Opa', 'BtnPin', 'BtnRefresh', 'BtnSet', 'BtnMin', 'BtnClose', 'TitleText', 'DoneToggle', 'StatusText', 'List') { $ui[$n] = $win.FindName($n) }
+foreach ($n in 'AddBox', 'AddKind', 'AddText', 'AddDate', 'AddTime', 'AddOk', 'AddCancel', 'BtnAdd', 'Header', 'Opa', 'BtnPin','BtnRefresh', 'BtnSet', 'BtnMin', 'BtnClose', 'TitleText', 'DoneToggle', 'StatusText', 'List') { $ui[$n] = $win.FindName($n) }
 
 $Script:Settings  = Read-Settings
 $Script:Done      = @{}
