@@ -394,7 +394,8 @@ function Update-Status {
 function Start-Engine {
     $ps = Join-Path $env:WINDIR 'System32\WindowsPowerShell\v1.0\powershell.exe'
     $eng = Join-Path $PSScriptRoot 'engine.ps1'
-    $Script:Engine = Start-Process $ps -ArgumentList "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$eng`" -ParentPid $PID" -WindowStyle Hidden -PassThru
+    $ch = Join-Path $env:WINDIR 'System32\conhost.exe'   # 터미널 창이 뜨지 않게 (v0.2.8)
+    $Script:Engine = Start-Process $ch -ArgumentList "--headless `"$ps`" -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$eng`" -ParentPid $PID" -WindowStyle Hidden -PassThru
 }
 
 # ── 단추·마우스 ──
