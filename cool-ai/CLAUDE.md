@@ -1,4 +1,4 @@
-# 🤖 cool-ai/ — 쿨메신저 비서 (2026-11-18 시작, 지금 v0.2.6)
+# 🤖 cool-ai/ — 쿨메신저 비서 (2026-11-18 시작, 지금 v0.2.7)
 나중에 이어서 고칠 때 이 파일부터 읽어요. 고치면 이 파일과 `cool-ai/README.md` 버전 기록을 함께 고쳐요. 공통 규칙은 school 맨 위 `CLAUDE.md`에 있어요.
 
 ### 무엇
@@ -42,3 +42,4 @@
 
 - 2026-11-23 v0.2.5: 분류 이름·기준 바꿈(사용자 결정) — kind 값은 그대로(todo/note/remember), 뜻만 todo=마감 할 일(제출 포함), note=일정(예전 '적어야 할 것'과 거의 같음), remember=알아 둘 것(안내·규칙). 학교 PC items.json의 체크 안 된 항목 12개는 손으로 다시 분류함(백업: backup/items-분류바꾸기전-*.json). AI 비서 v0.15.1과 짝.
 - 2026-11-23 v0.2.6: 마감일 없는 할 일(수시·상시·생길 때마다)은 remember로(사용자 결정) — engine.ps1 프롬프트 todo는 due 필수. 학교 PC items.json의 체크 안 된 due 없는 todo 9개를 remember로 바꿈(백업 backup/items-마감없는할일-*.json). AI 비서 v0.16.1도 앱에서 due 없는 todo를 알아 둘 것으로 보여 줌.
+- 2026-11-23 v0.2.7: ➕ 직접 넣기 — 창 AddBox(종류·글·DatePicker·시각) → `my.json`(common.ps1 $MyJson, id my-yyyyMMddHHmmssfff, sender ✍️ 직접). 엔진은 my.json을 안 건드려요(items.json 덮어쓰기 경쟁 피함). 창은 items.json+my.json을 합쳐 그림(Get-AllItems), 직접 항목(my-/app-)은 오른쪽 클릭 지우기·원래 쪽지 없음. 마감 없는 todo는 remember로, note는 날짜 필수. AI 비서 PC 일꾼 v0.9.0이 my.json을 올리고, 앱에서 넣은 app-… 항목을 my.json에 더하고, 앱에서 고친 직접 항목도 my.json에 반영. AI 비서 v0.18.0과 짝.
