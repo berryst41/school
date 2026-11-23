@@ -414,6 +414,36 @@ $ui.BtnSet.Add_Click({ [void](Read-Settings); Start-Process notepad.exe -Argumen
 $ui.StatusText.Add_MouseLeftButtonUp({ if ($ui.StatusText.Text -match 'API 키|모델') { Start-Process notepad.exe -ArgumentList "`"$SettingsTxt`"" } })
 $ui.BtnMin.Add_Click({ Save-Ui; $win.Hide() })   # 작업 표시줄에 안 뜨니 내리지 않고 숨겨요
 $ui.BtnClose.Add_Click({ $win.Close() })
+# ── ➕ 직접 넣기 ──
+function Show-AddBox([bool]$on) {
+    $ui.AddBox.Visibility = if ($on) { 'Visible' } else { 'Collapsed' }
+    if ($on) { $win.ShowActivated = $true; [void]$win.Activate(); [void]$ui.AddText.Focus() }
+}
+function Submit-Add {
+    $text = $ui.AddText.Text.Trim()
+    if (-not $text) { [void]$ui.AddText.Focus(); return }
+    $kind = @('todo', 'note', 'remember')[[Math]::Max(0, $ui.AddKind.SelectedIndex)]
+    $due = if ($ui.AddDate.SelectedDate) { $ui.AddDate.SelectedDate.ToString('yyyy-MM-dd', [Globalization.CultureInfo]::InvariantCulture) } else { '' }
+    $time = ''
+    if ($ui.AddTime.Text.Trim() -match '^(\d{1,2})[:시\s]*(\d{0,2})') {
+        $h = [int]$Matches[1]; $m = if ($Matches[2]) { [int]$Matches[2] } else { 0 }
+        if ($h -le 23 -and $m -le 59) { $time = '{0:D2}:{1:D2}' -f $h, $m }
+    }
+    if ($kind -eq 'note' -and -not $due) { $ui.StatusText.Foreground = '#FFE03131'; $ui.StatusText.Text = '⚠ 일정은 날짜를 골라 주세요'; return }
+    if ($kind -eq 'todo' -and -not $due) { $kind = 'remember' }   # 마감 없는 할 일은 '알아 둘 것'으로 (사용자 결정)
+    Add-MyItem $kind $text $due $time
+    $ui.AddText.Text = ''; $ui.AddTime.Text = ''; $ui.AddDate.SelectedDate = $null
+    $ui.StatusText.Foreground = '#FF2B8A3E'; $ui.StatusText.Text = '✔ 넣었어요 · AI 비서 앱에도 1분 안에 들어가요'
+    $Script:ItemsStamp = ''; Render-List
+    [void]$ui.AddText.Focus()
+}
+$ui.BtnAdd.Add_Click({ Show-AddBox ($ui.AddBox.Visibility -ne 'Visible') })
+$ui.AddOk.Add_Click({ Submit-Add })
+$ui.AddCancel.Add_Click({ Show-AddBox $false })
+$ui.AddText.Add_KeyDown({ param($s, $e)
+    if ($e.Key -eq 'Return') { Submit-Add; $e.Handled = $true }
+    elseif ($e.Key -eq 'Escape') { Show-AddBox $false; $e.Handled = $true } })
+$ui.AddTime.Add_KeyDown({ param($s, $e) if ($e.Key -eq 'Return') { Submit-Add; $e.Handled = $true } })
 $ui.DoneToggle.Add_MouseLeftButtonUp({ $Script:ShowDone = -not $Script:ShowDone; Render-List })
 $win.Add_Activated({ if ($Script:NewIds.Count -gt 0) { $Script:NewIds = @{}; Render-List } })
 $win.Add_LocationChanged({ $Script:UiDirty = $true })
@@ -453,7 +483,7 @@ $timer.Add_Tick({
         if ($stopEvent.WaitOne(0)) { $win.Close(); return }
         if ($showEvent.WaitOne(0)) { Bring-Up }
         $Script:Tick++
-        $is = if (Test-Path $ItemsJson) { (Get-Item $ItemsJson).LastWriteTimeUtc.Ticks } else { 0 }
+        $is = (if (Test-Path $ItemsJson) { (Get-Item $ItemsJson).LastWriteTimeUtc.Ticks } else { 0 }), (if (Test-Path $MyJson) { (Get-Item $MyJson).LastWriteTimeUtc.Ticks } else { 0 }) -join ':'
         $ss = if (Test-Path $StatusJson) { (Get-Item $StatusJson).LastWriteTimeUtc.Ticks } else { 0 }
         $ds = if (Test-Path $DoneJson) { (Get-Item $DoneJson).LastWriteTimeUtc.Ticks } else { 0 }
         if ($ds -ne $Script:DoneStamp) { Load-Done; $Script:ItemsStamp = '' }   # 폰 앱에서 체크한 게 들어오면 다시 그리기
