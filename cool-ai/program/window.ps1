@@ -192,8 +192,34 @@ function Get-Date-Or-Null($s, $fmt) {
     return $null
 }
 
+# ── 직접 넣은 항목 (my.json) — 쪽지에서 나온 게 아니라 이 창(my-…)이나 AI 비서 앱(app-…)에서 넣은 것 ──
+function Test-Mine($it) { return ([string]$it.id) -match '^(my|app)-' }
+function Get-AllItems {
+    $a = New-Object Collections.ArrayList
+    foreach ($it in @(Read-JsonFile $ItemsJson @())) { if ($it) { [void]$a.Add($it) } }
+    foreach ($it in @(Read-JsonFile $MyJson @())) { if ($it) { [void]$a.Add($it) } }
+    return $a
+}
+function Add-MyItem($kind, $text, $due, $time) {
+    $now = Get-Date
+    $mine = New-Object Collections.ArrayList
+    foreach ($it in @(Read-JsonFile $MyJson @())) { if ($it) { [void]$mine.Add($it) } }   # 쓰기 바로 전에 다시 읽기(PC 일꾼도 이 파일을 써요)
+    [void]$mine.Add([pscustomobject]@{
+        id = 'my-' + $now.ToString('yyyyMMddHHmmssfff'); msg = $null; kind = $kind; text = $text; due = $due; time = $time; fav = $false
+        sender = '✍️ 직접'; recv = $now.ToString('yyyy\/MM\/dd HH:mm', [Globalization.CultureInfo]::InvariantCulture)
+        added = $now.ToString('yyyy-MM-dd HH:mm:ss')
+    })
+    Write-JsonFile $MyJson @($mine)
+}
+function Remove-MyItem($id) {
+    $mine = @(Read-JsonFile $MyJson @()) | Where-Object { $_ -and [string]$_.id -ne $id }
+    Write-JsonFile $MyJson @($mine)
+    $Script:ItemsStamp = ''
+}
+
 function Show-Original($item) {
-    $all = Read-JsonFile $MsgsJson ([pscustomobject]@{})
+    if (Test-Mine $item) { return }   # 직접 넣은 건 원래 쪽지가 없어요
+    $all =Read-JsonFile $MsgsJson ([pscustomobject]@{})
     $m = $all.([string]$item.msg)
     $w = New-Object Windows.Window
     $w.Title = if ($m) { $m.title } else { '원래 쪽지' }
