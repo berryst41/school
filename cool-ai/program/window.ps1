@@ -483,7 +483,7 @@ $timer.Add_Tick({
         if ($stopEvent.WaitOne(0)) { $win.Close(); return }
         if ($showEvent.WaitOne(0)) { Bring-Up }
         $Script:Tick++
-        $is = (if (Test-Path $ItemsJson) { (Get-Item $ItemsJson).LastWriteTimeUtc.Ticks } else { 0 }), (if (Test-Path $MyJson) { (Get-Item $MyJson).LastWriteTimeUtc.Ticks } else { 0 }) -join ':'
+        $is = "$(if (Test-Path $ItemsJson) { (Get-Item $ItemsJson).LastWriteTimeUtc.Ticks } else { 0 }):$(if (Test-Path $MyJson) { (Get-Item $MyJson).LastWriteTimeUtc.Ticks } else { 0 })"
         $ss = if (Test-Path $StatusJson) { (Get-Item $StatusJson).LastWriteTimeUtc.Ticks } else { 0 }
         $ds = if (Test-Path $DoneJson) { (Get-Item $DoneJson).LastWriteTimeUtc.Ticks } else { 0 }
         if ($ds -ne $Script:DoneStamp) { Load-Done; $Script:ItemsStamp = '' }   # 폰 앱에서 체크한 게 들어오면 다시 그리기
