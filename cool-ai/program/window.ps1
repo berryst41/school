@@ -73,6 +73,7 @@ public class CoolHotkey {
             <TextBlock Text="◐" Foreground="White" VerticalAlignment="Center" Margin="0,0,3,0" ToolTip="투명도"/>
             <Slider x:Name="Opa" Width="58" Minimum="0.25" Maximum="1" Value="1" VerticalAlignment="Center" Margin="0,0,4,0"
                     ToolTip="투명도 (창 위에서 Ctrl + 마우스 휠로도 바꿀 수 있어요)"/>
+            <Button x:Name="BtnAdd" Content="➕" ToolTip="직접 넣기 (쪽지가 없어도 할 일·일정·알아 둘 것을 넣어요. AI 비서에도 넘어가요)"/>
             <Button x:Name="BtnPin" Content="📌"/>
             <Button x:Name="BtnRefresh" Content="⟳" ToolTip="지금 쿨메신저 쪽지 확인하기"/>
             <Button x:Name="BtnSet" Content="⚙" ToolTip="설정 (API 키·단축키 등)"/>
