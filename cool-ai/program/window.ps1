@@ -272,9 +272,9 @@ function Render-List {
 
     $ui.List.Children.Clear()
     $sections = @(
-        @{ kind = 'todo';     title = '✅ 해야 할 일';   color = '#FFC92A2A' },
-        @{ kind = 'note';     title = '📝 적어야 할 것'; color = '#FF1971C2' },
-        @{ kind = 'remember'; title = '💡 기억할 것';    color = '#FF2B8A3E' }
+        @{ kind = 'todo';     title = '✅ 마감 할 일';   color = '#FFC92A2A' },
+        @{ kind = 'note';     title = '📅 일정';         color = '#FF1971C2' },
+        @{ kind = 'remember'; title = '💡 알아 둘 것';   color = '#FF2B8A3E' }
     )
     $sortKey = { param($x) $(if ($x.due) { "$($x.due) $($x.time)" } else { '9999' }) + " $($x.recv)" }
     foreach ($sec in $sections) {

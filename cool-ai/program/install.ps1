@@ -50,7 +50,7 @@ try {
         $sc.Arguments   = $opts
         $sc.WindowStyle = 7
         $sc.IconLocation = "$env:WINDIR\System32\shell32.dll,165"
-        $sc.Description = '쿨메신저 쪽지를 AI가 할 일·적을 것·기억할 것으로 정리'
+        $sc.Description = '쿨메신저 쪽지를 AI가 마감 할 일·일정·알아 둘 것으로 정리'
         $sc.Save()
     }
 
