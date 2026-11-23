@@ -212,8 +212,8 @@ function Add-MyItem($kind, $text, $due, $time) {
     Write-JsonFile $MyJson @($mine)
 }
 function Remove-MyItem($id) {
-    $mine = @(Read-JsonFile $MyJson @()) | Where-Object { $_ -and [string]$_.id -ne $id }
-    Write-JsonFile $MyJson @($mine)
+    $mine = @(@(Read-JsonFile $MyJson @()) | Where-Object { $_ -and [string]$_.id -ne $id })
+    Write-JsonFile $MyJson $mine
     $Script:ItemsStamp = ''
 }
 
