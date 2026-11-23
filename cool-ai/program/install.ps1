@@ -40,8 +40,10 @@ try {
     [IO.File]::WriteAllText($SettingsTxt, $text, (New-Object Text.UTF8Encoding($true)))
 
     # 바로가기: 컴퓨터 켤 때 자동 시작 + 바탕화면
-    $ps   = Join-Path $env:WINDIR 'System32\WindowsPowerShell\v1.0\powershell.exe'
-    $opts = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$(Join-Path $prog 'window.ps1')`""
+    # 윈도우 11은 powershell을 '터미널' 창으로 열어서 -WindowStyle Hidden이 안 먹고 작업 표시줄에 검은 창이 남아요
+    # (그 창을 닫으면 비서도 꺼져요) → conhost --headless 로 창 없이 켜요 (v0.2.8)
+    $ps   = Join-Path $env:WINDIR 'System32\conhost.exe'
+    $opts = "--headless `"$(Join-Path $env:WINDIR 'System32\WindowsPowerShell\v1.0\powershell.exe')`" -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$(Join-Path $prog 'window.ps1')`""
     $shell = New-Object -ComObject WScript.Shell
     foreach ($lnk in (Join-Path ([Environment]::GetFolderPath('Startup')) '쿨메신저 비서.lnk'),
                      (Join-Path ([Environment]::GetFolderPath('Desktop')) '쿨메신저 비서.lnk')) {
