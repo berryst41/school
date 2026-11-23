@@ -1,0 +1,10 @@
+{
+  "name": "4원칙 학급 운영 자료실",
+  "short_name": "4원칙 자료실",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f8f4",
+  "theme_color": "#2f9e44",
+  "icons": [{ "src": "../images/class-icon.png", "sizes": "512x512", "type": "image/png" }]
+}

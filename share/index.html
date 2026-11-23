@@ -98,6 +98,7 @@ input[type=text]{width:100%;font-size:17px;padding:12px 14px;border-radius:12px;
 .item .meta .nm{flex:1;min-width:0;font-size:14px;overflow:hidden}
 .item .meta .nm div{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .item .meta .sz{font-size:12px;color:var(--muted)}
+.item .fixvid{margin:0 8px 8px;border:1px solid var(--line,#ddd);border-radius:10px;background:transparent;color:inherit;padding:6px 10px;font:inherit;font-size:13px;cursor:pointer}
 .item .hide{position:absolute;top:6px;right:6px;border:0;border-radius:10px;background:rgba(0,0,0,.6);color:#fff;
   font-size:13px;padding:5px 8px;cursor:pointer}
 .empty{text-align:center;color:var(--muted);padding:30px 10px}
@@ -348,6 +349,7 @@ footer{text-align:center;color:var(--muted);font-size:13px;margin-top:30px}
 </div>
 
 <script src="qrcode.js"></script>
+<script src="convert.js"></script>
 <script>
 // 봄바나나와 같은 Supabase 프로젝트를 써요. 파일은 'qrshare' 저장 공간에 반 폴더별로 들어가요.
 const SUPABASE_URL = 'https://bmfihlddiyfeejrdrigm.supabase.co';
@@ -878,6 +880,7 @@ function fileCard(f){
     `<div class="meta"><div class="nm"><div title="${esc(f.name)}">${esc(f.name)}</div>` +
     `<div class="sz">${who}${fmtTime(f.created_at)} · ${fmtSize(Number(f.size))}</div></div>` +
     `<a class="btn sm" href="${publicUrl(f.path, f.name)}">⬇️ 받기</a></div>` +
+    (teacherKey && k === 'video' && window.VideoFix && VideoFix.looksLikeMp4(f) ? `<button class="fixvid" title="HEVC 영상이면 PC에서도 보이게 H.264로 바꿔요">🔄 PC용으로 변환</button>` : '') +
     (teacherKey ? `<button class="hide">🗑️ 삭제</button>` : '');
   const img = el.querySelector('img');
   if (img) img.onclick = () => { $('zoomImg').src = url; $('zoom').classList.add('on'); };
@@ -886,20 +889,63 @@ function fileCard(f){
     if (!confirm(`"${f.name}" 파일을 삭제할까요?\n학생들 화면에서도 사라지고 되돌릴 수 없어요.`)) return;
     hb.disabled = true;
     try {
-      // 목록에서 빼고(관리 키 확인), 이어서 저장 공간의 실제 파일을 지워요.
-      const path = await rpc('qr_delete_file', { p_folder: F.id, p_key: teacherKey, p_file_id: f.id });
-      await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}`, {
-        method: 'DELETE',
-        headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prefixes: [path] })
-      }).catch(() => {});
+      await removeFile(f);
       refresh();
     } catch (e) {
       hb.disabled = false;
       alert('삭제하지 못했어요: ' + e.message);
     }
   };
+  const fx = el.querySelector('.fixvid');
+  if (fx) fx.onclick = () => fixExistingVideo(f);
   return el;
+}
+
+// 목록에서 빼고(관리 키 확인), 이어서 저장 공간의 실제 파일을 지워요.
+async function removeFile(f){
+  const path = await rpc('qr_delete_file', { p_folder: F.id, p_key: teacherKey, p_file_id: f.id });
+  await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}`, {
+    method: 'DELETE',
+    headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prefixes: [path] })
+  }).catch(() => {});
+}
+
+// 이미 올라온 HEVC 영상을 선생님이 PC에서도 보이는 형식으로 바꿔요.
+let converting = false;
+async function fixExistingVideo(f){
+  if (converting || uploading) { alert('다른 작업이 끝난 뒤에 눌러 주세요.'); return; }
+  if (!confirm(`"${f.name}" 영상을 PC에서도 보이는 형식(H.264)으로 바꿀까요?\n\n영상 길이에 따라 몇 분 걸릴 수 있어요. 바꾸는 동안 이 창을 닫지 마세요. 바뀐 영상이 올라가면 예전 영상은 지워져요.`)) return;
+  converting = true;
+  try {
+    showConvertModal(f.name, 0, '영상을 내려받는 중이에요');
+    const blob = await (await fetch(publicUrl(f.path))).blob();
+    const file = new File([blob], f.name, { type: 'video/mp4' });
+    if (!(await VideoFix.isHevc(file))) {
+      $('upModal').hidden = true;
+      alert('이 영상은 이미 PC에서도 잘 보이는 형식이에요. 바꿀 필요가 없어요.');
+      return;
+    }
+    const g = await VideoFix.convertToH264(file, p => showConvertModal(f.name, p));
+    if (g.size > MAX_BYTES) throw new Error('바꾼 영상이 50MB가 넘어서 올릴 수 없어요.');
+    const path = `${F.id}/${Date.now().toString(36)}-${randStr(6)}.mp4`;
+    showConvertModal(f.name, 1, '바꾼 영상을 올리는 중이에요');
+    await uploadOne(path, g, () => {});
+    await rpc('qr_add_file', { p_folder: F.id, p_path: path, p_name: f.name, p_type: 'video/mp4',
+      p_uploader: f.uploader || '', p_key: teacherKey });
+    await removeFile(f);
+    $('upIcon').textContent = '✅';
+    $('upTitle').textContent = '바꿨어요!';
+    $('upWarn').hidden = true;
+    $('upInfo').textContent = '이제 PC에서도 영상이 보여요.';
+    setTimeout(() => { $('upModal').hidden = true; }, 2500);
+    refresh();
+  } catch (e) {
+    $('upModal').hidden = true;
+    alert('바꾸지 못했어요: ' + e.message);
+  } finally {
+    converting = false;
+  }
 }
 
 async function downloadAll(){
@@ -975,6 +1021,17 @@ function showUpModal(current, frac){
   $('upFill').style.width = pct + '%';
   $('upInfo').textContent = `${Math.min(batch.done + 1, batch.total)} / ${batch.total}개 · ${current}`;
 }
+// HEVC 영상을 바꾸는 동안 보여 주는 안내예요. frac: 0~1 (0이면 변환 도구를 준비하는 중)
+function showConvertModal(name, frac, title){
+  $('upModal').hidden = false;
+  $('upIcon').textContent = '🎞️';
+  $('upTitle').textContent = title || '영상을 PC에서도 볼 수 있게 바꾸는 중이에요';
+  $('upWarn').hidden = false;
+  $('upDone').hidden = true;
+  $('upFill').style.width = (frac * 100) + '%';
+  $('upInfo').textContent = title ? name : `${name} · ${frac > 0 ? Math.round(frac * 100) + '%' : '변환 도구를 준비하는 중…'} · 몇 분 걸릴 수 있어요`;
+}
+
 function finishUpModal(){
   if (!batch.total) return;
   const ok = batch.total - batch.failed;
@@ -996,7 +1053,26 @@ async function runQueue(){
   while (pending.length) {
     const job = pending.shift();
     showUpModal(job.file.name, 0);
-    const f = job.file;
+    let f = job.file;
+    // 폰으로 찍은 HEVC(H.265) 영상은 윈도우 PC에서 화면이 안 나와서, 올리기 전에 H.264로 바꿔요.
+    if (window.VideoFix && VideoFix.looksLikeMp4(f)) {
+      try {
+        if (await VideoFix.isHevc(f)) {
+          setStatus(job, 'PC에서도 보이게 바꾸는 중');
+          converting = true;
+          showConvertModal(f.name, 0);
+          const g = await VideoFix.convertToH264(f, p => showConvertModal(f.name, p));
+          if (g.size <= MAX_BYTES) f = g;
+          else setStatus(job, '바꾼 영상이 50MB가 넘어 원래 영상으로 올려요');
+          showUpModal(f.name, 0);
+        }
+      } catch (e) {
+        // 바꾸지 못해도 올리기는 계속해요. (원래 영상 그대로)
+        showUpModal(f.name, 0);
+      } finally {
+        converting = false;
+      }
+    }
     // 여러 학생이 동시에 올려도 겹치지 않게, 파일마다 시간+무작위 이름을 붙여요.
     const m = /\.([a-z0-9]{1,8})$/i.exec(f.name);
     const path = `${F.id}/${Date.now().toString(36)}-${randStr(6)}${m ? '.' + m[1].toLowerCase() : ''}`;
