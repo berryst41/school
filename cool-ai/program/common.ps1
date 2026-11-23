@@ -7,6 +7,7 @@ $Script:MsgsJson    = Join-Path $AppDir 'msgs.json'      # 원래 쪽지 (엔진
 $Script:StatusJson  = Join-Path $AppDir 'status.json'    # 엔진 상태 (엔진이 씀)
 $Script:StateJson   = Join-Path $AppDir 'state.json'     # 어디까지 읽었는지 (엔진이 씀)
 $Script:DoneJson    = Join-Path $AppDir 'done.json'      # 완료 표시 (창이 씀)
+$Script:MyJson      = Join-Path $AppDir 'my.json'        # 직접 넣은 항목 (창·AI 비서 PC 일꾼이 씀, 엔진은 안 건드려요)
 $Script:UiJson      = Join-Path $AppDir 'ui.json'        # 창 위치·투명도 (창이 씀)
 $Script:ForceFile   = Join-Path $AppDir 'force.txt'      # 지금 확인 신호
 $Script:LogTxt      = Join-Path $AppDir 'log.txt'
