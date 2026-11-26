@@ -70,6 +70,11 @@
 <td>A4 그림을 N장으로 쪼개 재단선이 있는 PDF로 만들고, 칠한 스캔본을 한 장으로 합쳐요</td>
 <td align="center"><a href="https://berryst41.github.io/school/coop-art/"><b>🎨&nbsp;열&#8288;기</b></a></td>
 </tr>
+<tr>
+<td>⏱️ <a href="https://github.com/berryst41/school/tree/main/move-timer"><b>이동 타이머</b></a></td>
+<td>정해 둔 시간마다 "이동하세요!"를 목소리로 알려 주고 학생 수만큼 저절로 다시 세요</td>
+<td align="center"><a href="https://berryst41.github.io/school/move-timer/"><b>⏱️&nbsp;열&#8288;기</b></a></td>
+</tr>
 </table>
 
 > [!TIP]
@@ -92,6 +97,9 @@ school/
 │   └── README.md        설명
 ├── coop-art/
 │   ├── index.html    🎨 협동화 메이커
+│   └── README.md        설명
+├── move-timer/
+│   ├── index.html    ⏱️ 이동 타이머
 │   └── README.md        설명
 ├── share/
 │   ├── index.html    📮 자료 공유 사이트

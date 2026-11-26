@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>이동 타이머</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* 레이아웃: 교실 칠판 앞 큰 화면용 — 가운데 큰 시계, 아래 진행 칸, 그 밑에 설정 */
+:root {
+  --bg: #eef2f4;        /* 바탕 */
+  --panel: #ffffff;     /* 설정 상자 */
+  --ink: #17303d;       /* 글자 */
+  --muted: #5d7380;     /* 흐린 글자 */
+  --line: #d3dde2;      /* 테두리 */
+  --accent: #1f7a8c;    /* 카운트 중 색 */
+  --move: #f2994a;      /* 이동하세요 색 */
+  --move-ink: #2b1500;
+  --done: #3f9a5b;
+  --display: "Do Hyeon", "Noto Sans KR", system-ui, sans-serif;
+  --body: "Noto Sans KR", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1a20; --panel: #172630; --ink: #e6eef2; --muted: #93a8b3; --line: #2a3d48;
+  --accent: #4fb3c6; --move: #f2a35e; --move-ink: #2b1500; --done: #5cc07a; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f1a20; --panel: #172630; --ink: #e6eef2; --muted: #93a8b3; --line: #2a3d48;
+  --accent: #4fb3c6; --move: #f2a35e; --move-ink: #2b1500; --done: #5cc07a; color-scheme: dark }
+
+html, body { height: 100%; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  transition: background .3s;
+}
+.wrap { max-width: 980px; margin: 0 auto; padding-block: 20px 40px; display: flex; flex-direction: column; gap: 20px; }
+
+/* ── 큰 화면(시계) ── */
+.stage {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 20px;
+  padding: 28px 20px 24px; display: flex; flex-direction: column; align-items: center; gap: 10px;
+  transition: background .3s, border-color .3s;
+}
+.round { font-family: var(--display); font-size: clamp(22px, 4vw, 34px); color: var(--muted); }
+.round b { color: var(--accent); font-weight: 400; }
+.clock {
+  font-family: var(--display); font-size: clamp(96px, 24vw, 260px); line-height: 1;
+  font-variant-numeric: tabular-nums; letter-spacing: -.02em; color: var(--ink);
+}
+.msg { font-family: var(--display); font-size: clamp(22px, 4vw, 34px); color: var(--muted); min-height: 1.3em; text-align: center; }
+.bar { width: 100%; max-width: 720px; height: 14px; background: var(--line); border-radius: 99px; overflow: hidden; }
+.bar i { display: block; height: 100%; width: 100%; background: var(--accent); border-radius: 99px; transition: width .2s linear; }
+
+/* 이동하세요 화면: 상자 전체가 주황으로 바뀜 */
+.stage.moving { background: var(--move); border-color: var(--move); }
+.stage.moving .clock { color: var(--move-ink); font-size: clamp(72px, 16vw, 190px); }
+.stage.moving .round, .stage.moving .msg { color: var(--move-ink); }
+.stage.moving .round b { color: var(--move-ink); }
+.stage.moving .bar { background: rgba(0,0,0,.15); }
+.stage.moving .bar i { background: var(--move-ink); }
+.stage.finished .clock { color: var(--done); font-size: clamp(72px, 16vw, 190px); }
+.stage.paused .clock { opacity: .45; }
+@keyframes pop { 0% { transform: scale(.85); } 60% { transform: scale(1.06); } 100% { transform: scale(1); } }
+.stage.moving .clock { animation: pop .5s ease-out; }
+@media (prefers-reduced-motion: reduce) { .stage.moving .clock { animation: none; } * { transition: none !important; } }
+
+/* 진행 칸: 학생 수만큼 동그라미 */
+.dots { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; max-width: 720px; }
+.dots span {
+  width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--line);
+  font-size: 11px; display: grid; place-items: center; color: var(--muted); font-variant-numeric: tabular-nums;
+}
+.dots span.on { border-color: var(--accent); background: var(--accent); color: var(--panel); }
+.dots span.now { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+.stage.moving .dots span { border-color: rgba(0,0,0,.2); color: var(--move-ink); }
+.stage.moving .dots span.on { background: var(--move-ink); border-color: var(--move-ink); color: var(--move); }
+
+/* ── 단추 ── */
+.controls { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+button {
+  font-family: var(--body); font-size: 17px; font-weight: 700; padding: 12px 22px; border-radius: 12px;
+  border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer;
+}
+button:hover { border-color: var(--accent); }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+button.main { background: var(--accent); border-color: var(--accent); color: var(--panel); min-width: 150px; }
+
+/* ── 설정 ── */
+.settings { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 20px; }
+.settings h2 { font-family: var(--display); font-weight: 400; font-size: 24px; margin: 0 0 14px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; }
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.field label { font-size: 14px; font-weight: 700; color: var(--muted); }
+.field .row { display: flex; align-items: center; gap: 6px; }
+.field input[type=number], .field input[type=text] {
+  width: 100%; min-width: 0; font-family: var(--display); font-size: 26px; padding: 6px 10px;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.field input[type=text] { font-size: 22px; }
+.field .unit { color: var(--muted); white-space: nowrap; }
+.step { padding: 8px 12px; font-size: 18px; }
+.check { display: flex; align-items: center; gap: 8px; font-weight: 500; margin-top: 4px; }
+.hint { font-size: 14px; color: var(--muted); margin: 14px 0 0; line-height: 1.6; }
+
+/* 전체화면일 때는 설정 숨기고 시계 크게 */
+.full .settings { display: none; }
+.full .stage { min-height: 70vh; justify-content: center; }
+</style>
+<style>body{margin:0} [hidden]{display:none!important}</style>
+</head>
+<body>
+
+<div class="wrap" id="wrap">
+  <!-- 큰 시계 -->
+  <section class="stage" id="stage" aria-live="polite">
+    <div class="round" id="round"><b>1</b> / 24 번째</div>
+    <div class="clock" id="clock">01:00</div>
+    <div class="msg" id="msg">[시작]을 누르면 카운트가 시작돼요</div>
+    <div class="bar"><i id="bar"></i></div>
+    <div class="dots" id="dots"></div>
+  </section>
+
+  <!-- 조작 단추 -->
+  <div class="controls">
+    <button class="main" id="startBtn">▶ 시작</button>
+    <button id="skipBtn">⏭ 다음으로</button>
+    <button id="resetBtn">↺ 처음부터</button>
+    <button id="fullBtn">⛶ 크게 보기</button>
+  </div>
+
+  <!-- 설정 -->
+  <section class="settings">
+    <h2>설정</h2>
+    <div class="grid">
+      <div class="field">
+        <label for="students">학생 수 (몇 번 돌까요?)</label>
+        <div class="row">
+          <button class="step" data-t="students" data-d="-1" aria-label="학생 수 줄이기">−</button>
+          <input type="number" id="students" min="1" max="60" value="24">
+          <button class="step" data-t="students" data-d="1" aria-label="학생 수 늘리기">+</button>
+          <span class="unit">명</span>
+        </div>
+      </div>
+      <div class="field">
+        <label for="min">한 번 카운트 시간</label>
+        <div class="row">
+          <input type="number" id="min" min="0" max="59" value="1"><span class="unit">분</span>
+          <input type="number" id="sec" min="0" max="59" value="0"><span class="unit">초</span>
+        </div>
+      </div>
+      <div class="field">
+        <label for="moveSec">"이동하세요" 보여 줄 시간</label>
+        <div class="row">
+          <input type="number" id="moveSec" min="1" max="120" value="10"><span class="unit">초</span>
+        </div>
+      </div>
+      <div class="field">
+        <label for="moveText">이동할 때 나올 글</label>
+        <input type="text" id="moveText" value="이동하세요!" maxlength="20">
+        <label class="check"><input type="checkbox" id="voice" checked> 🗣️ 목소리로 알려 주기</label>
+        <label class="check"><input type="checkbox" id="sound" checked> 마지막 3초 '똑' 소리</label>
+        <button class="step" id="testVoice" type="button">🔊 목소리 들어 보기</button>
+      </div>
+    </div>
+    <p class="hint">
+      예) 학생 24명, 카운트 1분, 이동 10초 → 1분 세고 → "이동하세요!"(목소리) 10초 → 다시 1분… 을 24번 하고 끝나요.<br>
+      목소리는 컴퓨터·태블릿에 들어 있는 한국어 음성을 써요. 소리가 안 나면 [🔊 목소리 들어 보기]로 먼저 확인해 주세요.<br>
+      설정은 이 컴퓨터에 저장돼서 다음에 열어도 그대로예요. 진행 중에 바꾸면 [처음부터]를 눌러 주세요.
+    </p>
+  </section>
+</div>
+
+<script>
+// ===== 화면 요소 =====
+const $ = id => document.getElementById(id);
+const stage = $('stage'), clock = $('clock'), msg = $('msg'), roundEl = $('round'), bar = $('bar'), dotsEl = $('dots');
+const startBtn = $('startBtn');
+const inputs = ['students', 'min', 'sec', 'moveSec', 'moveText', 'voice', 'sound'];
+
+// ===== 상태 =====
+// phase: 'ready'(시작 전) | 'count'(카운트 중) | 'move'(이동하세요) | 'done'(끝)
+let phase = 'ready';
+let round = 1;          // 지금 몇 번째인지
+let endAt = 0;          // 지금 단계가 끝나는 시각(ms)
+let remainMs = 0;       // 일시정지했을 때 남은 시간
+let running = false;
+let lastBeepSec = -1;
+let wakeLock = null;
+
+// ===== 설정 읽기/저장 (localStorage) =====
+function cfg() {
+  const n = v => Math.max(0, parseInt($(v).value, 10) || 0);
+  return {
+    students: Math.max(1, n('students')),
+    countMs: Math.max(1, n('min') * 60 + n('sec')) * 1000,   // 최소 1초
+    moveMs: Math.max(1, n('moveSec')) * 1000,
+    moveText: $('moveText').value.trim() || '이동하세요!',
+    sound: $('sound').checked,
+    voice: $('voice').checked,
+  };
+}
+function save() {
+  try {
+    const o = {}; inputs.forEach(k => o[k] = $(k).type === 'checkbox' ? $(k).checked : $(k).value);
+    localStorage.setItem('moveTimer', JSON.stringify(o));
+  } catch (e) {}
+}
+function load() {
+  try {
+    const o = JSON.parse(localStorage.getItem('moveTimer') || 'null');
+    if (o) inputs.forEach(k => { if (k in o) $(k).type === 'checkbox' ? $(k).checked = o[k] : $(k).value = o[k]; });
+  } catch (e) {}
+}
+
+// ===== 소리 (Web Audio, 시작 단추를 누른 뒤부터 소리 남) =====
+let ac = null;
+function beep(freq, dur, times = 1, force = false) {
+  if (!cfg().sound && !force) return;
+  try {
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    for (let i = 0; i < times; i++) {
+      const t = ac.currentTime + i * (dur + 0.08);
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.frequency.value = freq; o.type = 'sine';
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.4, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g).connect(ac.destination); o.start(t); o.stop(t + dur + 0.02);
+    }
+  } catch (e) {}
+}
+
+// ===== 여자 목소리로 말하기 (브라우저에 들어 있는 한국어 음성 사용) =====
+// 여자 목소리 이름 예: Google 한국의, Microsoft SunHi·Heami, 삼성/애플 Yuna·Sora 등
+const FEMALE = /(female|여성|sunhi|heami|yuna|sora|jimin|seoyeon|google 한국|ko-kr-standard-a|wavenet-a)/i;
+const MALE = /(male|남성|injoon|hyunsu|bongjin|gookmin|minsik)/i;
+let koVoice = null;
+function pickVoice() {
+  try {
+    const ko = speechSynthesis.getVoices().filter(v => /^ko/i.test(v.lang));
+    koVoice = ko.find(v => FEMALE.test(v.name) && !/\bmale/i.test(v.name))   // 여자 목소리 먼저
+      || ko.find(v => !MALE.test(v.name))                                    // 남자 아닌 것
+      || ko[0] || null;
+  } catch (e) { koVoice = null; }
+}
+if ('speechSynthesis' in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+
+// 말하기. 한국어 목소리가 없는 기기면 대신 삑삑삑
+function say(text, fallbackBeep = true) {
+  if (!cfg().voice) return;
+  if (!('speechSynthesis' in window) || !koVoice) { if (fallbackBeep) beep(880, 0.25, 3, true); return; }
+  try {
+    speechSynthesis.cancel();                       // 앞 말이 남아 있으면 끊고
+    const u = new SpeechSynthesisUtterance(text);
+    u.voice = koVoice; u.lang = koVoice.lang || 'ko-KR';
+    u.rate = 0.95; u.pitch = 1.15; u.volume = 1;    // 또박또박, 조금 높은 목소리
+    speechSynthesis.speak(u);
+  } catch (e) { if (fallbackBeep) beep(880, 0.25, 3, true); }
+}
+
+// ===== 시간 글자 만들기 =====
+function fmt(ms) {
+  const s = Math.ceil(ms / 1000);
+  return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+}
+
+// ===== 진행 동그라미 그리기 =====
+function drawDots() {
+  const c = cfg();
+  let h = '';
+  for (let i = 1; i <= c.students; i++) {
+    const cls = (i < round || phase === 'done') ? 'on' : (i === round ? 'now' : '');
+    h += `<span class="${cls}">${i}</span>`;
+  }
+  dotsEl.innerHTML = h;
+}
+
+// ===== 단계 시작 =====
+function startPhase(p) {
+  const c = cfg();
+  phase = p;
+  lastBeepSec = -1;
+  if (p === 'count') endAt = Date.now() + c.countMs;
+  if (p === 'move') { endAt = Date.now() + c.moveMs; say(c.moveText); }       // "이동하세요" 목소리
+  if (p === 'done') { running = false; say('모두 끝났어요'); releaseWake(); }
+  drawDots();
+  render();
+}
+
+// ===== 단계가 끝났을 때 다음으로 넘기기 =====
+function next() {
+  const c = cfg();
+  if (phase === 'count') {
+    // 마지막 학생 차례가 끝나면 이동 없이 끝
+    if (round >= c.students) startPhase('done');
+    else startPhase('move');
+  } else if (phase === 'move') {
+    round++;                 // 다음 번째로
+    startPhase('count');     // 자동으로 다시 카운트 시작
+  }
+}
+
+// ===== 화면 그리기 =====
+function render() {
+  const c = cfg();
+  const left = running ? Math.max(0, endAt - Date.now()) : remainMs;
+  stage.className = 'stage' + (phase === 'move' ? ' moving' : '') + (phase === 'done' ? ' finished' : '') +
+    (!running && (phase === 'count' || phase === 'move') ? ' paused' : '');
+  roundEl.innerHTML = `<b>${Math.min(round, c.students)}</b> / ${c.students} 번째`;
+
+  if (phase === 'ready') {
+    clock.textContent = fmt(c.countMs);
+    msg.textContent = '[시작]을 누르면 카운트가 시작돼요';
+    bar.style.width = '100%';
+  } else if (phase === 'count') {
+    clock.textContent = fmt(left);
+    msg.textContent = running ? '' : '잠깐 멈췄어요';
+    bar.style.width = (left / c.countMs * 100) + '%';
+  } else if (phase === 'move') {
+    clock.textContent = c.moveText;
+    msg.textContent = running ? `${Math.ceil(left / 1000)}초 뒤 다시 시작해요` : '잠깐 멈췄어요';
+    bar.style.width = (left / c.moveMs * 100) + '%';
+  } else {
+    clock.textContent = '끝!';
+    msg.textContent = `${c.students}번 모두 마쳤어요`;
+    bar.style.width = '0%';
+  }
+  startBtn.textContent = phase === 'done' ? '↺ 다시 하기' : running ? '⏸ 멈춤' : (phase === 'ready' ? '▶ 시작' : '▶ 이어서');
+}
+
+// ===== 매 순간 확인 (시계 기준이라 탭을 옮겨도 시간이 밀리지 않음) =====
+function tick() {
+  if (running) {
+    const left = endAt - Date.now();
+    // 카운트 마지막 3초에 '똑' 소리
+    if (phase === 'count') {
+      const s = Math.ceil(left / 1000);
+      if (s <= 3 && s >= 1 && s !== lastBeepSec) { lastBeepSec = s; beep(520, 0.12); }
+    }
+    if (left <= 0) next();
+    render();
+  }
+  requestAnimationFrame(tick);
+}
+
+// ===== 화면 꺼짐 막기 (되는 기기에서만) =====
+async function keepAwake() {
+  try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {}
+}
+function releaseWake() { try { wakeLock && wakeLock.release(); } catch (e) {} wakeLock = null; }
+
+// ===== 단추 =====
+startBtn.onclick = () => {
+  if (phase === 'done') { reset(); }
+  if (phase === 'ready') { running = true; keepAwake(); beep(700, 0.1); startPhase('count'); return; }
+  if (running) { remainMs = Math.max(0, endAt - Date.now()); running = false; releaseWake(); }   // 멈춤
+  else { endAt = Date.now() + remainMs; running = true; keepAwake(); }                            // 이어서
+  render();
+};
+$('skipBtn').onclick = () => {
+  if (phase === 'ready' || phase === 'done') return;
+  if (!running) { running = true; keepAwake(); }
+  next();
+};
+function reset() {
+  running = false; phase = 'ready'; round = 1; remainMs = 0; releaseWake();
+  try { speechSynthesis.cancel(); } catch (e) {}
+  drawDots(); render();
+}
+$('resetBtn').onclick = reset;
+$('testVoice').onclick = () => {
+  if (!$('voice').checked) { $('voice').checked = true; save(); }
+  say(cfg().moveText);
+  if (!koVoice) msg.textContent = '이 기기에는 한국어 목소리가 없어서 삑삑 소리로 알려 줘요';
+};
+$('fullBtn').onclick = async () => {
+  const w = $('wrap');
+  w.classList.toggle('full');
+  $('fullBtn').textContent = w.classList.contains('full') ? '⛶ 설정 보기' : '⛶ 크게 보기';
+  try {
+    if (w.classList.contains('full') && document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen();
+    else if (document.fullscreenElement) await document.exitFullscreen();
+  } catch (e) {}
+};
+// 화면을 다시 보면 화면 꺼짐 막기 다시 켬
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && running) keepAwake(); });
+
+// − / + 단추
+document.querySelectorAll('.step').forEach(b => b.onclick = () => {
+  const el = $(b.dataset.t);
+  el.value = Math.min(60, Math.max(1, (parseInt(el.value, 10) || 0) + +b.dataset.d));
+  el.dispatchEvent(new Event('input'));
+});
+// 설정이 바뀌면 저장하고, 시작 전이면 화면에 바로 반영
+inputs.forEach(k => $(k).addEventListener('input', () => {
+  save();
+  if (phase === 'ready') { drawDots(); render(); }
+  else render();
+}));
+
+load(); drawDots(); render(); requestAnimationFrame(tick);
+</script>
+</body>
+</html>
